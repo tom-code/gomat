@@ -16,8 +16,12 @@ const TYPE_UINT_8 = 7
 
 const PROTOCOL_ID_SECURE_CHANNEL = 0
 
+const SEC_CHAN_OPCODE_ACK        = 0x10
 const SEC_CHAN_OPCODE_PBKDF_REQ  = 0x20
 const SEC_CHAN_OPCODE_PBKDF_RESP = 0x21
+const SEC_CHAN_OPCODE_PAKE1      = 0x22
+const SEC_CHAN_OPCODE_PAKE2      = 0x23
+const SEC_CHAN_OPCODE_PAKE3      = 0x24
 
 type TLVBuffer struct {
 	data bytes.Buffer
@@ -33,7 +37,26 @@ func (b *TLVBufferDec) checkAndSkip(d byte) error {
 		return err
 	}
 	if o != d {
+		b.data.UnreadByte()
 		return fmt.Errorf("unexpected byte %x, expected %x", o, d)
+	}
+	return nil
+}
+
+func (b *TLVBufferDec) checkAndSkipBytes(d []byte) error {
+	did_read := 0
+	for _, now := range d {
+		o, err := b.data.ReadByte()
+		if err != nil {
+			return err
+		}
+		did_read = did_read + 1
+		if o != now {
+			for i:=0; i<did_read; i++ {
+				b.data.UnreadByte()
+			}
+			return fmt.Errorf("unexpected byte %x, expected %x", o, d)
+		}
 	}
 	return nil
 }
@@ -359,6 +382,7 @@ func PBKDFParamRequest() []byte {
 		},
 	}
 	msg.encode(&buffer)
+	log.Printf("SIZZZZZ %d\n", len(buffer.Bytes()))
 
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
@@ -375,33 +399,181 @@ func PBKDFParamRequest() []byte {
 	return buffer.Bytes()
 }
 
-func decodePBKDFParamResponse(buf *bytes.Buffer) {
+type PBKDFParamResponse struct {
+	initiatorRandom []byte
+	responderRandom []byte
+	responderSession int
+	iterations int
+	salt []byte
+}
+type PAKE2ParamResponse struct {
+	pb []byte
+	cb []byte
+}
+
+type AllResp struct {
+	messageCounter uint32
+	PBKDFParamResponse *PBKDFParamResponse
+	PAKE2ParamResponse *PAKE2ParamResponse
+}
+
+func (d PBKDFParamResponse)dump() {
+	fmt.Printf(" initiatorRandom : %s\n", hex.EncodeToString(d.initiatorRandom))
+	fmt.Printf(" responderRandom : %s\n", hex.EncodeToString(d.responderRandom))
+	fmt.Printf(" responderSession: %d\n", d.responderSession)
+	fmt.Printf(" iterations      : %d\n", d.iterations)
+	fmt.Printf(" salt            : %s\n", hex.EncodeToString(d.salt))
+}
+
+func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
+	var out PBKDFParamResponse
 	var tlv TLVBufferDec
 	tlv.data = buf
 	err := tlv.checkAndSkip(0x15)
 	if err != nil {
 		panic(err)
 	}
-	initiatorRandom, err := tlv.readOctetString(1)
+	out.initiatorRandom, err = tlv.readOctetString(1)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(initiatorRandom)
-	responderRandom, err := tlv.readOctetString(2)
+	//log.Println(initiatorRandom)
+	out.responderRandom, err = tlv.readOctetString(2)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(responderRandom)
+	//log.Println(responderRandom)
 	responderSession, err := tlv.readUInt(3)
 	if err != nil {
 		panic(err)
 	}
-	log.Println(responderSession)
+	out.responderSession = int(responderSession)
+	//log.Println(responderSession)
 	log.Println(tlv.data.Available())
 	log.Println(tlv.data.Bytes())
+	log.Println(hex.EncodeToString(tlv.data.Bytes()))
+	err = tlv.checkAndSkipBytes([]byte{0x35, 0x4})
+	if err != nil {
+		panic(err)
+	}
+	iterations, err := tlv.readUInt(1)
+	if err != nil {
+		panic(err)
+	}
+	out.iterations = int(iterations)
+	//log.Println(iterations)
+	out.salt, err = tlv.readOctetString(2)
+	if err != nil {
+		panic(err)
+	}
+	//log.Println(salt)
+	log.Println(hex.EncodeToString(tlv.data.Bytes()))
+	out.dump()
+
+	var o AllResp
+	o.PBKDFParamResponse = &out
+
+	return o
 }
 
-func decode(data []byte) {
+func decodePAKE2ParamResponse(buf *bytes.Buffer) AllResp {
+	log.Println("decoding pake2")
+	var out PAKE2ParamResponse
+	var tlv TLVBufferDec
+	tlv.data = buf
+	err := tlv.checkAndSkip(0x15)
+	if err != nil {
+		panic(err)
+	}
+	out.pb, err = tlv.readOctetString(1)
+	if err != nil {
+		panic(err)
+	}
+	//log.Println(initiatorRandom)
+	out.cb, err = tlv.readOctetString(2)
+	if err != nil {
+		panic(err)
+	}
+
+	var o AllResp
+	o.PAKE2ParamResponse = &out
+
+	return o
+}
+
+func Pake1ParamRequest(key []byte) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: 3,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 5,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_PAKE1,
+			exchangeId: 0xba3e,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+
+	var tlv TLVBuffer
+	tlv.writeAnonStruct()
+	tlv.writeOctetString(0x1, key)
+	tlv.writeAnonStructEnd()
+	buffer.Write(tlv.data.Bytes())
+	return buffer.Bytes()
+}
+
+func Pake3ParamRequest(key []byte) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: 5,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 5,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_PAKE3,
+			exchangeId: 0xba3e,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+
+	var tlv TLVBuffer
+	tlv.writeAnonStruct()
+	tlv.writeOctetString(0x1, key)
+	tlv.writeAnonStructEnd()
+	buffer.Write(tlv.data.Bytes())
+	return buffer.Bytes()
+}
+
+func Ack(cnt uint32, counter uint32) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: cnt,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 3,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_ACK,
+			exchangeId: 0xba3e,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+	binary.Write(&buffer, binary.LittleEndian, counter)
+
+
+	return buffer.Bytes()
+}
+
+func decode(data []byte) AllResp {
 	var msg Message
 	buf := bytes.NewBuffer(data)
 	msg.decode(buf)
@@ -411,7 +583,14 @@ func decode(data []byte) {
 	case PROTOCOL_ID_SECURE_CHANNEL:
 		switch msg.prot.opcode {
 		case SEC_CHAN_OPCODE_PBKDF_RESP:
-			decodePBKDFParamResponse(buf)
+			resp := decodePBKDFParamResponse(buf)
+			resp.messageCounter = msg.messageCounter
+			return resp
+		case SEC_CHAN_OPCODE_PAKE2:
+			resp := decodePAKE2ParamResponse(buf)
+			resp.messageCounter = msg.messageCounter
+			return resp
 		}
 	}
+	return AllResp{}
 }
