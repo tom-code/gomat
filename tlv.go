@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -632,7 +633,7 @@ func decode(data []byte) AllResp {
 }
 
 
-func Secured(session uint16, counter uint32) []byte {
+func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []byte, add []byte) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: session,
@@ -641,5 +642,22 @@ func Secured(session uint16, counter uint32) []byte {
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 	}
 	msg.encodeBase(&buffer)
+
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	if err != nil {
+		panic(err)
+	}
+	CipherText := ccm.Seal(nil, nonce, data, add)
+	log.Printf("add: %s", hex.EncodeToString(add))
+	log.Printf("ciphertext: %s", hex.EncodeToString(CipherText))
+	buffer.Write(CipherText)
+
+
+	//buffer.Write(data)
+	//return CipherText
 	return buffer.Bytes()
 }

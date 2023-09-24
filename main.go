@@ -122,7 +122,24 @@ func main() {
 	nonce := make_nonce(7)
 	log.Printf("nonce %s\n", hex.EncodeToString(nonce))
 
-	sec := Secured(uint16(pbkdf_response.PBKDFParamResponse.responderSession), 7)
+	to_send, _ := hex.DecodeString("05025e630100153600172403312504fcff181724020024033024040018172402002403302404011817240200240330240402181724020024033024040318172402002403282404021817240200240328240404181724033124040318172402002403381818280324ff0a18")
+	//to_send, _ := hex.DecodeString("153600172403312504fcff181724020024033024040018172402002403302404011817240200240330240402181724020024033024040318172402002403282404021817240200240328240404181724033124040318172402002403381818280324ff0a18")
+	//to_send, _ := hex.DecodeString("153600172403312504fcff181724020024033024040018172402002403302404011817240200240330240402181724020024033024040318172402002403282404021817240200240328240404181724033124040318172402002403381818280324ff0a18")
+
+	//sec := Secured(uint16(pbkdf_response.PBKDFParamResponse.responderSession), 7, to_send)
+	var add bytes.Buffer
+	add.WriteByte(4)
+	//add.WriteByte(pbkdf_response.PBKDFParamResponse.responderSession)
+	log.Printf("responder session %x\n", pbkdf_response.PBKDFParamResponse.responderSession)
+	binary.Write(&add, binary.LittleEndian, uint16(pbkdf_response.PBKDFParamResponse.responderSession))
+	add.WriteByte(0)
+	var cnt uint32
+	cnt = 7
+	binary.Write(&add, binary.LittleEndian, cnt)
+	add.Write([]byte{1,2,3,4,5,6,7,8})
+	sec := Secured(uint16(pbkdf_response.PBKDFParamResponse.responderSession), cnt, to_send, ctx.encrypt_key, nonce, add.Bytes())
+	//seco := []byte{0,0,0,0,0,0,0,0}
+	//seco = append(seco, sec...)
 	udpr.WriteTo(sec, &addr)
 
 

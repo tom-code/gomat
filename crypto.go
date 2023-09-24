@@ -113,6 +113,8 @@ type SpakeCtx struct {
 	cB []byte
 	Ke []byte
 	Ka []byte
+	encrypt_key []byte
+	decrypt_key []byte
 }
 
 func (ctx *SpakeCtx)gen_w_test() {
@@ -220,9 +222,9 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	log.Printf("ke: %v\n", hex.EncodeToString(ctx.Ke))
 
 	//(salt, ikm, info []byte
-	hkdf := hkdf.New(sha256.New, ctx.Ka, nil, []byte("ConfirmationKeys"))
+	hkdfz := hkdf.New(sha256.New, ctx.Ka, nil, []byte("ConfirmationKeys"))
 	key := make([]byte, 32)
-	if _, err := io.ReadFull(hkdf, key); err != nil {
+	if _, err := io.ReadFull(hkdfz, key); err != nil {
 		panic(err)
 	}
 	//log.Printf("kca %v\n", hex.EncodeToString(key[:16]))
@@ -237,6 +239,16 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	mac.Write(ctx.X.as_bytes())
 	ctx.cB = mac.Sum(nil)
 	log.Printf("cb %v\n", hex.EncodeToString(ctx.cB))
+
+	//hm := hmac.New(h func() hash.Hash, key []byte)
+	//hkdf2 := hkdf.New(sha256.New, ctx.Ka, nil, []byte("SessionKeys"))
+	hkdf2 := hkdf.New(sha256.New, ctx.Ke, nil, []byte("SessionKeys"))
+	Xcryptkey := make([]byte, 16*3)
+	if _, err := io.ReadFull(hkdf2, Xcryptkey); err != nil {
+		panic(err)
+	}
+	ctx.decrypt_key = Xcryptkey[16:32]
+	ctx.encrypt_key = Xcryptkey[:16]
 }
 
 func newSpaceCtx() SpakeCtx {
