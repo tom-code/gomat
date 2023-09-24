@@ -22,6 +22,7 @@ const SEC_CHAN_OPCODE_PBKDF_RESP = 0x21
 const SEC_CHAN_OPCODE_PAKE1      = 0x22
 const SEC_CHAN_OPCODE_PAKE2      = 0x23
 const SEC_CHAN_OPCODE_PAKE3      = 0x24
+const SEC_CHAN_OPCODE_STATUS_REP = 0x40
 
 type TLVBuffer struct {
 	data bytes.Buffer
@@ -230,7 +231,7 @@ func (m *Message)dump()  {
 	fmt.Printf("  dstNode    : %v\n", m.destinationNodeId)
 	fmt.Printf("  prot       :\n")
 	fmt.Printf("    exchangeFlags : %d\n", m.prot.exchangeFlags)
-	fmt.Printf("    opcode        : %d\n", m.prot.opcode)
+	fmt.Printf("    opcode        : 0x%x\n", m.prot.opcode)
 	fmt.Printf("    exchangeId    : %d\n", m.prot.exchangeId)
 	fmt.Printf("    protocolId    : %d\n", m.prot.protocolId)
 	fmt.Printf("    ackCounter    : %d\n", m.prot.ackCounter)
@@ -254,6 +255,19 @@ func (m *Message)calcMessageFlags() byte {
 
 	out = out | byte(dsiz)
 	return out
+}
+
+func (m *Message) encodeBase(data *bytes.Buffer) {
+	data.WriteByte(m.calcMessageFlags())
+	binary.Write(data, binary.LittleEndian, uint16(m.sessionId))
+	data.WriteByte(m.securityFlags)
+	binary.Write(data, binary.LittleEndian, uint32(m.messageCounter))
+	if len(m.sourceNodeId) == 8 {
+		data.Write(m.sourceNodeId)
+	}
+	if len(m.destinationNodeId) > 0 {
+		data.Write(m.destinationNodeId)
+	}
 }
 
 func (m *Message) encode(data *bytes.Buffer) {
@@ -323,6 +337,7 @@ func (m *Message) decode(data *bytes.Buffer) error {
 	return nil
 }
 
+/*
 func test1() {
 	msg := Message {
 		sessionId: 0x1234,
@@ -350,7 +365,7 @@ func test1() {
 	fmt.Printf("%+v", msgdec)
 	msgdec.dump()
 }
-
+*/
 func test2() {
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
@@ -411,10 +426,22 @@ type PAKE2ParamResponse struct {
 	cb []byte
 }
 
+type StatusReport struct {
+	generalCode uint16
+	protocolId uint32
+	protocolCode uint16
+}
+func (d StatusReport)dump() {
+	fmt.Printf(" generalCode  : %d\n", d.generalCode)
+	fmt.Printf(" protocolId   : %d\n", d.protocolId)
+	fmt.Printf(" protocolCode : %d\n", d.protocolCode)
+}
+
 type AllResp struct {
 	messageCounter uint32
 	PBKDFParamResponse *PBKDFParamResponse
 	PAKE2ParamResponse *PAKE2ParamResponse
+	StatusReport StatusReport
 }
 
 func (d PBKDFParamResponse)dump() {
@@ -423,6 +450,18 @@ func (d PBKDFParamResponse)dump() {
 	fmt.Printf(" responderSession: %d\n", d.responderSession)
 	fmt.Printf(" iterations      : %d\n", d.iterations)
 	fmt.Printf(" salt            : %s\n", hex.EncodeToString(d.salt))
+}
+
+func decodeStatusReport(buf *bytes.Buffer) AllResp {
+	log.Printf("status report data %s", hex.EncodeToString(buf.Bytes()))
+	var StatusReport StatusReport
+	binary.Read(buf, binary.LittleEndian, &StatusReport.generalCode)
+	binary.Read(buf, binary.LittleEndian, &StatusReport.protocolId)
+	binary.Read(buf, binary.LittleEndian, &StatusReport.protocolCode)
+
+	return AllResp{
+		StatusReport: StatusReport,
+	}
 }
 
 func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
@@ -437,18 +476,15 @@ func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
 	if err != nil {
 		panic(err)
 	}
-	//log.Println(initiatorRandom)
 	out.responderRandom, err = tlv.readOctetString(2)
 	if err != nil {
 		panic(err)
 	}
-	//log.Println(responderRandom)
 	responderSession, err := tlv.readUInt(3)
 	if err != nil {
 		panic(err)
 	}
 	out.responderSession = int(responderSession)
-	//log.Println(responderSession)
 	log.Println(tlv.data.Available())
 	log.Println(tlv.data.Bytes())
 	log.Println(hex.EncodeToString(tlv.data.Bytes()))
@@ -461,12 +497,10 @@ func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
 		panic(err)
 	}
 	out.iterations = int(iterations)
-	//log.Println(iterations)
 	out.salt, err = tlv.readOctetString(2)
 	if err != nil {
 		panic(err)
 	}
-	//log.Println(salt)
 	log.Println(hex.EncodeToString(tlv.data.Bytes()))
 	out.dump()
 
@@ -489,7 +523,6 @@ func decodePAKE2ParamResponse(buf *bytes.Buffer) AllResp {
 	if err != nil {
 		panic(err)
 	}
-	//log.Println(initiatorRandom)
 	out.cb, err = tlv.readOctetString(2)
 	if err != nil {
 		panic(err)
@@ -510,7 +543,6 @@ func Pake1ParamRequest(key []byte) []byte {
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 		prot: ProtocolMessage{
 			exchangeFlags: 5,
-			//exchangeFlags: 7,
 			opcode: SEC_CHAN_OPCODE_PAKE1,
 			exchangeId: 0xba3e,
 			protocolId: 0x00,
@@ -590,7 +622,24 @@ func decode(data []byte) AllResp {
 			resp := decodePAKE2ParamResponse(buf)
 			resp.messageCounter = msg.messageCounter
 			return resp
+		case SEC_CHAN_OPCODE_STATUS_REP:
+			resp := decodeStatusReport(buf)
+			resp.messageCounter = msg.messageCounter
+			return resp
 		}
 	}
 	return AllResp{}
+}
+
+
+func Secured(session uint16, counter uint32) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: session,
+		securityFlags: 0,
+		messageCounter: counter,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+	}
+	msg.encodeBase(&buffer)
+	return buffer.Bytes()
 }

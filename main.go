@@ -1,11 +1,21 @@
 package main
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"log"
 	"net"
 	"time"
 )
+
+func make_nonce(counter uint32) []byte{
+	var n bytes.Buffer
+	n.WriteByte(0)
+	binary.Write(&n, binary.LittleEndian, counter)
+	n.Write([]byte{0,0,0,0,0,0,0,0})
+	return n.Bytes()
+}
 
 func main() {
 
@@ -58,7 +68,7 @@ func main() {
 	respstr := hex.EncodeToString(respbin)
 	log.Println(respstr)
 	resp := decode(respbin)
-
+	pbkdf_response := resp
 	ctx := newSpaceCtx()
 	ctx.gen_w(123456, resp.PBKDFParamResponse.salt, resp.PBKDFParamResponse.iterations)
 	ctx.gen_random_X()
@@ -98,6 +108,27 @@ func main() {
 
 	pake3 := Pake3ParamRequest(ctx.cA)
 	udpr.WriteTo(pake3, &addr)
+
+	n, addrx, errx = udpr.ReadFrom(buf)
+	if errx != nil {
+		panic(errx)
+	}
+	respbin = buf[:n]
+	resp = decode(respbin)
+	resp.StatusReport.dump()
+	ack = Ack(6, resp.messageCounter)
+	udpr.WriteTo(ack, &addr)
+
+	nonce := make_nonce(7)
+	log.Printf("nonce %s\n", hex.EncodeToString(nonce))
+
+	sec := Secured(uint16(pbkdf_response.PBKDFParamResponse.responderSession), 7)
+	udpr.WriteTo(sec, &addr)
+
+
+	// create secure session
+	// https://github.com/project-chip/matter.js/blob/main/packages/matter.js/src/session/SecureSession.ts#L33
+	// https://github.com/project-chip/matter.js/blob/main/packages/matter.js/src/session/pase/PaseClient.ts#L57
 	/*
 	devices, err := discover()
 	if err != nil {
