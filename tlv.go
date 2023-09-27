@@ -191,9 +191,9 @@ func (b *TLVBuffer) writeBool(tag byte, val bool) {
 	var ctrl byte
 	ctrl = 0x1 << 5
 	if val {
-		ctrl = ctrl | 0x8
-	} else {
 		ctrl = ctrl | 0x9
+	} else {
+		ctrl = ctrl | 0x8
 	}
 	b.data.WriteByte(ctrl)
 	b.data.WriteByte(tag)
@@ -201,6 +201,18 @@ func (b *TLVBuffer) writeBool(tag byte, val bool) {
 
 func (b *TLVBuffer) writeAnonStruct() {
 	b.data.WriteByte(0x15)
+}
+func (b *TLVBuffer) writeStruct(tag byte) {
+	b.data.WriteByte(0x35)
+	b.data.WriteByte(tag)
+}
+func (b *TLVBuffer) writeArray(tag byte) {
+	b.data.WriteByte(0x36)
+	b.data.WriteByte(tag)
+}
+func (b *TLVBuffer) writeList(tag byte) {
+	b.data.WriteByte(0x37)
+	b.data.WriteByte(tag)
 }
 func (b *TLVBuffer) writeAnonStructEnd() {
 	b.data.WriteByte(0x18)
@@ -377,7 +389,7 @@ func test2() {
 	tlv.writeOctetString(0x1, bytes)
 	tlv.writeUInt(0x2, TYPE_UINT_2, 0xfdb8)
 	tlv.writeUInt(0x3, TYPE_UINT_1, 0x00)
-	tlv.writeBool(0x4, true)
+	tlv.writeBool(0x4, false)
 	tlv.writeAnonStructEnd()
 	dbg := hex.EncodeToString(tlv.data.Bytes())
 	log.Println(dbg)
@@ -409,7 +421,7 @@ func PBKDFParamRequest() []byte {
 	tlv.writeOctetString(0x1, bytes)             // initiator random
 	tlv.writeUInt(0x2, TYPE_UINT_2, 0x0001)      //initator session-id
 	tlv.writeUInt(0x3, TYPE_UINT_1, 0x00)        // passcode id
-	tlv.writeBool(0x4, true)                     // has pbkdf
+	tlv.writeBool(0x4, false)                     // has pbkdf
 	tlv.writeAnonStructEnd()
 	buffer.Write(tlv.data.Bytes())
 	return buffer.Bytes()
@@ -659,5 +671,40 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 
 	//buffer.Write(data)
 	//return CipherText
+	return buffer.Bytes()
+}
+
+func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
+
+	var tlv TLVBuffer
+	tlv.writeAnonStruct()
+		tlv.writeBool(0, false)
+		tlv.writeBool(1, false)
+		tlv.writeArray(2)
+			tlv.writeAnonStruct()
+				tlv.writeList(0)
+					tlv.writeUInt(0, TYPE_UINT_1, uint64(endpoint))
+					tlv.writeUInt(1, TYPE_UINT_1, uint64(cluster))
+					tlv.writeUInt(2, TYPE_UINT_1, uint64(command))
+				tlv.writeAnonStructEnd()
+				tlv.writeStruct(1)
+					tlv.writeOctetString(0, payload)
+				tlv.writeAnonStructEnd()
+			tlv.writeAnonStructEnd()
+		tlv.writeAnonStructEnd()
+		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
+	tlv.writeAnonStructEnd()
+
+
+	var buffer bytes.Buffer
+	buffer.WriteByte(5) // flags
+	buffer.WriteByte(8) // opcode
+	var exchange_id uint16
+	binary.Write(&buffer, binary.LittleEndian, exchange_id)
+	var protocol_id uint16 
+	protocol_id = 1
+	binary.Write(&buffer, binary.LittleEndian, protocol_id)
+	buffer.Write(tlv.data.Bytes())
+
 	return buffer.Bytes()
 }
