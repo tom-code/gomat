@@ -628,29 +628,7 @@ func Ack(cnt uint32, counter uint32) []byte {
 	return buffer.Bytes()
 }
 
-func Ack2(session_id uint16, cnt uint32, counter uint32) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: session_id,
-		securityFlags: 0,
-		messageCounter: cnt,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 3,
-			//exchangeFlags: 7,
-			opcode: SEC_CHAN_OPCODE_ACK,
-			exchangeId: 0xba3e,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
-	//binary.Write(&buffer, binary.LittleEndian, counter)
-	//msg.encodeBase(&buffer)
-	//s := Secured(session_id, counter, data []byte, key []byte, nonce []byte)
 
-
-	return buffer.Bytes()
-}
 
 func decode(data []byte) AllResp {
 	var msg Message
@@ -834,5 +812,18 @@ func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
 	buffer.Write(tlv.data.Bytes())
 
+	return buffer.Bytes()
+}
+
+func Ack3(counter uint32) []byte {
+	var buffer bytes.Buffer
+	buffer.WriteByte(3) // flags
+	buffer.WriteByte(SEC_CHAN_OPCODE_ACK) // opcode
+	var exchange_id uint16
+	binary.Write(&buffer, binary.LittleEndian, exchange_id)
+	var protocol_id uint16 
+	protocol_id = 0
+	binary.Write(&buffer, binary.LittleEndian, protocol_id)
+	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }

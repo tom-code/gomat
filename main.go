@@ -138,8 +138,13 @@ func main() {
 	csr_response, _ := channel.receive()
 	ds := decodeSecured(csr_response, sctx.decrypt_key)
 
-	ack = Ack2(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), uint32(channel.get_counter()), ds.msg.messageCounter)
-	channel.send(ack)
+
+	ack = Ack3(ds.msg.messageCounter)
+	cnt = uint32(channel.get_counter())
+	nonce = make_nonce(cnt)
+	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
+	channel.send(sec)
+
 
 	nocsr := ds.tlv.GetOctetStringRec([]int{1,0,0,1,0})
 	tlv2 := tlvdec.Decode(nocsr)
@@ -148,7 +153,7 @@ func main() {
 	csrp, err := x509.ParseCertificateRequest(csr)
 	log.Printf("csr %+v\n", csrp)
 
-	/*
+
 	var tlv3 TLVBuffer
 	tlv3.writeOctetString(0, bb)
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv3.data.Bytes())
@@ -156,5 +161,5 @@ func main() {
 	cnt = uint32(channel.get_counter())
 	nonce = make_nonce(cnt)
 	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
-	channel.send(sec)*/
+	channel.send(sec)
 }
