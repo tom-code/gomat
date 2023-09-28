@@ -228,6 +228,7 @@ type ProtocolMessage struct {
 }
 
 type Message struct {
+	flags byte
 	sessionId uint16
 	securityFlags byte
 	messageCounter uint32
@@ -302,7 +303,8 @@ func (m *Message) encode(data *bytes.Buffer) {
 }
 
 func (m *Message) decode(data *bytes.Buffer) error {
-	flags, err := data.ReadByte()
+	var err error
+	m.flags, err = data.ReadByte()
 	if err != nil {
 		return err
 	}
@@ -312,18 +314,18 @@ func (m *Message) decode(data *bytes.Buffer) error {
 		return err
 	}
 	binary.Read(data, binary.LittleEndian, &m.messageCounter)
-	if (flags & 4) != 0 {
+	if (m.flags & 4) != 0 {
 		m.sourceNodeId = make([]byte, 8)
 		_, err := data.Read(m.sourceNodeId)
 		if err != nil {
 			return err
 		}
 	}
-	if ((flags & 3 )!= 0) {
+	if ((m.flags & 3 )!= 0) {
 		dsiz := 0
-		if (flags & 3) == 1 {
+		if (m.flags & 3) == 1 {
 			dsiz = 8
-		} else if (flags & 3) == 2 {
+		} else if (m.flags & 3) == 2 {
 			dsiz = 2
 		}
 		if dsiz != 0 {
@@ -350,7 +352,8 @@ func (m *Message) decode(data *bytes.Buffer) error {
 	return nil
 }
 func (m *Message) decodeBase(data *bytes.Buffer) error {
-	flags, err := data.ReadByte()
+	var err error
+	m.flags, err = data.ReadByte()
 	if err != nil {
 		return err
 	}
@@ -360,18 +363,18 @@ func (m *Message) decodeBase(data *bytes.Buffer) error {
 		return err
 	}
 	binary.Read(data, binary.LittleEndian, &m.messageCounter)
-	if (flags & 4) != 0 {
+	if (m.flags & 4) != 0 {
 		m.sourceNodeId = make([]byte, 8)
 		_, err := data.Read(m.sourceNodeId)
 		if err != nil {
 			return err
 		}
 	}
-	if ((flags & 3 )!= 0) {
+	if ((m.flags & 3 )!= 0) {
 		dsiz := 0
-		if (flags & 3) == 1 {
+		if (m.flags & 3) == 1 {
 			dsiz = 8
-		} else if (flags & 3) == 2 {
+		} else if (m.flags & 3) == 2 {
 			dsiz = 2
 		}
 		if dsiz != 0 {
@@ -684,7 +687,7 @@ func decode(data []byte) AllResp {
 }
 
 
-func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []byte, add []byte) []byte {
+func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []byte) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: session,
@@ -694,6 +697,13 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	}
 	msg.encodeBase(&buffer)
 
+	var add bytes.Buffer
+	add.WriteByte(4) //flags
+	binary.Write(&add, binary.LittleEndian, uint16(msg.sessionId))
+	add.WriteByte(msg.securityFlags)
+	binary.Write(&add, binary.LittleEndian, msg.messageCounter)
+	add.Write(msg.sourceNodeId)
+
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err)
@@ -702,8 +712,8 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	if err != nil {
 		panic(err)
 	}
-	CipherText := ccm.Seal(nil, nonce, data, add)
-	log.Printf("add: %s", hex.EncodeToString(add))
+	CipherText := ccm.Seal(nil, nonce, data, add.Bytes())
+	log.Printf("add: %s", hex.EncodeToString(add.Bytes()))
 	log.Printf("ciphertext: %s", hex.EncodeToString(CipherText))
 	buffer.Write(CipherText)
 
@@ -713,11 +723,18 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	return buffer.Bytes()
 }
 
-func decodeSecured(in []byte, key []byte, add []byte) {
+func decodeSecured(in []byte, key []byte) {
 	var msg Message
 	buf := bytes.NewBuffer(in)
 	msg.decodeBase(buf)
 	msg.dump()
+
+	var add bytes.Buffer
+	add.WriteByte(msg.flags)
+	binary.Write(&add, binary.LittleEndian, uint16(msg.sessionId))
+	add.WriteByte(msg.securityFlags)
+	binary.Write(&add, binary.LittleEndian, msg.messageCounter)
+
 	nonce := make_nonce(msg.messageCounter)
 	c, err := aes.NewCipher(key)
 	if err != nil {
@@ -729,7 +746,7 @@ func decodeSecured(in []byte, key []byte, add []byte) {
 	}
 	ciphertext := in[len(in)-buf.Len():]
 	decbuf := []byte{}
-	out, err := ccm.Open(decbuf, nonce, ciphertext, add)
+	out, err := ccm.Open(decbuf, nonce, ciphertext, add.Bytes())
 	if err != nil {
 		panic(err)
 	}
