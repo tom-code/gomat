@@ -547,12 +547,12 @@ func decodePAKE2ParamResponse(buf *bytes.Buffer) AllResp {
 	return o
 }
 
-func Pake1ParamRequest(key []byte) []byte {
+func Pake1ParamRequest(key []byte, counter uint32) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: 0x0,
 		securityFlags: 0,
-		messageCounter: 3,
+		messageCounter: counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 		prot: ProtocolMessage{
 			exchangeFlags: 5,
@@ -571,12 +571,12 @@ func Pake1ParamRequest(key []byte) []byte {
 	return buffer.Bytes()
 }
 
-func Pake3ParamRequest(key []byte) []byte {
+func Pake3ParamRequest(key []byte, counter uint32) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: 0x0,
 		securityFlags: 0,
-		messageCounter: 5,
+		messageCounter: counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 		prot: ProtocolMessage{
 			exchangeFlags: 5,
