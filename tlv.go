@@ -349,6 +349,41 @@ func (m *Message) decode(data *bytes.Buffer) error {
 	}
 	return nil
 }
+func (m *Message) decodeBase(data *bytes.Buffer) error {
+	flags, err := data.ReadByte()
+	if err != nil {
+		return err
+	}
+	binary.Read(data, binary.LittleEndian, &m.sessionId)
+	m.securityFlags, err = data.ReadByte()
+	if err != nil {
+		return err
+	}
+	binary.Read(data, binary.LittleEndian, &m.messageCounter)
+	if (flags & 4) != 0 {
+		m.sourceNodeId = make([]byte, 8)
+		_, err := data.Read(m.sourceNodeId)
+		if err != nil {
+			return err
+		}
+	}
+	if ((flags & 3 )!= 0) {
+		dsiz := 0
+		if (flags & 3) == 1 {
+			dsiz = 8
+		} else if (flags & 3) == 2 {
+			dsiz = 2
+		}
+		if dsiz != 0 {
+			m.destinationNodeId = make([]byte, dsiz)
+			_, err := data.Read(m.destinationNodeId)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
 
 /*
 func test1() {
@@ -452,6 +487,7 @@ func (d StatusReport)dump() {
 
 type AllResp struct {
 	messageCounter uint32
+	sourceNodeId []byte
 	PBKDFParamResponse *PBKDFParamResponse
 	PAKE2ParamResponse *PAKE2ParamResponse
 	StatusReport StatusReport
@@ -630,14 +666,17 @@ func decode(data []byte) AllResp {
 		case SEC_CHAN_OPCODE_PBKDF_RESP:
 			resp := decodePBKDFParamResponse(buf)
 			resp.messageCounter = msg.messageCounter
+			resp.sourceNodeId = msg.sourceNodeId
 			return resp
 		case SEC_CHAN_OPCODE_PAKE2:
 			resp := decodePAKE2ParamResponse(buf)
 			resp.messageCounter = msg.messageCounter
+			resp.sourceNodeId = msg.sourceNodeId
 			return resp
 		case SEC_CHAN_OPCODE_STATUS_REP:
 			resp := decodeStatusReport(buf)
 			resp.messageCounter = msg.messageCounter
+			resp.sourceNodeId = msg.sourceNodeId
 			return resp
 		}
 	}
@@ -672,6 +711,30 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	//buffer.Write(data)
 	//return CipherText
 	return buffer.Bytes()
+}
+
+func decodeSecured(in []byte, key []byte, add []byte) {
+	var msg Message
+	buf := bytes.NewBuffer(in)
+	msg.decodeBase(buf)
+	msg.dump()
+	nonce := make_nonce(msg.messageCounter)
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	if err != nil {
+		panic(err)
+	}
+	ciphertext := in[len(in)-buf.Len():]
+	decbuf := []byte{}
+	out, err := ccm.Open(decbuf, nonce, ciphertext, add)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(hex.EncodeToString(out))
+
 }
 
 func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {

@@ -111,6 +111,7 @@ func main() {
 	status_report_decoded.StatusReport.dump()
 	ack = Ack(uint32(channel.get_counter()), status_report_decoded.messageCounter)
 	channel.send(ack)
+	log.Printf("remote node id: %s", hex.EncodeToString(status_report_decoded.sourceNodeId))
 
 
 	b := "c4f68604b151d21f2afac9e61a745ade93fde7dce1c6615de543f230bd62dd85"
@@ -130,6 +131,23 @@ func main() {
 	add.Write([]byte{1,2,3,4,5,6,7,8})
 	sec := Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce, add.Bytes())
 	channel.send(sec)
+
+	channel.receive() // ack
+	csr_response, _ := channel.receive()
+	var msg Message
+	buf := bytes.NewBuffer(csr_response)
+	msg.decode(buf)
+	msg.dump()
+	log.Printf("csr resp: %s\n", hex.EncodeToString(csr_response))
+	nonce = make_nonce(msg.messageCounter)
+	log.Printf("nonce: %s\n", hex.EncodeToString(nonce))
+	var add2 bytes.Buffer
+	add2.WriteByte(0)
+	binary.Write(&add2, binary.LittleEndian, uint16(1))
+	add2.WriteByte(0)
+	binary.Write(&add2, binary.LittleEndian, msg.messageCounter)
+	log.Printf("aad: %s\n", hex.EncodeToString(add2.Bytes()))
+	decodeSecured(csr_response, sctx.decrypt_key, add2.Bytes())
 }
 
 func main_old() {
