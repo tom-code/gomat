@@ -2,9 +2,11 @@ package main
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"gomat/tlvdec"
 	"log"
 	"net"
 )
@@ -54,6 +56,8 @@ func (ch *Channel)receive() ([]byte, error) {
 }
 
 func main() {
+	//tlvdec.Test1()
+	//panic("")
 	var devices []Device
 	var err error
 	for i:=0; i<5; i++ {
@@ -113,9 +117,12 @@ func main() {
 	log.Printf("remote node id: %s", hex.EncodeToString(status_report_decoded.sourceNodeId))
 
 
+
 	b := "c4f68604b151d21f2afac9e61a745ade93fde7dce1c6615de543f230bd62dd85"
 	bb, _ := hex.DecodeString(b)
-	to_send := invokeCommand(0, 0x3e, 4, bb)
+	var tlv TLVBuffer
+	tlv.writeOctetString(0, bb)
+	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
 
 
 
@@ -129,5 +136,25 @@ func main() {
 
 	channel.receive() // ack
 	csr_response, _ := channel.receive()
-	decodeSecured(csr_response, sctx.decrypt_key)
+	ds := decodeSecured(csr_response, sctx.decrypt_key)
+
+	ack = Ack2(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), uint32(channel.get_counter()), ds.msg.messageCounter)
+	channel.send(ack)
+
+	nocsr := ds.tlv.GetOctetStringRec([]int{1,0,0,1,0})
+	tlv2 := tlvdec.Decode(nocsr)
+	tlv2.Dump(0)
+	csr := tlv2.GetOctetStringRec([]int{1})
+	csrp, err := x509.ParseCertificateRequest(csr)
+	log.Printf("csr %+v\n", csrp)
+
+	/*
+	var tlv3 TLVBuffer
+	tlv3.writeOctetString(0, bb)
+	to_send = invokeCommand2(0, 0x3e, 0xb, tlv3.data.Bytes())
+
+	cnt = uint32(channel.get_counter())
+	nonce = make_nonce(cnt)
+	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
+	channel.send(sec)*/
 }

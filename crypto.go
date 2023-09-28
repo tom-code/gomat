@@ -60,7 +60,6 @@ func init() {
 	nhex := "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
 	nbin, _ := hex.DecodeString(nhex)
 	N.x, N.y = elliptic.UnmarshalCompressed(elliptic.P256(), nbin)
-	log.Println("ooo")
 }
 
 

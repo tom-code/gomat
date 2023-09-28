@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"gomat/tlvdec"
 	"log"
 )
 
@@ -154,6 +155,10 @@ func (b *TLVBufferDec) readUInt(itag byte) (uint64, error) {
 }
 
 
+func (b *TLVBuffer) writeRaw(raw []byte) {
+	b.data.Write(raw)
+}
+
 
 func (b *TLVBuffer) writeControl(ctrl byte) {
 	binary.Write(&b.data, binary.BigEndian, ctrl)
@@ -225,6 +230,15 @@ type ProtocolMessage struct {
 	exchangeId uint16
 	protocolId uint16
 	ackCounter uint32
+}
+func (m *ProtocolMessage)decode(data *bytes.Buffer) {
+	m.exchangeFlags, _ = data.ReadByte()
+	m.opcode, _ = data.ReadByte()
+	binary.Read(data, binary.LittleEndian, m.exchangeId)
+	binary.Read(data, binary.LittleEndian, m.protocolId)
+	if (m.exchangeFlags & 0x2) != 0 {
+		binary.Read(data, binary.LittleEndian, m.ackCounter)
+	}
 }
 
 type Message struct {
@@ -388,50 +402,7 @@ func (m *Message) decodeBase(data *bytes.Buffer) error {
 	return nil
 }
 
-/*
-func test1() {
-	msg := Message {
-		sessionId: 0x1234,
-		securityFlags: 0,
-		messageCounter: 1,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: 0x20,
-			exchangeId: 0xba3e,
-			protocolId: PROTOCOL_ID_SECURE_CHANNEL,
-		},
-	}
-	var buffer bytes.Buffer
-	msg.encode(&buffer)
-	out := buffer.Bytes()
-	dbg := hex.EncodeToString(out)
-	log.Println(dbg)
-	buf := bytes.NewBuffer(out)
-	var msgdec Message
-	err := msgdec.decode(buf)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%+v", msgdec)
-	msgdec.dump()
-}
-*/
-func test2() {
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-	bytes, err := hex.DecodeString("bbcbd707308cb511a5b7909ee2e15eeeed2a24372f851499b2d0dfc9485eae8f")
-	if err != nil {
-		panic(err)
-	}
-	tlv.writeOctetString(0x1, bytes)
-	tlv.writeUInt(0x2, TYPE_UINT_2, 0xfdb8)
-	tlv.writeUInt(0x3, TYPE_UINT_1, 0x00)
-	tlv.writeBool(0x4, false)
-	tlv.writeAnonStructEnd()
-	dbg := hex.EncodeToString(tlv.data.Bytes())
-	log.Println(dbg)
-}
+
 
 func PBKDFParamRequest() []byte {
 	var buffer bytes.Buffer
@@ -657,6 +628,30 @@ func Ack(cnt uint32, counter uint32) []byte {
 	return buffer.Bytes()
 }
 
+func Ack2(session_id uint16, cnt uint32, counter uint32) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: session_id,
+		securityFlags: 0,
+		messageCounter: cnt,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 3,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_ACK,
+			exchangeId: 0xba3e,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+	//binary.Write(&buffer, binary.LittleEndian, counter)
+	//msg.encodeBase(&buffer)
+	//s := Secured(session_id, counter, data []byte, key []byte, nonce []byte)
+
+
+	return buffer.Bytes()
+}
+
 func decode(data []byte) AllResp {
 	var msg Message
 	buf := bytes.NewBuffer(data)
@@ -723,19 +718,26 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	return buffer.Bytes()
 }
 
-func decodeSecured(in []byte, key []byte) {
-	var msg Message
+type DecodedGeneric struct {
+	msg Message
+	proto ProtocolMessage
+	tlv tlvdec.TlvItem
+}
+
+func decodeSecured(in []byte, key []byte) DecodedGeneric {
+	var decoded DecodedGeneric
+	//var msg Message
 	buf := bytes.NewBuffer(in)
-	msg.decodeBase(buf)
-	msg.dump()
+	decoded.msg.decodeBase(buf)
+	decoded.msg.dump()
 
 	var add bytes.Buffer
-	add.WriteByte(msg.flags)
-	binary.Write(&add, binary.LittleEndian, uint16(msg.sessionId))
-	add.WriteByte(msg.securityFlags)
-	binary.Write(&add, binary.LittleEndian, msg.messageCounter)
+	add.WriteByte(decoded.msg.flags)
+	binary.Write(&add, binary.LittleEndian, uint16(decoded.msg.sessionId))
+	add.WriteByte(decoded.msg.securityFlags)
+	binary.Write(&add, binary.LittleEndian, decoded.msg.messageCounter)
 
-	nonce := make_nonce(msg.messageCounter)
+	nonce := make_nonce(decoded.msg.messageCounter)
 	c, err := aes.NewCipher(key)
 	if err != nil {
 		panic(err)
@@ -752,8 +754,18 @@ func decodeSecured(in []byte, key []byte) {
 	}
 	log.Println(hex.EncodeToString(out))
 
+	decoder := bytes.NewBuffer(out)
+
+	decoded.proto.decode(decoder)
+	log.Println(decoder.Available())
+	log.Println(hex.EncodeToString(decoder.Bytes()))
+	decoded.tlv = tlvdec.Decode(decoder.Bytes())
+
+	return decoded
+
 }
 
+/*
 func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 
 	var tlv TLVBuffer
@@ -769,6 +781,42 @@ func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 				tlv.writeAnonStructEnd()
 				tlv.writeStruct(1)
 					tlv.writeOctetString(0, payload)
+				tlv.writeAnonStructEnd()
+			tlv.writeAnonStructEnd()
+		tlv.writeAnonStructEnd()
+		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
+	tlv.writeAnonStructEnd()
+
+
+	var buffer bytes.Buffer
+	buffer.WriteByte(5) // flags
+	buffer.WriteByte(8) // opcode
+	var exchange_id uint16
+	binary.Write(&buffer, binary.LittleEndian, exchange_id)
+	var protocol_id uint16 
+	protocol_id = 1
+	binary.Write(&buffer, binary.LittleEndian, protocol_id)
+	buffer.Write(tlv.data.Bytes())
+
+	return buffer.Bytes()
+}*/
+
+func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
+
+	var tlv TLVBuffer
+	tlv.writeAnonStruct()
+		tlv.writeBool(0, false)
+		tlv.writeBool(1, false)
+		tlv.writeArray(2)
+			tlv.writeAnonStruct()
+				tlv.writeList(0)
+					tlv.writeUInt(0, TYPE_UINT_1, uint64(endpoint))
+					tlv.writeUInt(1, TYPE_UINT_1, uint64(cluster))
+					tlv.writeUInt(2, TYPE_UINT_1, uint64(command))
+				tlv.writeAnonStructEnd()
+				tlv.writeStruct(1)
+					//tlv.writeOctetString(0, payload)
+					tlv.writeRaw(payload)
 				tlv.writeAnonStructEnd()
 			tlv.writeAnonStructEnd()
 		tlv.writeAnonStructEnd()
