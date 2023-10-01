@@ -82,7 +82,7 @@ func store_cert(name string, cert_bytes []byte) {
 	}
 }
 
-func Create_cert() {
+func Create_ca_cert() {
 
 	generate_and_store_key_ecdsa("ca")
 	pub := load_public_key("ca-public.pem")
@@ -95,11 +95,12 @@ func Create_cert() {
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
 			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4},
-			Value: "CACACACA00000001",
+			Value: "0000000000000001",
 		},
 	}
 	//subj.CommonName = "aaa"
 	var template x509.Certificate
+	template.SignatureAlgorithm = x509.ECDSAWithSHA256
 	template.Subject = subj
 	template.IsCA = true
 	template.SerialNumber = big.NewInt(1)
@@ -109,4 +110,20 @@ func Create_cert() {
 		panic(err)
 	}
 	store_cert("ca", cert_bytes)
+
+	//ce := load_cert("ca-cert.pem")
+	//log.Println(ce)
+}
+
+func LoadCert(file string) *x509.Certificate {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		panic(err)
+	}
+	pem_block, _ := pem.Decode(data)
+	cert, err := x509.ParseCertificate(pem_block.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	return cert
 }
