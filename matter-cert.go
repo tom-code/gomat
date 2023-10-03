@@ -65,6 +65,7 @@ func CAMatterCert() []byte {
 
 func CAMatterCert2() []byte {
 	cacert := ca.LoadCert("ca-cert.pem")
+	//cacert.Signature = []byte{}
 	pub := cacert.PublicKey.(*ecdsa.PublicKey)
 	log.Println(pub)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
@@ -74,8 +75,8 @@ func CAMatterCert2() []byte {
 
 	var tlv3 TLVBuffer
 	tlv3.writeAnonStruct()
-	tlv3.writeOctetString(1, []byte{1})
-	tlv3.writeUInt(2, TYPE_UINT_1, 1)
+	tlv3.writeOctetString(1, []byte{1}) // serial number
+	tlv3.writeUInt(2, TYPE_UINT_1, 1) // signature algorithm
 	//tlv3.writeUInt(3, TYPE_UINT_1, 1)
 	tlv3.writeList(3)
 	tlv3.writeUInt(20, TYPE_UINT_1, 1)
@@ -107,8 +108,17 @@ func CAMatterCert2() []byte {
 	fmt.Printf("signato: 4e313fcaea8b531b24f44ff1451368eea2018c89f787f39c0a52b85b08092fd475c285b99933caaa30e106e43bd129a9c65798a1ba5c06680e42f3104dd9336e\n")
 	fmt.Printf("signat: %s\n", hex.EncodeToString(cacert.Signature))
 	fmt.Printf("signat: %d\n", len(cacert.Signature))
-	//tlv3.writeOctetString(11, cacert.Signature)
-	tlv3.writeOctetString(11, hex2bin("4e313fcaea8b531b24f44ff1451368eea2018c89f787f39c0a52b85b08092fd475c285b99933caaa30e106e43bd129a9c65798a1ba5c06680e42f3104dd9336e"))
+	s1 := cacert.Signature[4:]
+	s2 := s1[:32]
+	s3 := s1[34:][:32]
+	s4 := append(s2, s3...)
+	fmt.Printf("signatx: %d %s\n", len(s4),hex.EncodeToString(s4))
+
+	fmt.Printf("signat: %s\n", hex.EncodeToString(s2))
+	fmt.Printf("signat: %s\n", hex.EncodeToString(s3))
+
+
+	tlv3.writeOctetString(11, s4)
 	tlv3.writeAnonStructEnd()
 	return tlv3.data.Bytes()
 }
