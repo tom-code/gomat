@@ -104,7 +104,6 @@ func Create_ca_cert() {
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
 			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4},
-			//Value: "0000000000000001",
 			Value: asn1.RawValue{FullBytes: valname},
 		},
 	}
@@ -113,31 +112,31 @@ func Create_ca_cert() {
 	template.Version = 3
 	//template.BasicConstraintsValid = true
 	template.SignatureAlgorithm = x509.ECDSAWithSHA256
-	template.NotBefore = time.Unix(662774400+946707779-59-22*60-6*60*60 , 0)
-	template.NotAfter = time.Unix(978134400+946707779-59-22*60-6*60*60, 0)
+	template.NotBefore = time.Now()
+	template.NotAfter = time.Now().AddDate(1, 0, 0)
 	template.Subject = subj
 	template.IsCA = true
-	template.SerialNumber = big.NewInt(1)
+	template.SerialNumber = big.NewInt(10000)
 	template.Issuer = subj
 	//template.KeyUsage = x509.KeyUsageCertSign
 	template.ExtraExtensions = []pkix.Extension{
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,19},
+			Id: asn1.ObjectIdentifier{2,5,29,19}, // basic constraints
 			Critical: true,
 			Value: []byte{0x30, 0x03, 0x01, 0x01, 0xff},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,15},
+			Id: asn1.ObjectIdentifier{2,5,29,15},  // keyUsage
 			Critical: true,
 			Value: []byte{3,2,1,6},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,14},
+			Id: asn1.ObjectIdentifier{2,5,29,14},  //subjectKeyId
 			Critical: false,
 			Value: append([]byte{0x04,0x14}, sha...),
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,35},
+			Id: asn1.ObjectIdentifier{2,5,29,35},  // authorityKeyId
 			Critical: false,
 			Value: append([]byte{0x30, 0x16, 0x80, 0x14}, sha...),
 		},

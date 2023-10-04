@@ -4,11 +4,13 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha1"
+	"encoding/asn1"
 	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
 	"log"
+	"math/big"
 )
 
 
@@ -62,6 +64,9 @@ func CAMatterCert() []byte {
 	return tlv.data.Bytes()
 }
 
+type dsaSignature struct {
+	R, S *big.Int
+}
 
 func CAMatterCert2() []byte {
 	cacert := ca.LoadCert("ca-cert.pem")
@@ -75,16 +80,19 @@ func CAMatterCert2() []byte {
 
 	var tlv3 TLVBuffer
 	tlv3.writeAnonStruct()
-	tlv3.writeOctetString(1, []byte{1}) // serial number
+	//tlv3.writeOctetString(1, []byte{1}) // serial number
+	tlv3.writeOctetString(1, cacert.SerialNumber.Bytes()) // serial number
 	tlv3.writeUInt(2, TYPE_UINT_1, 1) // signature algorithm
 	//tlv3.writeUInt(3, TYPE_UINT_1, 1)
-	tlv3.writeList(3)
-	tlv3.writeUInt(20, TYPE_UINT_1, 1)
+	tlv3.writeList(3) // issuer
+		tlv3.writeUInt(20, TYPE_UINT_1, 1)  // matter-rcac-id
 	tlv3.writeAnonStructEnd()
-	tlv3.writeUInt(4, TYPE_UINT_4, 662774400)
-	tlv3.writeUInt(5, TYPE_UINT_4, 978134400)
-	tlv3.writeList(6)
-	tlv3.writeUInt(20, TYPE_UINT_1, 1)
+
+
+	tlv3.writeUInt(4, TYPE_UINT_4, uint64(cacert.NotBefore.Unix()-946684800))
+	tlv3.writeUInt(5, TYPE_UINT_4, uint64(cacert.NotAfter.Unix())-946684800)
+	tlv3.writeList(6)  // subject
+		tlv3.writeUInt(20, TYPE_UINT_1, 1)  // matter-rcac-id
 	tlv3.writeAnonStructEnd()
 	tlv3.writeUInt(7, TYPE_UINT_1, 1)
 	tlv3.writeUInt(8, TYPE_UINT_1, 1)
@@ -92,30 +100,40 @@ func CAMatterCert2() []byte {
 	//tlv3.writeOctetString(9, hex2bin("046fc35861a75f0b0d9d912009cbec15676f24678aeeab3dcb189c3e021500952c199dff8680bf0d3a4ee7c9f60048135fa210f2a4d60889ed2e6ca12166dc904e"))
 	tlv3.writeOctetString(9, public_key)
 	tlv3.writeList(10)
-	tlv3.writeStruct(1)
-	tlv3.writeBool(1, true) // isCA
-	tlv3.writeAnonStructEnd()
-	tlv3.writeUInt(2, TYPE_UINT_1, 96) // key-usage
-	//id is 160bit sha1 of public key
-	sh := sha1.New()
-	sh.Write(public_key)
-	sha := sh.Sum(nil)
+		tlv3.writeStruct(1)
+			tlv3.writeBool(1, true) // isCA
+		tlv3.writeAnonStructEnd()
+		tlv3.writeUInt(2, TYPE_UINT_1, 96) // key-usage
+		//id is 160bit sha1 of public key
+		sh := sha1.New()
+		sh.Write(public_key)
+		sha := sh.Sum(nil)
 
-	tlv3.writeOctetString(4, sha) // subject-key-id
-	tlv3.writeOctetString(5, sha) // authority-key-id
+		tlv3.writeOctetString(4, sha) // subject-key-id
+		tlv3.writeOctetString(5, sha) // authority-key-id
 	tlv3.writeAnonStructEnd()
 	//tlv3.writeOctetString(11, hex2bin("4e313fcaea8b531b24f44ff1451368eea2018c89f787f39c0a52b85b08092fd475c285b99933caaa30e106e43bd129a9c65798a1ba5c06680e42f3104dd9336e"))
 	fmt.Printf("signato: 4e313fcaea8b531b24f44ff1451368eea2018c89f787f39c0a52b85b08092fd475c285b99933caaa30e106e43bd129a9c65798a1ba5c06680e42f3104dd9336e\n")
 	fmt.Printf("signat: %s\n", hex.EncodeToString(cacert.Signature))
 	fmt.Printf("signat: %d\n", len(cacert.Signature))
+
+	var signature dsaSignature
+	asn1.Unmarshal(cacert.Signature, &signature)
+	log.Println(signature)
+	r := signature.R.Bytes()
+	s := signature.S.Bytes()
+	log.Println(hex.EncodeToString(signature.R.Bytes()))
+	log.Println(hex.EncodeToString(signature.S.Bytes()))
+
 	s1 := cacert.Signature[4:]
 	s2 := s1[:32]
 	s3 := s1[34:][:32]
-	s4 := append(s2, s3...)
+	//s4 := append(s2, s3...)
+	s4 := append(r, s...)
 	fmt.Printf("signatx: %d %s\n", len(s4),hex.EncodeToString(s4))
 
-	fmt.Printf("signat: %s\n", hex.EncodeToString(s2))
-	fmt.Printf("signat: %s\n", hex.EncodeToString(s3))
+	fmt.Printf("signat: %d %s\n", len(s2), hex.EncodeToString(s2))
+	fmt.Printf("signat: %d %s\n", len(s3), hex.EncodeToString(s3))
 
 
 	tlv3.writeOctetString(11, s4)
