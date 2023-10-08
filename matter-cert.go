@@ -130,17 +130,10 @@ func MatterCert2(in *x509.Certificate) []byte {
 		tlv3.writeStruct(1)
 			tlv3.writeBool(1, in.IsCA) // isCA
 		tlv3.writeAnonStructEnd()
-		//tlv3.writeUInt(2, TYPE_UINT_1, 0x60) // key-usage
 
-		//tlv3.writeArray(3)
-		//	tlv3.writeRaw([]byte{0x04, 0x02, 0x04, 0x01})  // extended key-usage
-		//tlv3.writeAnonStructEnd()
 
 		tlv3.writeUInt(2, TYPE_UINT_1, uint64(in.KeyUsage)) // key-usage
-		//id is 160bit sha1 of public key
-		//sh := sha1.New()
-		//sh.Write(public_key)
-		//sha := sh.Sum(nil)
+
 	
 		if len(in.ExtKeyUsage) > 0 {
 			tlv3.writeArray(3)
@@ -151,9 +144,7 @@ func MatterCert2(in *x509.Certificate) []byte {
 
 
 		tlv3.writeOctetString(4, in.SubjectKeyId) // subject-key-id
-		//tlv3.writeOctetString(5, authority_key) // authority-key-id
 		tlv3.writeOctetString(5, xides) // authority-key-id
-		//log.Printf("oooooooo keys %v %v\n",sha, authority_key)
 	tlv3.writeAnonStructEnd()
 
 	var signature dsaSignature
@@ -205,29 +196,15 @@ func sign_cert(req *x509.CertificateRequest) *x509.Certificate {
 		},
 	}
 
-	subj_issuer := pkix.Name{
-	}
-
-	valname_issuer, err := asn1.MarshalWithParams("0000000000000001", "utf8")
-
-	subj_issuer.ExtraNames = []pkix.AttributeTypeAndValue{
-		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4},
-			Value: asn1.RawValue{FullBytes: valname_issuer},
-		},
-	}
-	//subj.CommonName = "aaa"
 	var template x509.Certificate
 	template.Version = 3
-	//template.BasicConstraintsValid = true
 	template.SignatureAlgorithm = x509.ECDSAWithSHA256
 	template.NotBefore = time.Now()
 	template.NotAfter = time.Now().AddDate(1, 0, 0)
 	template.Subject = subj
 	template.IsCA = false
 	template.SerialNumber = big.NewInt(10001)
-	template.Issuer = subj_issuer
-	//template.KeyUsage = x509.KeyUsageCertSign
+
 	extkeyusa, _ := hex.DecodeString("301406082B0601050507030206082B06010505070301")
 	template.ExtraExtensions = []pkix.Extension{
 		{

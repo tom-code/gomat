@@ -48,7 +48,7 @@ func generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
 	return priv
 }
 
-func load_priv_key(file string) any {
+func Load_priv_key(file string) any {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		panic(err)
@@ -60,7 +60,7 @@ func load_priv_key(file string) any {
 	}
 	return key
 }
-func load_public_key(file string) any {
+func Load_public_key(file string) any {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		panic(err)
@@ -73,7 +73,7 @@ func load_public_key(file string) any {
 	return key
 }
 
-func store_cert(name string, cert_bytes []byte) {
+func Store_cert(name string, cert_bytes []byte) {
 	certBlock := pem.Block {
 		Type: "CERTIFICATE",
 		Bytes: cert_bytes,
@@ -87,8 +87,8 @@ func store_cert(name string, cert_bytes []byte) {
 func Create_ca_cert() {
 
 	generate_and_store_key_ecdsa("ca")
-	pub := load_public_key("ca-public.pem").(*ecdsa.PublicKey)
-	priv_ca := load_priv_key("ca-private.pem")
+	pub := Load_public_key("ca-public.pem").(*ecdsa.PublicKey)
+	priv_ca := Load_priv_key("ca-private.pem")
 
 
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
@@ -146,7 +146,7 @@ func Create_ca_cert() {
 	if err != nil {
 		panic(err)
 	}
-	store_cert("ca", cert_bytes)
+	Store_cert("ca", cert_bytes)
 
 	//ce := load_cert("ca-cert.pem")
 	//log.Println(ce)

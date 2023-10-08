@@ -155,6 +155,13 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 			size := readByte(buf)
 			current.valueOctetString = make([]byte, size)
 			buf.Read(current.valueOctetString)
+		case 0x11:
+			current.Type = TypeOctetString
+			current.Tag = readByte(buf)
+			var size uint16
+			binary.Read(buf, binary.LittleEndian, &size)
+			current.valueOctetString = make([]byte, size)
+			buf.Read(current.valueOctetString)
 		case 0x15:
 			current.types = "struct"
 			current.Type = TypeList

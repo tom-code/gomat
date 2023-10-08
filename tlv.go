@@ -655,6 +655,21 @@ func decode(data []byte) AllResp {
 	return AllResp{}
 }
 
+func decodegen(data []byte) DecodedGeneric {
+	log.Printf("goinf to decvode %s\n", hex.EncodeToString(data))
+	out := DecodedGeneric{}
+	buf := bytes.NewBuffer(data)
+	out.msg.decode(buf)
+	out.msg.dump()
+
+	tlvdata := make([]byte, buf.Available())
+	n, _ := buf.Read(tlvdata)
+	log.Printf("tlv data %s", hex.EncodeToString(tlvdata[:n]))
+	out.tlv = tlvdec.Decode(tlvdata[:n])
+
+	return out
+}
+
 
 func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []byte) []byte {
 	var buffer bytes.Buffer

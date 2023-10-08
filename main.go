@@ -107,6 +107,7 @@ func flow() {
 	channel.send(pake1)
 
 	pake2, _ := channel.receive()
+	log.Printf("pake2 %s\n", hex.EncodeToString(pake2))
 	pake2_decoded := decode(pake2)
 	log.Println(pake2_decoded)
 
@@ -204,6 +205,24 @@ func flow() {
 	nonce = make_nonce(cnt)
 	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
 	channel.send(sec)
+
+	channel.receive() // ack
+	addnoc_response, _ := channel.receive()
+	ds = decodeSecured(addnoc_response, sctx.decrypt_key)
+	ds.tlv.Dump(0)
+
+	ack = Ack3(ds.msg.messageCounter)
+	cnt = uint32(channel.get_counter())
+	nonce = make_nonce(cnt)
+	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
+	channel.send(sec)
+
+
+	sigma1 := genSigma1Req()
+	channel.send(sigma1)
+	sigma2, _ := channel.receive()
+	sigma2dec := decodegen(sigma2)
+	sigma2dec.tlv.Dump(0)
 
 }
 
