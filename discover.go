@@ -96,7 +96,7 @@ func discover(iface string) ([]Device, error) {
 	params := mdns.QueryParam {
 		Service: "_matterc._udp.",
 		Entries: entriesCh,
-		//DisableIPv6: true,
+		DisableIPv6: true,
 		Interface: i,
 	}
 	err = mdns.Query(&params)

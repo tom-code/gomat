@@ -419,7 +419,6 @@ func PBKDFParamRequest() []byte {
 		},
 	}
 	msg.encode(&buffer)
-	log.Printf("SIZZZZZ %d\n", len(buffer.Bytes()))
 
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
@@ -508,9 +507,6 @@ func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
 		panic(err)
 	}
 	out.responderSession = int(responderSession)
-	log.Println(tlv.data.Available())
-	log.Println(tlv.data.Bytes())
-	log.Println(hex.EncodeToString(tlv.data.Bytes()))
 	err = tlv.checkAndSkipBytes([]byte{0x35, 0x4})
 	if err != nil {
 		panic(err)
@@ -524,7 +520,7 @@ func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
 	if err != nil {
 		panic(err)
 	}
-	log.Println(hex.EncodeToString(tlv.data.Bytes()))
+
 	out.dump()
 
 	var o AllResp
@@ -686,8 +682,6 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 		panic(err)
 	}
 	CipherText := ccm.Seal(nil, nonce, data, add.Bytes())
-	log.Printf("add: %s", hex.EncodeToString(add.Bytes()))
-	log.Printf("ciphertext: %s", hex.EncodeToString(CipherText))
 	buffer.Write(CipherText)
 
 
@@ -730,13 +724,11 @@ func decodeSecured(in []byte, key []byte) DecodedGeneric {
 	if err != nil {
 		panic(err)
 	}
-	log.Println(hex.EncodeToString(out))
+
 
 	decoder := bytes.NewBuffer(out)
 
 	decoded.proto.decode(decoder)
-	log.Println(decoder.Available())
-	log.Println(hex.EncodeToString(decoder.Bytes()))
 	decoded.tlv = tlvdec.Decode(decoder.Bytes())
 
 	return decoded

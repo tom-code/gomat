@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"math/big"
 
 	"golang.org/x/crypto/hkdf"
@@ -127,17 +126,10 @@ func (ctx *SpakeCtx)gen_w_test() {
 }*/
 
 func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
-	log.Println("gen")
-	log.Println(passcode)
-	log.Println(salt)
-	log.Println(iterations)
 	pwd := pinToPasscode(uint32(passcode))
 	ws := pbkdf2.Key(pwd, salt, iterations, 80, sha256.New)
 	w0 := ws[:40]
 	w1 := ws[40:80]
-
-	log.Printf("w0 %s\n", hex.EncodeToString(w0))
-	log.Printf("w1 %s\n", hex.EncodeToString(w1))
 
 	curve := elliptic.P256()
 	w0b := new(big.Int)
@@ -147,10 +139,6 @@ func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
 	w1b := new(big.Int)
 	w1b.SetBytes(w1)
 	ctx.w1 = w1b.Mod(w1b, curve.Params().N).Bytes()
-
-	log.Printf("w0a %s\n", hex.EncodeToString(w0))
-	log.Printf("w0b %s\n", hex.EncodeToString(ctx.w0))
-	log.Printf("w1 %s\n", hex.EncodeToString(ctx.w1))
 
 }
 
@@ -215,11 +203,9 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	sh1 := sha256.New()
 	sh1.Write(tt)
 	sh1sum := sh1.Sum(nil)
-	log.Printf("hash: %v\n", hex.EncodeToString(sh1sum))
+
 	ctx.Ka = sh1sum[:16]
 	ctx.Ke = sh1sum[16:32]
-	log.Printf("ka: %v\n", hex.EncodeToString(ctx.Ka))
-	log.Printf("ke: %v\n", hex.EncodeToString(ctx.Ke))
 
 	//(salt, ikm, info []byte
 	hkdfz := hkdf.New(sha256.New, ctx.Ka, nil, []byte("ConfirmationKeys"))
@@ -227,21 +213,15 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
 		panic(err)
 	}
-	//log.Printf("kca %v\n", hex.EncodeToString(key[:16]))
-	//log.Printf("kcb %v\n", hex.EncodeToString(key[16:]))
 
 	mac := hmac.New(sha256.New, key[:16])
 	mac.Write(ctx.Y.as_bytes())
 	ctx.cA = mac.Sum(nil)
-	log.Printf("ca %v\n", hex.EncodeToString(ctx.cA))
 
 	mac = hmac.New(sha256.New, key[16:])
 	mac.Write(ctx.X.as_bytes())
 	ctx.cB = mac.Sum(nil)
-	log.Printf("cb %v\n", hex.EncodeToString(ctx.cB))
 
-	//hm := hmac.New(h func() hash.Hash, key []byte)
-	//hkdf2 := hkdf.New(sha256.New, ctx.Ka, nil, []byte("SessionKeys"))
 	hkdf2 := hkdf.New(sha256.New, ctx.Ke, nil, []byte("SessionKeys"))
 	Xcryptkey := make([]byte, 16*3)
 	if _, err := io.ReadFull(hkdf2, Xcryptkey); err != nil {
