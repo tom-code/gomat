@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
+	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
 	"math/big"
@@ -162,7 +163,7 @@ func CAMatterCert2() []byte {
 	return MatterCert2(cacert)
 }
 
-func sign_cert(req *x509.CertificateRequest) *x509.Certificate {
+func sign_cert(req *x509.CertificateRequest, node_id uint64, name string) *x509.Certificate {
 	cacert := ca.LoadCert("ca-cert.pem")
 	pub := ca.Load_public_key("ca-public.pem").(*ecdsa.PublicKey)
 	priv_ca := ca.Load_priv_key("ca-private.pem")
@@ -182,7 +183,9 @@ func sign_cert(req *x509.CertificateRequest) *x509.Certificate {
 	subj := pkix.Name{
 	}
 
-	valname, err := asn1.MarshalWithParams("0000000000000002", "utf8")
+	node_id_string := fmt.Sprintf("%016x", node_id)
+	//valname, err := asn1.MarshalWithParams("0000000000000002", "utf8")
+	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
 	valname_fabric, err := asn1.MarshalWithParams("0000000000000010", "utf8")
 
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
@@ -242,7 +245,6 @@ func sign_cert(req *x509.CertificateRequest) *x509.Certificate {
 	if err != nil {
 		panic(err)
 	}
-	//store_cert("ca", cert_bytes)
-	ca.Store_cert("user", cert_bytes)
+	ca.Store_cert(name, cert_bytes)
 	return out_parsed
 }

@@ -191,7 +191,7 @@ func flow() {
 	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
 	channel.send(sec)
 
-	noc_x509 := sign_cert(csrp)
+	noc_x509 := sign_cert(csrp, 2, "user")
 	noc_matter := MatterCert2(noc_x509)
 	//AddNOC
 	var tlv5 TLVBuffer
@@ -223,7 +223,6 @@ func flow() {
 	sigma2, _ := channel.receive()
 	sigma2dec := decodegen(sigma2)
 	sigma2dec.tlv.Dump(0)
-
 }
 
 
