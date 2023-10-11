@@ -364,19 +364,41 @@ func flow() {
 	channel.send(sec)
 
 
-/*
+	resp, _ = channel.receive()
+	log.Printf("%s\n", hex.EncodeToString(resp))
+	msg.decode(bytes.NewBuffer(resp))
+	msg.dump()
+
+	ack = Ack3(msg.messageCounter)
+	cnt = 5001
+	nonce = make_nonce2(cnt)
+	sec = Secured(uint16(sigma2responder_session), cnt, ack, i2rkey, nonce)
+	channel.send(sec)
+	channel.send(ack)
+
+
 	//to_send = []byte{1,2,3,4,5,6,7,8,9,0}
 	// cluster=6 on/off - command 1=on
-	to_send = invokeCommand2(1, 6, 0, []byte{})
+	to_send = invokeCommand2(1, 6, 1, []byte{})
 	//cnt = uint32(channel.get_counter())
-	cnt = 5000
+	cnt = 5002
 	nonce = make_nonce2(cnt)
 	log.Printf("nonce %s\n", hex.EncodeToString(nonce))
 	log.Printf("key %s\n", hex.EncodeToString(i2rkey))
 	sec = Secured(uint16(sigma2responder_session), cnt, to_send, i2rkey, nonce)
 	channel.send(sec)
 
-*/
+	resp, _ = channel.receive()
+	log.Printf("%s\n", hex.EncodeToString(resp))
+	msg.decode(bytes.NewBuffer(resp))
+	msg.dump()
+
+	ack = Ack3(msg.messageCounter)
+	cnt = 5003
+	nonce = make_nonce2(cnt)
+	sec = Secured(uint16(sigma2responder_session), cnt, ack, i2rkey, nonce)
+	channel.send(sec)
+	channel.send(ack)
 
 }
 

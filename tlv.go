@@ -654,6 +654,27 @@ func AckS(cnt uint32, counter uint32) []byte {
 
 	return buffer.Bytes()
 }
+func AckS2(cnt uint32, counter uint32, session_id uint16) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: session_id,
+		securityFlags: 0,
+		messageCounter: cnt,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 3,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_ACK,
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+	binary.Write(&buffer, binary.LittleEndian, counter)
+
+
+	return buffer.Bytes()
+}
 
 
 
