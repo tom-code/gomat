@@ -70,6 +70,20 @@ func (i TlvItem)GetOctetStringRec(tag []int) []byte {
 	return []byte{}
 }
 
+func (i TlvItem)GetIntRec(tag []int) uint64 {
+	if len(tag) == 0 {
+		return i.valueInt
+	}
+	if i.Type == TypeList {
+		for _, d := range i.valueList {
+			if d.Tag == tag[0] {
+				return d.GetIntRec(tag[1:])
+			}
+		}
+	}
+	return 0
+}
+
 
 
 

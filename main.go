@@ -29,6 +29,13 @@ func make_nonce(counter uint32) []byte{
 	n.Write([]byte{0,0,0,0,0,0,0,0})
 	return n.Bytes()
 }
+func make_nonce2(counter uint32) []byte{
+	var n bytes.Buffer
+	n.WriteByte(0)
+	binary.Write(&n, binary.LittleEndian, counter)
+	n.Write([]byte{9,0,0,0,0,0,0,0})
+	return n.Bytes()
+}
 
 type Channel struct {
 	udp net.PacketConn
@@ -204,7 +211,8 @@ func flow() {
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
 	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
-	tlv5.writeUInt(3, TYPE_UINT_2, 100)
+	//tlv5.writeUInt(3, TYPE_UINT_2, 100)
+	tlv5.writeUInt(3, TYPE_UINT_2, 9)  // admin subject !
 	tlv5.writeUInt(4, TYPE_UINT_2, 101)
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
@@ -248,6 +256,7 @@ func flow() {
 	tlv_s3tbs.writeOctetString(1, conrtoller_cert_matter)
 	tlv_s3tbs.writeOctetString(3, controller_privkey.PublicKey().Bytes())
 	responder_public := sigma2dec.tlv.GetOctetStringRec([]int{3})
+	sigma2responder_session := sigma2dec.tlv.GetIntRec([]int{2})
 	tlv_s3tbs.writeOctetString(4, responder_public)
 	tlv_s3tbs.writeAnonStructEnd()
 	log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
@@ -316,6 +325,58 @@ func flow() {
 	to_send = genSigma3Req(tlv_s3.data.Bytes())
 
 	channel.send(to_send)
+
+
+	resp, _ := channel.receive()
+	log.Printf("%s\n", hex.EncodeToString(resp))
+	//respdec := decodegen(resp)
+	var msg Message
+	msg.decode(bytes.NewBuffer(resp))
+	msg.dump()
+
+	ack = AckS(uint32(channel.get_counter()), msg.messageCounter)
+	channel.send(ack)
+
+	ses_key_transcript := s3k_th
+	ses_key_transcript = append(ses_key_transcript, tlv_s3.data.Bytes()...)
+	s2 = sha256.New()
+	s2.Write(ses_key_transcript)
+	transcript_hash = s2.Sum(nil)
+	salt := make_ipk()
+	salt = append(salt, transcript_hash...)
+
+	keypackengine := hkdf.New(sha256.New, shared_secret, salt, []byte("SessionKeys"))
+	keypack := make([]byte, 16*3)
+	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
+		panic(err)
+	}
+	i2rkey := keypack[:16]
+	//r2ikey := keypack[16:32]
+	log.Println(hex.EncodeToString(keypack))
+
+	to_send = invokeCommand2(0, 0x30, 4, []byte{})
+	//cnt = uint32(channel.get_counter())
+	cnt = 5000
+	nonce = make_nonce2(cnt)
+	log.Printf("nonce %s\n", hex.EncodeToString(nonce))
+	log.Printf("key %s\n", hex.EncodeToString(i2rkey))
+	sec = Secured(uint16(sigma2responder_session), cnt, to_send, i2rkey, nonce)
+	channel.send(sec)
+
+
+/*
+	//to_send = []byte{1,2,3,4,5,6,7,8,9,0}
+	// cluster=6 on/off - command 1=on
+	to_send = invokeCommand2(1, 6, 0, []byte{})
+	//cnt = uint32(channel.get_counter())
+	cnt = 5000
+	nonce = make_nonce2(cnt)
+	log.Printf("nonce %s\n", hex.EncodeToString(nonce))
+	log.Printf("key %s\n", hex.EncodeToString(i2rkey))
+	sec = Secured(uint16(sigma2responder_session), cnt, to_send, i2rkey, nonce)
+	channel.send(sec)
+
+*/
 
 }
 
