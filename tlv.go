@@ -185,10 +185,19 @@ func (b *TLVBuffer) writeUInt(tag byte, typ int, val uint64) {
 func (b *TLVBuffer) writeOctetString(tag byte, data []byte) {
 	var ctrl byte
 	ctrl = 0x1 << 5
-	ctrl = ctrl | 0x10
-	b.data.WriteByte(ctrl)
-	b.data.WriteByte(tag)
-	b.data.WriteByte(byte(len(data)))
+	if len(data) > 0xff {
+		ctrl = ctrl | 0x11
+		b.data.WriteByte(ctrl)
+		b.data.WriteByte(tag)
+		var ln uint16
+		ln = uint16(len(data))
+		binary.Write(&b.data, binary.LittleEndian, ln)
+	} else {
+		ctrl = ctrl | 0x10
+		b.data.WriteByte(ctrl)
+		b.data.WriteByte(tag)
+		b.data.WriteByte(byte(len(data)))
+	}
 	b.data.Write(data)
 }
 
@@ -624,6 +633,28 @@ func Ack(cnt uint32, counter uint32) []byte {
 	return buffer.Bytes()
 }
 
+func AckS(cnt uint32, counter uint32) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: cnt,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 3,
+			//exchangeFlags: 7,
+			opcode: SEC_CHAN_OPCODE_ACK,
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+	binary.Write(&buffer, binary.LittleEndian, counter)
+
+
+	return buffer.Bytes()
+}
+
 
 
 func decode(data []byte) AllResp {
@@ -666,6 +697,7 @@ func decodegen(data []byte) DecodedGeneric {
 	n, _ := buf.Read(tlvdata)
 	log.Printf("tlv data %s", hex.EncodeToString(tlvdata[:n]))
 	out.tlv = tlvdec.Decode(tlvdata[:n])
+	out.payload = tlvdata[:n]
 
 	return out
 }
@@ -709,6 +741,7 @@ type DecodedGeneric struct {
 	msg Message
 	proto ProtocolMessage
 	tlv tlvdec.TlvItem
+	payload []byte
 }
 
 func decodeSecured(in []byte, key []byte) DecodedGeneric {

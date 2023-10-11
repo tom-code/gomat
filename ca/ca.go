@@ -15,7 +15,7 @@ import (
 )
 
 
-func generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
+func Generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
@@ -86,7 +86,7 @@ func Store_cert(name string, cert_bytes []byte) {
 
 func Create_ca_cert() {
 
-	generate_and_store_key_ecdsa("ca")
+	Generate_and_store_key_ecdsa("ca")
 	pub := Load_public_key("ca-public.pem").(*ecdsa.PublicKey)
 	priv_ca := Load_priv_key("ca-private.pem")
 

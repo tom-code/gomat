@@ -34,7 +34,17 @@ func compressedFabric() []byte {
 }
 
 
-func genSigma1() []byte{
+func make_ipk() []byte {
+	ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
+	hkdfz := hkdf.New(sha256.New, ipk, compressedFabric(), []byte("GroupKey v1.0"))
+	key := make([]byte, 16)
+	if _, err := io.ReadFull(hkdfz, key); err != nil {
+		panic(err)
+	}
+	return key
+}
+
+func genSigma1(privkey *ecdh.PrivateKey) []byte{
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
 	
@@ -79,16 +89,16 @@ func genSigma1() []byte{
 
 	tlv.writeOctetString(3, destinationIdentifier)
 
-	privkey, err := ecdh.P256().GenerateKey(rand.Reader)
+	/*privkey, err := ecdh.P256().GenerateKey(rand.Reader)
 	if err != nil {
 		panic(err)
-	}
+	}*/
 	tlv.writeOctetString(4, privkey.PublicKey().Bytes())
 	tlv.writeAnonStructEnd()
 	return tlv.data.Bytes()
 }
 
-func genSigma1Req() []byte {
+func genSigma1Req(payload []byte) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: 0x0,
@@ -104,6 +114,26 @@ func genSigma1Req() []byte {
 	}
 	msg.encode(&buffer)
 
-	buffer.Write(genSigma1())
+	buffer.Write(payload)
+	return buffer.Bytes()
+}
+
+func genSigma3Req(payload []byte) []byte {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: 1001,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 5,
+			opcode: 0x32, //sigma1
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+
+	buffer.Write(payload)
 	return buffer.Bytes()
 }

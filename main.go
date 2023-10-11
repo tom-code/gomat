@@ -2,17 +2,24 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/ecdh"
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
+	"io"
 	"log"
 	"net"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/hkdf"
 )
 
 func make_nonce(counter uint32) []byte{
@@ -218,11 +225,98 @@ func flow() {
 	channel.send(sec)
 
 
-	sigma1 := genSigma1Req()
+	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
+	sigma1_payload := genSigma1(controller_privkey)
+	sigma1 := genSigma1Req(sigma1_payload)
 	channel.send(sigma1)
 	sigma2, _ := channel.receive()
 	sigma2dec := decodegen(sigma2)
 	sigma2dec.tlv.Dump(0)
+
+	ack = AckS(uint32(channel.get_counter()), sigma2dec.msg.messageCounter)
+	channel.send(ack)
+
+	controller_key := ca.Generate_and_store_key_ecdsa("controller")
+	controller_csr := x509.CertificateRequest {
+		PublicKey: &controller_key.PublicKey,
+	}
+	controller_cert := sign_cert(&controller_csr, 9, "controller")
+	conrtoller_cert_matter := MatterCert2(controller_cert)
+
+	var tlv_s3tbs TLVBuffer
+	tlv_s3tbs.writeAnonStruct()
+	tlv_s3tbs.writeOctetString(1, conrtoller_cert_matter)
+	tlv_s3tbs.writeOctetString(3, controller_privkey.PublicKey().Bytes())
+	responder_public := sigma2dec.tlv.GetOctetStringRec([]int{3})
+	tlv_s3tbs.writeOctetString(4, responder_public)
+	tlv_s3tbs.writeAnonStructEnd()
+	log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
+	s2 := sha256.New()
+	s2.Write(tlv_s3tbs.data.Bytes())
+	tlv_s3tbs_hash := s2.Sum(nil)
+	sr, ss, err := ecdsa.Sign(rand.Reader, controller_key, tlv_s3tbs_hash)
+	if err != nil {
+		panic(err)
+	}
+	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
+
+	var tlv_s3tbe TLVBuffer
+	tlv_s3tbe.writeAnonStruct()
+	tlv_s3tbe.writeOctetString(1, conrtoller_cert_matter)
+	tlv_s3tbe.writeOctetString(3, tlv_s3tbs_out)
+	tlv_s3tbe.writeAnonStructEnd()
+
+	pub, err := ecdh.P256().NewPublicKey(responder_public)
+	if err != nil {
+		panic(err)
+	}
+	shared_secret, err := controller_privkey.ECDH(pub)
+	if err != nil {
+		panic(err)
+	}
+	log.Println(shared_secret)
+	s3k_th := sigma1_payload
+	s3k_th = append(s3k_th, sigma2dec.payload...)
+	log.Printf("transcript %s\n", hex.EncodeToString(s3k_th))
+	log.Printf("transcript_a %s\n", hex.EncodeToString(genSigma1(controller_privkey)))
+	log.Printf("transcript_b %s\n", hex.EncodeToString(sigma2dec.payload))
+	s2 = sha256.New()
+	s2.Write(s3k_th)
+	transcript_hash := s2.Sum(nil)
+	log.Printf("transcript hash %s\n", hex.EncodeToString(transcript_hash))
+	s3_salt := make_ipk()
+	s3_salt = append(s3_salt, transcript_hash...)
+	log.Printf("s3 salt %s\n", hex.EncodeToString(s3_salt))
+	log.Printf("s3 shared %s\n", hex.EncodeToString(shared_secret))
+	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
+	s3k := make([]byte, 16)
+	if _, err := io.ReadFull(s3kengine, s3k); err != nil {
+		panic(err)
+	}
+
+
+	log.Printf("key %s\n", hex.EncodeToString(s3k))
+	c, err := aes.NewCipher(s3k)
+	if err != nil {
+		panic(err)
+	}
+	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	if err != nil {
+		panic(err)
+	}
+	CipherText := ccm.Seal(nil, []byte("NCASE_Sigma3N"), tlv_s3tbe.data.Bytes(), []byte{})
+	log.Printf("ciphertext %s", hex.EncodeToString(CipherText))
+
+
+	var tlv_s3 TLVBuffer
+	tlv_s3.writeAnonStruct()
+	tlv_s3.writeOctetString(1, CipherText)
+	tlv_s3.writeAnonStructEnd()
+
+	to_send = genSigma3Req(tlv_s3.data.Bytes())
+
+	channel.send(to_send)
+
 }
 
 
