@@ -9,10 +9,12 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
 	"io"
+	"log"
 	"net"
 
 	"github.com/spf13/cobra"
@@ -163,23 +165,29 @@ func (sc *SecureChannel)send(session uint16, counter uint32, data []byte) {
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 	}
 	msg.encodeBase(&buffer)
+	if len(sc.encrypt_key) == 0 {
+		log.Printf("-- %s\n", hex.EncodeToString(buffer.Bytes()))
+		buffer.Write(data)
+		log.Printf("-- %s\n", hex.EncodeToString(buffer.Bytes()))
+	} else {
 
-	header_slice := buffer.Bytes()
-	add2 := make([]byte, len(header_slice))
-	copy(add2, header_slice)
+		header_slice := buffer.Bytes()
+		add2 := make([]byte, len(header_slice))
+		copy(add2, header_slice)
 
-	nonce := make_nonce3(counter, sc.local_node)
+		nonce := make_nonce3(counter, sc.local_node)
 
-	c, err := aes.NewCipher(sc.encrypt_key)
-	if err != nil {
-		panic(err)
+		c, err := aes.NewCipher(sc.encrypt_key)
+		if err != nil {
+			panic(err)
+		}
+		ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+		if err != nil {
+			panic(err)
+		}
+		CipherText := ccm.Seal(nil, nonce, data, add2)
+		buffer.Write(CipherText)
 	}
-	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
-	if err != nil {
-		panic(err)
-	}
-	CipherText := ccm.Seal(nil, nonce, data, add2)
-	buffer.Write(CipherText)
 
 
 	sc.udp.send(buffer.Bytes())
@@ -204,16 +212,19 @@ func flow() {
 	device := devices[0]
 
 	channel := NewChannel(device.addrs[1], 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+	}
 
 	pbkdf_request := PBKDFParamRequest()
-	channel.send(pbkdf_request)
+	secure_channel.send(0, 1, pbkdf_request)
 
 	pbkdf_response, _ := channel.receive()
 	pbkdf_response_decoded := decode(pbkdf_response)
 	//log.Println(pbkdf_response_decoded)
 
-	ack := Ack(uint32(channel.get_counter()), pbkdf_response_decoded.messageCounter)
-	channel.send(ack)
+	ack := AckWS(uint32(channel.get_counter()), pbkdf_response_decoded.messageCounter)
+	secure_channel.send(0, 2, ack)
 
 	sctx := newSpaceCtx()
 	sctx.gen_w(123456, pbkdf_response_decoded.PBKDFParamResponse.salt, pbkdf_response_decoded.PBKDFParamResponse.iterations)
@@ -221,34 +232,32 @@ func flow() {
 	sctx.calc_X()
 
 	pake1 := Pake1ParamRequest(sctx.X.as_bytes(), uint32(channel.get_counter()))
-	channel.send(pake1)
+	secure_channel.send(0, 3, pake1)
 
 	pake2, _ := channel.receive()
 	//log.Printf("pake2 %s\n", hex.EncodeToString(pake2))
 	pake2_decoded := decode(pake2)
 	//log.Println(pake2_decoded)
 
-	ack = Ack(uint32(channel.get_counter()), pake2_decoded.messageCounter)
-	channel.send(ack)
+	ack = AckWS(uint32(channel.get_counter()), pake2_decoded.messageCounter)
+	secure_channel.send(0, 4, ack)
 
 	sctx.Y.from_bytes(pake2_decoded.PAKE2ParamResponse.pb)
 	sctx.calc_ZV()
 	ttseed := []byte("CHIP PAKE V1 Commissioning")
-	ttseed = append(ttseed, pbkdf_request[22:]...)
+	ttseed = append(ttseed, pbkdf_request[6:]...) // 6 is size of proto header
 	ttseed = append(ttseed, pbkdf_response[26:]...)
 	sctx.calc_hash(ttseed)
 
 	pake3 := Pake3ParamRequest(sctx.cA, uint32(channel.get_counter()))
-	channel.send(pake3)
+	secure_channel.send(0, 5, pake3)
 
 	status_report, _ := channel.receive()
 	status_report_decoded := decode(status_report)
-	//status_report_decoded.StatusReport.dump()
-	ack = Ack(uint32(channel.get_counter()), status_report_decoded.messageCounter)
-	channel.send(ack)
-	//log.Printf("remote node id: %s", hex.EncodeToString(status_report_decoded.sourceNodeId))
+	ack = AckWS(uint32(channel.get_counter()), status_report_decoded.messageCounter)
+	secure_channel.send(0, 6, ack)
 
-	secure_channel := SecureChannel {
+	secure_channel = SecureChannel {
 		udp: &channel,
 		decrypt_key: sctx.decrypt_key,
 		encrypt_key: sctx.encrypt_key,
@@ -342,15 +351,15 @@ func flow() {
 	//-------- sigma1
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
 	sigma1_payload := genSigma1(controller_privkey)
-	sigma1 := genSigma1Req(sigma1_payload)
-	channel.send(sigma1)
+	sigma1 := genSigma1Req2(sigma1_payload)
+	secure_channel.send(0, 1000, sigma1)
 
 
 	sigma2dec := secure_channel.receive()
 	//sigma2dec.tlv.Dump(0)
 
-	ack = AckS(uint32(channel.get_counter()), sigma2dec.msg.messageCounter)
-	channel.send(ack)
+	ack = AckWS2(uint32(channel.get_counter()), sigma2dec.msg.messageCounter)
+	secure_channel.send(0, uint32(channel.get_counter()), ack)
 
 	//sigma3
 	controller_key := ca.Generate_and_store_key_ecdsa("controller")
@@ -432,15 +441,17 @@ func flow() {
 	tlv_s3.writeOctetString(1, CipherText)
 	tlv_s3.writeAnonStructEnd()
 
-	to_send = genSigma3Req(tlv_s3.data.Bytes())
 
-	channel.send(to_send)
+	to_send = genSigma3Req2(tlv_s3.data.Bytes())
+	secure_channel.send(0, 1001, to_send)
 	// sigma3 sent
 
 	// status report
 	respx := secure_channel.receive()
-	ack = AckS(uint32(channel.get_counter()), respx.msg.messageCounter)
-	channel.send(ack)
+
+	ack = AckWS2(uint32(channel.get_counter()), respx.msg.messageCounter)
+	secure_channel.send(0, 1002, ack)
+
 
 	// prepare session keys
 	ses_key_transcript := s3k_th

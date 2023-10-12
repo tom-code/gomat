@@ -284,6 +284,12 @@ func (m *ProtocolMessage)dump()  {
 	fmt.Printf("    protocolId    : %d\n", m.protocolId)
 	fmt.Printf("    ackCounter    : %d\n", m.ackCounter)
 }
+func (m *ProtocolMessage)encode(data *bytes.Buffer) {
+	data.WriteByte(m.exchangeFlags)
+	data.WriteByte(m.opcode)
+	binary.Write(data, binary.LittleEndian, uint16(m.exchangeId))
+	binary.Write(data, binary.LittleEndian, uint16(m.protocolId))
+}
 
 
 func (m *Message)calcMessageFlags() byte {
@@ -426,20 +432,14 @@ func (m *Message) decodeBase(data *bytes.Buffer) error {
 
 func PBKDFParamRequest() []byte {
 	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: 1,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: SEC_CHAN_OPCODE_PBKDF_REQ,
-			exchangeId: 0xba3e,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
 
+	prot:= ProtocolMessage{
+		exchangeFlags: 5,
+		opcode: SEC_CHAN_OPCODE_PBKDF_REQ,
+		exchangeId: 0xba3e,
+		protocolId: 0x00,
+	}
+	prot.encode(&buffer)	
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
 	initiator_random := make([]byte, 32)
@@ -452,6 +452,7 @@ func PBKDFParamRequest() []byte {
 	buffer.Write(tlv.data.Bytes())
 	return buffer.Bytes()
 }
+
 
 type PBKDFParamResponse struct {
 	initiatorRandom []byte
@@ -573,19 +574,14 @@ func decodePAKE2ParamResponse(buf *bytes.Buffer) AllResp {
 
 func Pake1ParamRequest(key []byte, counter uint32) []byte {
 	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: counter,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: SEC_CHAN_OPCODE_PAKE1,
-			exchangeId: 0xba3e,
-			protocolId: 0x00,
-		},
+
+	prot:= ProtocolMessage{
+		exchangeFlags: 5,
+		opcode: SEC_CHAN_OPCODE_PAKE1,
+		exchangeId: 0xba3e,
+		protocolId: 0x00,
 	}
-	msg.encode(&buffer)
+	prot.encode(&buffer)	
 
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
@@ -597,20 +593,13 @@ func Pake1ParamRequest(key []byte, counter uint32) []byte {
 
 func Pake3ParamRequest(key []byte, counter uint32) []byte {
 	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: counter,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			//exchangeFlags: 7,
-			opcode: SEC_CHAN_OPCODE_PAKE3,
-			exchangeId: 0xba3e,
-			protocolId: 0x00,
-		},
+	prot:= ProtocolMessage{
+		exchangeFlags: 5,
+		opcode: SEC_CHAN_OPCODE_PAKE3,
+		exchangeId: 0xba3e,
+		protocolId: 0x00,
 	}
-	msg.encode(&buffer)
+	prot.encode(&buffer)
 
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
@@ -619,7 +608,7 @@ func Pake3ParamRequest(key []byte, counter uint32) []byte {
 	buffer.Write(tlv.data.Bytes())
 	return buffer.Bytes()
 }
-
+/*
 func Ack(cnt uint32, counter uint32) []byte {
 	var buffer bytes.Buffer
 	msg := Message {
@@ -639,6 +628,32 @@ func Ack(cnt uint32, counter uint32) []byte {
 	binary.Write(&buffer, binary.LittleEndian, counter)
 
 
+	return buffer.Bytes()
+}*/
+func AckWS(cnt uint32, counter uint32) []byte {
+	var buffer bytes.Buffer
+
+	prot:= ProtocolMessage{
+		exchangeFlags: 3,
+		opcode: SEC_CHAN_OPCODE_ACK,
+		exchangeId: 0xba3e,
+		protocolId: 0x00,
+	}
+	prot.encode(&buffer)
+	binary.Write(&buffer, binary.LittleEndian, counter)
+	return buffer.Bytes()
+}
+func AckWS2(cnt uint32, counter uint32) []byte {
+	var buffer bytes.Buffer
+
+	prot:= ProtocolMessage{
+		exchangeFlags: 3,
+		opcode: SEC_CHAN_OPCODE_ACK,
+		exchangeId: 0xba3f,
+		protocolId: 0x00,
+	}
+	prot.encode(&buffer)
+	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }
 

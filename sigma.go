@@ -105,6 +105,34 @@ func genSigma1Req(payload []byte) []byte {
 	buffer.Write(payload)
 	return buffer.Bytes()
 }
+func genSigma1Req2(payload []byte) []byte {
+	var buffer bytes.Buffer
+	prot:= ProtocolMessage{
+			exchangeFlags: 5,
+			opcode: 0x30, //sigma1
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+	}
+	/*
+	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: 1000,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 5,
+			opcode: 0x30, //sigma1
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+		},
+	}
+	msg.encode(&buffer)
+	*/
+	prot.encode(&buffer)
+
+	buffer.Write(payload)
+	return buffer.Bytes()
+}
 
 func genSigma3Req(payload []byte) []byte {
 	var buffer bytes.Buffer
@@ -121,6 +149,32 @@ func genSigma3Req(payload []byte) []byte {
 		},
 	}
 	msg.encode(&buffer)
+
+	buffer.Write(payload)
+	return buffer.Bytes()
+}
+
+func genSigma3Req2(payload []byte) []byte {
+	var buffer bytes.Buffer
+	prot:= ProtocolMessage{
+		exchangeFlags: 5,
+		opcode: 0x32, //sigma1
+		exchangeId: 0xba3f,
+		protocolId: 0x00,	}
+
+/*	msg := Message {
+		sessionId: 0x0,
+		securityFlags: 0,
+		messageCounter: 1001,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+		prot: ProtocolMessage{
+			exchangeFlags: 5,
+			opcode: 0x32, //sigma1
+			exchangeId: 0xba3f,
+			protocolId: 0x00,
+		},
+	}*/
+	prot.encode(&buffer)
 
 	buffer.Write(payload)
 	return buffer.Bytes()
