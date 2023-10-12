@@ -94,6 +94,7 @@ type SecureChannel struct {
 	encrypt_key []byte
 	decrypt_key []byte
 	remote_node []byte
+	local_node []byte
 }
 
 func (sc *SecureChannel) receive() DecodedGeneric {
@@ -151,6 +152,37 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 		out.tlv = tlvdec.Decode(out.payload)
 	}
 	return out
+}
+
+func (sc *SecureChannel)send(session uint16, counter uint32, data []byte) {
+	var buffer bytes.Buffer
+	msg := Message {
+		sessionId: session,
+		securityFlags: 0,
+		messageCounter: counter,
+		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
+	}
+	msg.encodeBase(&buffer)
+
+	header_slice := buffer.Bytes()
+	add2 := make([]byte, len(header_slice))
+	copy(add2, header_slice)
+
+	nonce := make_nonce3(counter, sc.local_node)
+
+	c, err := aes.NewCipher(sc.encrypt_key)
+	if err != nil {
+		panic(err)
+	}
+	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	if err != nil {
+		panic(err)
+	}
+	CipherText := ccm.Seal(nil, nonce, data, add2)
+	buffer.Write(CipherText)
+
+
+	sc.udp.send(buffer.Bytes())
 }
 
 
@@ -219,7 +251,9 @@ func flow() {
 	secure_channel := SecureChannel {
 		udp: &channel,
 		decrypt_key: sctx.decrypt_key,
+		encrypt_key: sctx.encrypt_key,
 		remote_node: []byte{0,0,0,0,0,0,0,0},
+		local_node: []byte{0,0,0,0,0,0,0,0},
 	}
 
 	// send csr request
@@ -232,21 +266,19 @@ func flow() {
 	//log.Printf("responder session %x\n", pbkdf_response_decoded.PBKDFParamResponse.responderSession)
 	var cnt uint32
 	cnt = uint32(channel.get_counter())
-	nonce := make_nonce(cnt)
-	sec := Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
-	channel.send(sec)
+
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send)
+
 
 	channel.receive() // ack
-	//csr_response, _ := channel.receive()
-	//ds := decodeSecured(csr_response, sctx.decrypt_key)
+
 	ds := secure_channel.receive()
 
 
 	ack = Ack3(ds.msg.messageCounter)
 	cnt = uint32(channel.get_counter())
-	nonce = make_nonce(cnt)
-	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack)
+
 
 
 	nocsr := ds.tlv.GetOctetStringRec([]int{1,0,0,1,0})
@@ -264,26 +296,21 @@ func flow() {
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
 
 	cnt = uint32(channel.get_counter())
-	nonce = make_nonce(cnt)
-	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send)
 
-	//rec, _ := channel.receive() // ack
-	//rec_decoded := decodeSecured(rec, sctx.decrypt_key)
+
 	rec_decoded := secure_channel.receive()
 	rec_decoded.msg.dump()
 	rec_decoded.proto.dump()
 
-	//add_root_cer_response, _ := channel.receive()
-	//ds = decodeSecured(add_root_cer_response, sctx.decrypt_key)
+
 	ds = secure_channel.receive()
 	//ds.tlv.Dump(0)
 
 	ack = Ack3(ds.msg.messageCounter)
 	cnt = uint32(channel.get_counter())
-	nonce = make_nonce(cnt)
-	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack)
+
 
 	noc_x509 := sign_cert(csrp, 2, "user")
 	noc_matter := MatterCert2(noc_x509)
@@ -291,28 +318,23 @@ func flow() {
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
 	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
-	//tlv5.writeUInt(3, TYPE_UINT_2, 100)
 	tlv5.writeUInt(3, TYPE_UINT_2, 9)  // admin subject !
 	tlv5.writeUInt(4, TYPE_UINT_2, 101)
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
 	cnt = uint32(channel.get_counter())
-	nonce = make_nonce(cnt)
-	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send, sctx.encrypt_key, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, to_send)
+
 
 	//channel.receive() // ack
 	secure_channel.receive()
-	//addnoc_response, _ := channel.receive()
-	//ds = decodeSecured(addnoc_response, sctx.decrypt_key)
 	ds = secure_channel.receive()
 	//ds.tlv.Dump(0)
 
 	ack = Ack3(ds.msg.messageCounter)
 	cnt = uint32(channel.get_counter())
-	nonce = make_nonce(cnt)
-	sec = Secured(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack, sctx.encrypt_key, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), cnt, ack)
+
 
 
 	secure_channel.decrypt_key = []byte{}
@@ -324,9 +346,6 @@ func flow() {
 	channel.send(sigma1)
 
 
-	//sigma2
-	//sigma2, _ := channel.receive()
-	//sigma2dec := decodegen(sigma2)
 	sigma2dec := secure_channel.receive()
 	//sigma2dec.tlv.Dump(0)
 
@@ -399,6 +418,7 @@ func flow() {
 	if err != nil {
 		panic(err)
 	}
+	nonce := make_nonce(cnt) // just for size
 	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 	if err != nil {
 		panic(err)
@@ -439,28 +459,22 @@ func flow() {
 	i2rkey := keypack[:16]
 	r2ikey := keypack[16:32]
 	secure_channel.decrypt_key = r2ikey
+	secure_channel.encrypt_key = i2rkey
 	secure_channel.remote_node = []byte{2,0,0,0,0,0,0,0}
+	secure_channel.local_node = []byte{9,0,0,0,0,0,0,0}
 	//log.Println(hex.EncodeToString(keypack))
 
 
 	//commistioning complete
 	to_send = invokeCommand2(0, 0x30, 4, []byte{})
-	//cnt = uint32(channel.get_counter())
 	cnt = 5000
-	nonce = make_nonce2(cnt)
-	//log.Printf("nonce %s\n", hex.EncodeToString(nonce))
-	//log.Printf("key %s\n", hex.EncodeToString(i2rkey))
-	sec = Secured(uint16(sigma2responder_session), cnt, to_send, i2rkey, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(sigma2responder_session), cnt, to_send)
 
 
 	respx = secure_channel.receive()
 	ack = Ack3(respx.msg.messageCounter)
 	cnt = 5001
-	nonce = make_nonce2(cnt)
-	sec = Secured(uint16(sigma2responder_session), cnt, ack, i2rkey, nonce)
-	channel.send(sec)
-	channel.send(ack)
+	secure_channel.send(uint16(sigma2responder_session), cnt, ack)
 
 
 	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
@@ -468,25 +482,14 @@ func flow() {
 	to_send = invokeCommand2(1, 6, 1, []byte{})
 	//cnt = uint32(channel.get_counter())
 	cnt = 5002
-	nonce = make_nonce2(cnt)
-	//log.Printf("nonce %s\n", hex.EncodeToString(nonce))
-	//log.Printf("key %s\n", hex.EncodeToString(i2rkey))
-	sec = Secured(uint16(sigma2responder_session), cnt, to_send, i2rkey, nonce)
-	channel.send(sec)
+	secure_channel.send(uint16(sigma2responder_session), cnt, to_send)
 
 	light_resp := secure_channel.receive()
 	light_resp.tlv.Dump(0)
-	//resp, _ = channel.receive()
-	//log.Printf("%s\n", hex.EncodeToString(resp))
-	//msg.decode(bytes.NewBuffer(resp))
-	//msg.dump()
 
 	ack = Ack3(light_resp.msg.messageCounter)
 	cnt = 5003
-	nonce = make_nonce2(cnt)
-	sec = Secured(uint16(sigma2responder_session), cnt, ack, i2rkey, nonce)
-	channel.send(sec)
-	channel.send(ack)
+	secure_channel.send(uint16(sigma2responder_session), cnt, ack)
 
 }
 
