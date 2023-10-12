@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/aes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -216,6 +215,9 @@ func (b *TLVBuffer) writeBool(tag byte, val bool) {
 
 func (b *TLVBuffer) writeAnonStruct() {
 	b.data.WriteByte(0x15)
+}
+func (b *TLVBuffer) writeAnonList() {
+	b.data.WriteByte(0x17)
 }
 func (b *TLVBuffer) writeStruct(tag byte) {
 	b.data.WriteByte(0x35)
@@ -608,29 +610,8 @@ func Pake3ParamRequest(key []byte, counter uint32) []byte {
 	buffer.Write(tlv.data.Bytes())
 	return buffer.Bytes()
 }
-/*
-func Ack(cnt uint32, counter uint32) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: cnt,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 3,
-			//exchangeFlags: 7,
-			opcode: SEC_CHAN_OPCODE_ACK,
-			exchangeId: 0xba3e,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
-	binary.Write(&buffer, binary.LittleEndian, counter)
 
-
-	return buffer.Bytes()
-}*/
-func AckWS(cnt uint32, counter uint32) []byte {
+func AckWS(counter uint32) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
@@ -643,7 +624,7 @@ func AckWS(cnt uint32, counter uint32) []byte {
 	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }
-func AckWS2(cnt uint32, counter uint32) []byte {
+func AckWS2(counter uint32) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
@@ -654,49 +635,6 @@ func AckWS2(cnt uint32, counter uint32) []byte {
 	}
 	prot.encode(&buffer)
 	binary.Write(&buffer, binary.LittleEndian, counter)
-	return buffer.Bytes()
-}
-
-func AckS(cnt uint32, counter uint32) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: cnt,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 3,
-			//exchangeFlags: 7,
-			opcode: SEC_CHAN_OPCODE_ACK,
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
-	binary.Write(&buffer, binary.LittleEndian, counter)
-
-
-	return buffer.Bytes()
-}
-func AckS2(cnt uint32, counter uint32, session_id uint16) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: session_id,
-		securityFlags: 0,
-		messageCounter: cnt,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 3,
-			//exchangeFlags: 7,
-			opcode: SEC_CHAN_OPCODE_ACK,
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
-	binary.Write(&buffer, binary.LittleEndian, counter)
-
-
 	return buffer.Bytes()
 }
 
@@ -748,35 +686,6 @@ func decodegen(data []byte) DecodedGeneric {
 }
 
 
-func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []byte) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: session,
-		securityFlags: 0,
-		messageCounter: counter,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-	}
-	msg.encodeBase(&buffer)
-
-	header_slice := buffer.Bytes()
-	add2 := make([]byte, len(header_slice))
-	copy(add2, header_slice)
-
-	c, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
-	}
-	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
-	if err != nil {
-		panic(err)
-	}
-	CipherText := ccm.Seal(nil, nonce, data, add2)
-	buffer.Write(CipherText)
-
-
-	return buffer.Bytes()
-}
-
 type DecodedGeneric struct {
 	msg Message
 	proto ProtocolMessage
@@ -784,46 +693,6 @@ type DecodedGeneric struct {
 	payload []byte
 }
 
-func decodeSecured(in []byte, key []byte) DecodedGeneric {
-	var decoded DecodedGeneric
-	//var msg Message
-	buf := bytes.NewBuffer(in)
-	decoded.msg.decodeBase(buf)
-	//decoded.msg.dump()
-
-	var add bytes.Buffer
-	add.WriteByte(decoded.msg.flags)
-	binary.Write(&add, binary.LittleEndian, uint16(decoded.msg.sessionId))
-	add.WriteByte(decoded.msg.securityFlags)
-	binary.Write(&add, binary.LittleEndian, decoded.msg.messageCounter)
-
-	nonce := make_nonce(decoded.msg.messageCounter)
-	c, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err)
-	}
-	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
-	if err != nil {
-		panic(err)
-	}
-	ciphertext := in[len(in)-buf.Len():]
-	decbuf := []byte{}
-	out, err := ccm.Open(decbuf, nonce, ciphertext, add.Bytes())
-	if err != nil {
-		panic(err)
-	}
-
-
-	decoder := bytes.NewBuffer(out)
-
-	decoded.proto.decode(decoder)
-	if len(decoder.Bytes()) > 0 {
-		decoded.tlv = tlvdec.Decode(decoder.Bytes())
-	}
-
-	return decoded
-
-}
 
 
 func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
@@ -852,6 +721,38 @@ func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 	var buffer bytes.Buffer
 	buffer.WriteByte(5) // flags
 	buffer.WriteByte(8) // opcode
+	var exchange_id uint16
+	binary.Write(&buffer, binary.LittleEndian, exchange_id)
+	var protocol_id uint16 
+	protocol_id = 1
+	binary.Write(&buffer, binary.LittleEndian, protocol_id)
+	buffer.Write(tlv.data.Bytes())
+
+	return buffer.Bytes()
+}
+
+func invokeRead(endpoint, cluster, attr byte) []byte {
+
+	var tlv TLVBuffer
+	tlv.writeAnonStruct()
+		tlv.writeArray(0)
+			tlv.writeAnonList()
+				//tlv.writeList(0)
+					//tlv.writeBool(0, false)
+					tlv.writeUInt(2, TYPE_UINT_1, uint64(endpoint))
+					tlv.writeUInt(3, TYPE_UINT_1, uint64(cluster))
+					tlv.writeUInt(4, TYPE_UINT_1, uint64(attr))
+				//tlv.writeAnonStructEnd()
+			tlv.writeAnonStructEnd()
+		tlv.writeAnonStructEnd()
+		tlv.writeBool(3, true)
+		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
+	tlv.writeAnonStructEnd()
+
+
+	var buffer bytes.Buffer
+	buffer.WriteByte(5) // flags
+	buffer.WriteByte(2) // opcode
 	var exchange_id uint16
 	binary.Write(&buffer, binary.LittleEndian, exchange_id)
 	var protocol_id uint16 
