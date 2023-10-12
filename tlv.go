@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/aes"
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -431,14 +432,12 @@ func PBKDFParamRequest() []byte {
 
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
-	bytes, err := hex.DecodeString("bbcbd707308cb511a5b7909ee2e15eeeed2a24372f851499b2d0dfc9485eae8f")
-	if err != nil {
-		panic(err)
-	}
-	tlv.writeOctetString(0x1, bytes)             // initiator random
+	initiator_random := make([]byte, 32)
+	rand.Read(initiator_random)
+	tlv.writeOctetString(0x1, initiator_random)  // initiator random
 	tlv.writeUInt(0x2, TYPE_UINT_2, 0x0001)      //initator session-id
 	tlv.writeUInt(0x3, TYPE_UINT_1, 0x00)        // passcode id
-	tlv.writeBool(0x4, false)                     // has pbkdf
+	tlv.writeBool(0x4, false)                    // has pbkdf
 	tlv.writeAnonStructEnd()
 	buffer.Write(tlv.data.Bytes())
 	return buffer.Bytes()

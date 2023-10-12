@@ -107,10 +107,8 @@ func Create_ca_cert() {
 			Value: asn1.RawValue{FullBytes: valname},
 		},
 	}
-	//subj.CommonName = "aaa"
 	var template x509.Certificate
 	template.Version = 3
-	//template.BasicConstraintsValid = true
 	template.SignatureAlgorithm = x509.ECDSAWithSHA256
 	template.NotBefore = time.Now()
 	template.NotAfter = time.Now().AddDate(1, 0, 0)
@@ -118,7 +116,9 @@ func Create_ca_cert() {
 	template.IsCA = true
 	template.SerialNumber = big.NewInt(10000)
 	template.Issuer = subj
-	//template.KeyUsage = x509.KeyUsageCertSign
+
+	// extensions must be in matter correct order
+	// for this reason they must appear in this list
 	template.ExtraExtensions = []pkix.Extension{
 		{
 			Id: asn1.ObjectIdentifier{2,5,29,19}, // basic constraints
@@ -147,9 +147,6 @@ func Create_ca_cert() {
 		panic(err)
 	}
 	Store_cert("ca", cert_bytes)
-
-	//ce := load_cert("ca-cert.pem")
-	//log.Println(ce)
 }
 
 func LoadCert(file string) *x509.Certificate {
