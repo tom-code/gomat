@@ -330,6 +330,7 @@ func flow() {
 	to_send = genSigma3Req(tlv_s3.data.Bytes())
 
 	channel.send(to_send)
+	// sigma3 sent
 
 
 	resp, _ := channel.receive()
@@ -342,6 +343,7 @@ func flow() {
 	ack = AckS(uint32(channel.get_counter()), msg.messageCounter)
 	channel.send(ack)
 
+	// prepare session keys
 	ses_key_transcript := s3k_th
 	ses_key_transcript = append(ses_key_transcript, tlv_s3.data.Bytes()...)
 	s2 = sha256.New()
@@ -359,6 +361,8 @@ func flow() {
 	//r2ikey := keypack[16:32]
 	log.Println(hex.EncodeToString(keypack))
 
+
+	//commistioning complete
 	to_send = invokeCommand2(0, 0x30, 4, []byte{})
 	//cnt = uint32(channel.get_counter())
 	cnt = 5000
@@ -382,7 +386,7 @@ func flow() {
 	channel.send(ack)
 
 
-	//to_send = []byte{1,2,3,4,5,6,7,8,9,0}
+	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
 	// cluster=6 on/off - command 1=on
 	to_send = invokeCommand2(1, 6, 1, []byte{})
 	//cnt = uint32(channel.get_counter())
