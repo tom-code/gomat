@@ -9,12 +9,10 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
 	"io"
-	"log"
 	"net"
 
 	"github.com/spf13/cobra"
@@ -128,16 +126,29 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 
 		out.proto.decode(decoder)
 		if len(decoder.Bytes()) > 0 {
-			out.tlv = tlvdec.Decode(decoder.Bytes())
+			tlvdata := make([]byte, decoder.Len())
+			n, _ := decoder.Read(tlvdata)
+			//out.tlv = tlvdec.Decode(decoder.Bytes())
+			out.payload = tlvdata[:n]
 		}
 	} else {
 		out.proto.decode(decode_buffer)
 		if len(decode_buffer.Bytes()) > 0 {
 			tlvdata := make([]byte, decode_buffer.Len())
 			n, _ := decode_buffer.Read(tlvdata)
-			out.tlv = tlvdec.Decode(tlvdata[:n])
+			//out.tlv = tlvdec.Decode(tlvdata[:n])
 			out.payload = tlvdata[:n]
 		}
+	}
+
+	// do not decode status report today
+	if out.proto.protocolId == 0 {
+		if out.proto.opcode == 0x40 {
+			return out
+		}
+	}
+	if len(out.payload) >0 {
+		out.tlv = tlvdec.Decode(out.payload)
 	}
 	return out
 }
@@ -406,15 +417,9 @@ func flow() {
 	channel.send(to_send)
 	// sigma3 sent
 
-
-	resp, _ := channel.receive()
-	log.Printf("%s\n", hex.EncodeToString(resp))
-	//respdec := decodegen(resp)
-	var msg Message
-	msg.decode(bytes.NewBuffer(resp))
-	//msg.dump()
-
-	ack = AckS(uint32(channel.get_counter()), msg.messageCounter)
+	// status report
+	respx := secure_channel.receive()
+	ack = AckS(uint32(channel.get_counter()), respx.msg.messageCounter)
 	channel.send(ack)
 
 	// prepare session keys
@@ -449,12 +454,8 @@ func flow() {
 	channel.send(sec)
 
 
-	resp, _ = channel.receive()
-	//log.Printf("%s\n", hex.EncodeToString(resp))
-	msg.decode(bytes.NewBuffer(resp))
-	//msg.dump()
-
-	ack = Ack3(msg.messageCounter)
+	respx = secure_channel.receive()
+	ack = Ack3(respx.msg.messageCounter)
 	cnt = 5001
 	nonce = make_nonce2(cnt)
 	sec = Secured(uint16(sigma2responder_session), cnt, ack, i2rkey, nonce)
