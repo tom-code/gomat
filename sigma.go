@@ -9,10 +9,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/hex"
 	"gomat/ca"
 	"io"
-	"log"
 
 	"golang.org/x/crypto/hkdf"
 )
@@ -29,7 +27,7 @@ func compressedFabric() []byte {
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
 		panic(err)
 	}
-	log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
+	//log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
 	return key
 }
 
@@ -71,21 +69,14 @@ func genSigma1(privkey *ecdh.PrivateKey) []byte{
 	node = 2
 	binary.Write(&destination_message, binary.LittleEndian, node)
 
-	ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
-	hkdfz := hkdf.New(sha256.New, ipk, compressedFabric(), []byte("GroupKey v1.0"))
-	key := make([]byte, 16)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
-	}
-	log.Printf("group key %s\n", hex.EncodeToString(key))
+	key := make_ipk()
 
-
-	log.Printf("dest id %s\n", hex.EncodeToString(destination_message.Bytes()))
+	//log.Printf("dest id %s\n", hex.EncodeToString(destination_message.Bytes()))
 
 	mac := hmac.New(sha256.New, key)
 	mac.Write(destination_message.Bytes())
 	destinationIdentifier := mac.Sum(nil)
-	log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
+	//log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
 
 	tlv.writeOctetString(3, destinationIdentifier)
 

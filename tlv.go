@@ -262,6 +262,7 @@ type Message struct {
 }
 
 func (m *Message)dump()  {
+	fmt.Printf("  flags      : %d\n", m.flags)
 	fmt.Printf("  sessionId  : %d\n", m.sessionId)
 	fmt.Printf("  secFlags   : %d\n", m.securityFlags)
 	fmt.Printf("  msgCounter : %d\n", m.messageCounter)
@@ -273,6 +274,15 @@ func (m *Message)dump()  {
 	fmt.Printf("    exchangeId    : %d\n", m.prot.exchangeId)
 	fmt.Printf("    protocolId    : %d\n", m.prot.protocolId)
 	fmt.Printf("    ackCounter    : %d\n", m.prot.ackCounter)
+}
+
+func (m *ProtocolMessage)dump()  {
+	fmt.Printf("  prot       :\n")
+	fmt.Printf("    exchangeFlags : %d\n", m.exchangeFlags)
+	fmt.Printf("    opcode        : 0x%x\n", m.opcode)
+	fmt.Printf("    exchangeId    : %d\n", m.exchangeId)
+	fmt.Printf("    protocolId    : %d\n", m.protocolId)
+	fmt.Printf("    ackCounter    : %d\n", m.ackCounter)
 }
 
 
@@ -529,7 +539,7 @@ func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
 		panic(err)
 	}
 
-	out.dump()
+	//out.dump()
 
 	var o AllResp
 	o.PBKDFParamResponse = &out
@@ -681,7 +691,7 @@ func decode(data []byte) AllResp {
 	var msg Message
 	buf := bytes.NewBuffer(data)
 	msg.decode(buf)
-	msg.dump()
+	//msg.dump()
 
 	switch msg.prot.protocolId {
 	case PROTOCOL_ID_SECURE_CHANNEL:
@@ -707,15 +717,15 @@ func decode(data []byte) AllResp {
 }
 
 func decodegen(data []byte) DecodedGeneric {
-	log.Printf("goinf to decvode %s\n", hex.EncodeToString(data))
+	//log.Printf("goinf to decvode %s\n", hex.EncodeToString(data))
 	out := DecodedGeneric{}
 	buf := bytes.NewBuffer(data)
 	out.msg.decode(buf)
-	out.msg.dump()
+	//out.msg.dump()
 
 	tlvdata := make([]byte, buf.Available())
 	n, _ := buf.Read(tlvdata)
-	log.Printf("tlv data %s", hex.EncodeToString(tlvdata[:n]))
+	//log.Printf("tlv data %s", hex.EncodeToString(tlvdata[:n]))
 	out.tlv = tlvdec.Decode(tlvdata[:n])
 	out.payload = tlvdata[:n]
 
@@ -733,12 +743,9 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	}
 	msg.encodeBase(&buffer)
 
-	var add bytes.Buffer
-	add.WriteByte(4) //flags
-	binary.Write(&add, binary.LittleEndian, uint16(msg.sessionId))
-	add.WriteByte(msg.securityFlags)
-	binary.Write(&add, binary.LittleEndian, msg.messageCounter)
-	add.Write(msg.sourceNodeId)
+	header_slice := buffer.Bytes()
+	add2 := make([]byte, len(header_slice))
+	copy(add2, header_slice)
 
 	c, err := aes.NewCipher(key)
 	if err != nil {
@@ -748,12 +755,10 @@ func Secured(session uint16, counter uint32, data []byte, key []byte, nonce []by
 	if err != nil {
 		panic(err)
 	}
-	CipherText := ccm.Seal(nil, nonce, data, add.Bytes())
+	CipherText := ccm.Seal(nil, nonce, data, add2)
 	buffer.Write(CipherText)
 
 
-	//buffer.Write(data)
-	//return CipherText
 	return buffer.Bytes()
 }
 
@@ -769,7 +774,7 @@ func decodeSecured(in []byte, key []byte) DecodedGeneric {
 	//var msg Message
 	buf := bytes.NewBuffer(in)
 	decoded.msg.decodeBase(buf)
-	decoded.msg.dump()
+	//decoded.msg.dump()
 
 	var add bytes.Buffer
 	add.WriteByte(decoded.msg.flags)
@@ -797,7 +802,9 @@ func decodeSecured(in []byte, key []byte) DecodedGeneric {
 	decoder := bytes.NewBuffer(out)
 
 	decoded.proto.decode(decoder)
-	decoded.tlv = tlvdec.Decode(decoder.Bytes())
+	if len(decoder.Bytes()) > 0 {
+		decoded.tlv = tlvdec.Decode(decoder.Bytes())
+	}
 
 	return decoded
 
