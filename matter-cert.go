@@ -11,57 +11,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"gomat/ca"
-	"gomat/tlvdec"
 	"math/big"
 	"strconv"
 	"time"
 )
 
-
-func CAMatterCert() []byte {
-
-	cacert := ca.LoadCert("ca-cert.pem")
-	pub := cacert.PublicKey.(*ecdsa.PublicKey)
-	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
-
-
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-	tlv.writeOctetString(1, []byte{1})
-	tlv.writeUInt(2, TYPE_UINT_1, 1)
-	tlv.writeList(3)
-	tlv.writeUInt(20, TYPE_UINT_1, 1)
-	tlv.writeAnonStructEnd()
-	tlv.writeUInt(4, TYPE_UINT_4, 662774400)
-	tlv.writeUInt(5, TYPE_UINT_4, 978134400)
-	tlv.writeList(6)
-	tlv.writeUInt(20, TYPE_UINT_1, 1)
-	tlv.writeAnonStructEnd()
-	tlv.writeUInt(7, TYPE_UINT_1, 1)
-	tlv.writeUInt(8, TYPE_UINT_1, 1)
-	//public key:
-	tlv.writeOctetString(9, public_key)
-	tlv.writeList(10)
-	tlv.writeStruct(1)
-	tlv.writeBool(1, true) // isCA
-	tlv.writeAnonStructEnd()
-	tlv.writeUInt(2, TYPE_UINT_1, 96) // key-usage
-	//id is 160bit sha1 of public key
-	ide := sha1.New()
-	ide.Write(public_key)
-	ides := ide.Sum(nil)
-	tlv.writeOctetString(4, ides) // subject-key-id
-	tlv.writeOctetString(5, ides) // authority-key-id
-	tlv.writeAnonStructEnd()
-	//tlv.writeOctetString(11, hex2bin("4e313fcaea8b531b24f44ff1451368eea2018c89f787f39c0a52b85b08092fd475c285b99933caaa30e106e43bd129a9c65798a1ba5c06680e42f3104dd9336e"))
-	tlv.writeOctetString(11, cacert.Signature)
-	tlv.writeAnonStructEnd()
-
-	enc := tlv.data.Bytes()
-	dec := tlvdec.Decode(enc)
-	dec.Dump(10)
-	return tlv.data.Bytes()
-}
 
 type dsaSignature struct {
 	R, S *big.Int
@@ -98,8 +52,6 @@ func MatterCert2(in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 
-	//authority_key := in.AuthorityKeyId
-	//authority_key := in.a
 	cacert := ca.LoadCert("ca-cert.pem")
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
@@ -184,7 +136,6 @@ func sign_cert(req *x509.CertificateRequest, node_id uint64, name string) *x509.
 	}
 
 	node_id_string := fmt.Sprintf("%016x", node_id)
-	//valname, err := asn1.MarshalWithParams("0000000000000002", "utf8")
 	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
 	valname_fabric, err := asn1.MarshalWithParams("0000000000000010", "utf8")
 

@@ -147,8 +147,8 @@ func flow() {
 
 
 
-	b := "c4f68604b151d21f2afac9e61a745ade93fde7dce1c6615de543f230bd62dd85"
-	bb, _ := hex.DecodeString(b)
+	bb := make([]byte, 32)
+	rand.Read(bb)
 	var tlv TLVBuffer
 	tlv.writeOctetString(0, bb)
 	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
@@ -233,10 +233,14 @@ func flow() {
 	channel.send(sec)
 
 
+	//-------- sigma1
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
 	sigma1_payload := genSigma1(controller_privkey)
 	sigma1 := genSigma1Req(sigma1_payload)
 	channel.send(sigma1)
+
+
+	//sigma2
 	sigma2, _ := channel.receive()
 	sigma2dec := decodegen(sigma2)
 	sigma2dec.tlv.Dump(0)
@@ -244,6 +248,7 @@ func flow() {
 	ack = AckS(uint32(channel.get_counter()), sigma2dec.msg.messageCounter)
 	channel.send(ack)
 
+	//sigma3
 	controller_key := ca.Generate_and_store_key_ecdsa("controller")
 	controller_csr := x509.CertificateRequest {
 		PublicKey: &controller_key.PublicKey,
@@ -423,7 +428,6 @@ func main() {
 	var testCmd = &cobra.Command{
 		Use:   "test",
 		Run: func(cmd *cobra.Command, args []string) {
-		  tlvdec.Test2()
 		},
 	}
 	rootCmd.AddCommand(flowCmd)

@@ -89,10 +89,7 @@ func genSigma1(privkey *ecdh.PrivateKey) []byte{
 
 	tlv.writeOctetString(3, destinationIdentifier)
 
-	/*privkey, err := ecdh.P256().GenerateKey(rand.Reader)
-	if err != nil {
-		panic(err)
-	}*/
+
 	tlv.writeOctetString(4, privkey.PublicKey().Bytes())
 	tlv.writeAnonStructEnd()
 	return tlv.data.Bytes()

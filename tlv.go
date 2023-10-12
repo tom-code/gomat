@@ -804,41 +804,6 @@ func decodeSecured(in []byte, key []byte) DecodedGeneric {
 
 }
 
-/*
-func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
-
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-		tlv.writeBool(0, false)
-		tlv.writeBool(1, false)
-		tlv.writeArray(2)
-			tlv.writeAnonStruct()
-				tlv.writeList(0)
-					tlv.writeUInt(0, TYPE_UINT_1, uint64(endpoint))
-					tlv.writeUInt(1, TYPE_UINT_1, uint64(cluster))
-					tlv.writeUInt(2, TYPE_UINT_1, uint64(command))
-				tlv.writeAnonStructEnd()
-				tlv.writeStruct(1)
-					tlv.writeOctetString(0, payload)
-				tlv.writeAnonStructEnd()
-			tlv.writeAnonStructEnd()
-		tlv.writeAnonStructEnd()
-		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
-	tlv.writeAnonStructEnd()
-
-
-	var buffer bytes.Buffer
-	buffer.WriteByte(5) // flags
-	buffer.WriteByte(8) // opcode
-	var exchange_id uint16
-	binary.Write(&buffer, binary.LittleEndian, exchange_id)
-	var protocol_id uint16 
-	protocol_id = 1
-	binary.Write(&buffer, binary.LittleEndian, protocol_id)
-	buffer.Write(tlv.data.Bytes())
-
-	return buffer.Bytes()
-}*/
 
 func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 

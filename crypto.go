@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -62,7 +63,7 @@ func init() {
 }
 
 
-func serializePoint(buf *bytes.Buffer, p []byte) {
+func serializeBytes(buf *bytes.Buffer, p []byte) {
 	ln := uint64(len(p))
 	binary.Write(buf, binary.LittleEndian, ln)
 	buf.Write(p)
@@ -70,31 +71,21 @@ func serializePoint(buf *bytes.Buffer, p []byte) {
 
 func createTT(context []byte, a, b string, m, n, x, y, z, v []byte, w0 []byte) []byte {
 	var buf bytes.Buffer
-	serializePoint(&buf, context)
-	serializePoint(&buf, []byte(a))
-	serializePoint(&buf, []byte(b))
+	serializeBytes(&buf, context)
+	serializeBytes(&buf, []byte(a))
+	serializeBytes(&buf, []byte(b))
 
-	serializePoint(&buf, m)
-	serializePoint(&buf, n)
-	serializePoint(&buf, x)
-	serializePoint(&buf, y)
-	serializePoint(&buf, z)
-	serializePoint(&buf, v)
-	serializePoint(&buf, w0)
-
+	serializeBytes(&buf, m)
+	serializeBytes(&buf, n)
+	serializeBytes(&buf, x)
+	serializeBytes(&buf, y)
+	serializeBytes(&buf, z)
+	serializeBytes(&buf, v)
+	serializeBytes(&buf, w0)
 	return buf.Bytes()
 }
 
-/*
-func genw0w1(password []byte, salt []byte, iterations int, keylen int) ([]byte, []byte){
-	w0 := []byte {0xe6, 0x88, 0x7c, 0xf9, 0xbd, 0xfb, 0x75, 0x79, 0xc6, 0x9b, 0xf4, 0x79, 0x28, 0xa8,
-		0x45, 0x14, 0xb5, 0xe3, 0x55, 0xac, 0x03, 0x48, 0x63, 0xf7, 0xff, 0xaf, 0x43, 0x90,
-		0xe6, 0x7d, 0x79, 0x8c}
-	w1 := []byte {0x24, 0xb5, 0xae, 0x4a, 0xbd, 0xa8, 0x68, 0xec, 0x93, 0x36, 0xff, 0xc3, 0xb7, 0x8e,
-		0xe3, 0x1c, 0x57, 0x55, 0xbe, 0xf1, 0x75, 0x92, 0x27, 0xef, 0x53, 0x72, 0xca, 0x13,
-		0x9b, 0x94, 0xe5, 0x12}
-	return w0, w1
-}*/
+
 
 type SpakeCtx struct {
 	curve elliptic.Curve
@@ -115,15 +106,6 @@ type SpakeCtx struct {
 	decrypt_key []byte
 }
 
-/*
-func (ctx *SpakeCtx)gen_w_test() {
-	ctx.w0 = []byte {0xe6, 0x88, 0x7c, 0xf9, 0xbd, 0xfb, 0x75, 0x79, 0xc6, 0x9b, 0xf4, 0x79, 0x28, 0xa8,
-		0x45, 0x14, 0xb5, 0xe3, 0x55, 0xac, 0x03, 0x48, 0x63, 0xf7, 0xff, 0xaf, 0x43, 0x90,
-		0xe6, 0x7d, 0x79, 0x8c}
-	ctx.w1 = []byte {0x24, 0xb5, 0xae, 0x4a, 0xbd, 0xa8, 0x68, 0xec, 0x93, 0x36, 0xff, 0xc3, 0xb7, 0x8e,
-		0xe3, 0x1c, 0x57, 0x55, 0xbe, 0xf1, 0x75, 0x92, 0x27, 0xef, 0x53, 0x72, 0xca, 0x13,
-		0x9b, 0x94, 0xe5, 0x12}
-}*/
 
 func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
 	pwd := pinToPasscode(uint32(passcode))
@@ -143,14 +125,14 @@ func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
 }
 
 func (ctx *SpakeCtx)gen_random_X() {
-	ctx.x_random.SetBytes([]byte{0x8b, 0x0f, 0x3f, 0x38, 0x39, 0x05, 0xcf, 0x3a, 0x3b, 0xb9, 0x55, 0xef, 0x8f, 0xb6,
-							     0x2e, 0x24, 0x84, 0x9d, 0xd3, 0x49, 0xa0, 0x5c, 0xa7, 0x9a, 0xaf, 0xb1, 0x80, 0x41,
-		                         0xd3, 0x0c, 0xbd, 0xb6})
+	random_bytes := make([]byte, 32)
+	rand.Read(random_bytes)
+	ctx.x_random.SetBytes(random_bytes)
 }
 func (ctx *SpakeCtx)gen_random_Y() {
-	ctx.y_random.SetBytes([]byte{0x2e, 0x08, 0x95, 0xb0, 0xe7, 0x63, 0xd6, 0xd5, 0xa9, 0x56, 0x44, 0x33, 0xe6, 0x4a,
-		0xc3, 0xca, 0xc7, 0x4f, 0xf8, 0x97, 0xf6, 0xc3, 0x44, 0x52, 0x47, 0xba, 0x1b, 0xab,
-		0x40, 0x08, 0x2a, 0x91})
+	random_bytes := make([]byte, 32)
+	rand.Read(random_bytes)
+	ctx.y_random.SetBytes(random_bytes)
 }
 func (ctx *SpakeCtx)calc_X() {
 	// X=x*P+w0*M
@@ -197,7 +179,6 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	sh0sum := sh0.Sum(nil)
 	mbin := elliptic.Marshal(elliptic.P256(), M.x, M.y)
 	nbin := elliptic.Marshal(elliptic.P256(), N.x, N.y)
-	//tt := createTT("SPAKE2+-P256-SHA256-HKDF draft-01", "client", "server", mbin, nbin, ctx.X.as_bytes(), ctx.Y.as_bytes(), ctx.Z.as_bytes(), ctx.V.as_bytes(), ctx.w0)
 	tt := createTT(sh0sum, "", "", mbin, nbin, ctx.X.as_bytes(), ctx.Y.as_bytes(), ctx.Z.as_bytes(), ctx.V.as_bytes(), ctx.w0)
 
 	sh1 := sha256.New()
@@ -236,30 +217,3 @@ func newSpaceCtx() SpakeCtx {
 		curve: elliptic.P256(),
 	}
 }
-
-/*
-func test3() {
-	ctx := newSpaceCtx()
-	ctx.gen_w_test()
-	ctx.gen_random_X()
-	ctx.gen_random_Y()
-	ctx.calc_X()
-	ctx.calc_Y()
-	ctx.calc_ZV()
-	log.Printf("X: %s\n", ctx.X.as_hex())
-	log.Printf("Y: %s\n", ctx.Y.as_hex())
-	log.Printf("Z: %s\n", ctx.Z.as_hex())
-	log.Printf("V: %s\n", ctx.V.as_hex())
-
-	ctx.Z.reset()
-	ctx.V.reset()
-	ctx.calc_ZVb()
-	log.Printf("Z: %s\n", ctx.Z.as_hex())
-	log.Printf("V: %s\n", ctx.V.as_hex())
-
-	ctx.calc_hash([]byte("SPAKE2+-P256-SHA256-HKDF draft-01"))
-
-	ctx.gen_w(123456, []byte{0x4, 0xa1, 0xd2, 0xc6, 0x11, 0xf0, 0xbd, 0x36, 0x78, 0x67, 0x79, 0x7b, 0xfe, 0x82, 0x36, 0x0}, 2000)
-}
-
-*/
