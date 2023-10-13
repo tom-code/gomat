@@ -9,7 +9,6 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/x509"
 	"encoding/binary"
 	"gomat/ca"
 	"io"
@@ -42,6 +41,16 @@ func make_ipk() []byte {
 		panic(err)
 	}
 	return key
+}
+
+type SigmaContext struct {
+	session_privkey *ecdh.PrivateKey
+	session int
+	controller_key *ecdsa.PrivateKey
+	controller_matter_certificate []byte
+
+	sigma2dec DecodedGeneric
+	sigma1payload []byte
 }
 
 func genSigma1(privkey *ecdh.PrivateKey) []byte{
@@ -117,13 +126,7 @@ func genSigma3Req2(payload []byte) []byte {
 	return buffer.Bytes()
 }
 
-func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma1_payload []byte) ([]byte, uint64, []byte) {
-	controller_key := ca.Generate_and_store_key_ecdsa("controller")
-	controller_csr := x509.CertificateRequest {
-		PublicKey: &controller_key.PublicKey,
-	}
-	controller_cert := sign_cert(&controller_csr, 9, "controller")
-	conrtoller_cert_matter := MatterCert2(controller_cert)
+func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma1_payload []byte, conrtoller_cert_matter []byte, controller_key *ecdsa.PrivateKey) ([]byte, uint64, []byte) {
 
 	var tlv_s3tbs TLVBuffer
 	tlv_s3tbs.writeAnonStruct()

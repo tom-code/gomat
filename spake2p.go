@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -125,14 +124,10 @@ func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
 }
 
 func (ctx *SpakeCtx)gen_random_X() {
-	random_bytes := make([]byte, 32)
-	rand.Read(random_bytes)
-	ctx.x_random.SetBytes(random_bytes)
+	ctx.x_random.SetBytes(create_random_bytes(32))
 }
 func (ctx *SpakeCtx)gen_random_Y() {
-	random_bytes := make([]byte, 32)
-	rand.Read(random_bytes)
-	ctx.y_random.SetBytes(random_bytes)
+	ctx.y_random.SetBytes(create_random_bytes(32))
 }
 func (ctx *SpakeCtx)calc_X() {
 	// X=x*P+w0*M

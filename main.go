@@ -249,34 +249,30 @@ func flow() {
 	pbkdf_response_session := secure_channel.session
 
 	// send csr request
-	bb := make([]byte, 32)
-	rand.Read(bb)
 	var tlv TLVBuffer
-	tlv.writeOctetString(0, bb)
+	tlv.writeOctetString(0, create_random_bytes(32))
 	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
 	secure_channel.send(uint16(pbkdf_response_session), to_send)
 
 
 	secure_channel.receive()//ack
 
-	ds := secure_channel.receive()
-	ack := Ack3(ds.msg.messageCounter)
+	csr_resp := secure_channel.receive()
+	ack := Ack3(csr_resp.msg.messageCounter)
 	secure_channel.send(uint16(pbkdf_response_session), ack)
 
 
 
-	nocsr := ds.tlv.GetOctetStringRec([]int{1,0,0,1,0})
+	nocsr := csr_resp.tlv.GetOctetStringRec([]int{1,0,0,1,0})
 	tlv2 := tlvdec.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)
-
 
 
 	//AddTrustedRootCertificate
 	var tlv4 TLVBuffer
 	tlv4.writeOctetString(0, CAMatterCert2())
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
-
 	secure_channel.send(uint16(pbkdf_response_session), to_send)
 
 
@@ -285,7 +281,7 @@ func flow() {
 	rec_decoded.proto.dump()
 
 
-	ds = secure_channel.receive()
+	ds := secure_channel.receive()
 	ack = Ack3(ds.msg.messageCounter)
 	secure_channel.send(uint16(pbkdf_response_session), ack)
 
@@ -296,8 +292,8 @@ func flow() {
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
 	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
-	tlv5.writeUInt(3, TYPE_UINT_2, 9)  // admin subject !
-	tlv5.writeUInt(4, TYPE_UINT_2, 101)
+	tlv5.writeUInt(3, TYPE_UINT_2, 9)   // admin subject !
+	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
 	secure_channel.send(uint16(pbkdf_response_session), to_send)
@@ -323,7 +319,14 @@ func flow() {
 	ack = AckWS2(sigma2dec.msg.messageCounter)
 	secure_channel.send(0, ack)
 
-	to_send, sigma2responder_session, keypack := sigma3(controller_privkey, sigma2dec, sigma1_payload)
+	controller_key := ca.Generate_and_store_key_ecdsa("controller")
+	controller_csr := x509.CertificateRequest {
+		PublicKey: &controller_key.PublicKey,
+	}
+	controller_cert := sign_cert(&controller_csr, 9, "controller")
+	conrtoller_cert_matter := MatterCert2(controller_cert)
+
+	to_send, sigma2responder_session, keypack := sigma3(controller_privkey, sigma2dec, sigma1_payload, conrtoller_cert_matter, controller_key)
 	secure_channel.send(0, to_send)
 
 	respx := secure_channel.receive()
