@@ -49,11 +49,14 @@ type SigmaContext struct {
 	controller_key *ecdsa.PrivateKey
 	controller_matter_certificate []byte
 
+	i2rkey []byte
+	r2ikey []byte
+
 	sigma2dec DecodedGeneric
 	sigma1payload []byte
 }
 
-func genSigma1(privkey *ecdh.PrivateKey) []byte{
+func (sc *SigmaContext)genSigma1() {
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
 	
@@ -92,9 +95,10 @@ func genSigma1(privkey *ecdh.PrivateKey) []byte{
 	tlv.writeOctetString(3, destinationIdentifier)
 
 
-	tlv.writeOctetString(4, privkey.PublicKey().Bytes())
+	tlv.writeOctetString(4, sc.session_privkey.PublicKey().Bytes())
 	tlv.writeAnonStructEnd()
-	return tlv.data.Bytes()
+	//return tlv.data.Bytes()
+	sc.sigma1payload = tlv.data.Bytes()
 }
 
 
@@ -126,21 +130,21 @@ func genSigma3Req2(payload []byte) []byte {
 	return buffer.Bytes()
 }
 
-func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma1_payload []byte, conrtoller_cert_matter []byte, controller_key *ecdsa.PrivateKey) ([]byte, uint64, []byte) {
+func (sc *SigmaContext)sigma3() []byte {
 
 	var tlv_s3tbs TLVBuffer
 	tlv_s3tbs.writeAnonStruct()
-	tlv_s3tbs.writeOctetString(1, conrtoller_cert_matter)
-	tlv_s3tbs.writeOctetString(3, controller_privkey.PublicKey().Bytes())
-	responder_public := sigma2dec.tlv.GetOctetStringRec([]int{3})
-	sigma2responder_session := sigma2dec.tlv.GetIntRec([]int{2})
+	tlv_s3tbs.writeOctetString(1, sc.controller_matter_certificate)
+	tlv_s3tbs.writeOctetString(3, sc.session_privkey.PublicKey().Bytes())
+	responder_public := sc.sigma2dec.tlv.GetOctetStringRec([]int{3})
+	sigma2responder_session := sc.sigma2dec.tlv.GetIntRec([]int{2})
 	tlv_s3tbs.writeOctetString(4, responder_public)
 	tlv_s3tbs.writeAnonStructEnd()
 	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
 	s2 := sha256.New()
 	s2.Write(tlv_s3tbs.data.Bytes())
 	tlv_s3tbs_hash := s2.Sum(nil)
-	sr, ss, err := ecdsa.Sign(rand.Reader, controller_key, tlv_s3tbs_hash)
+	sr, ss, err := ecdsa.Sign(rand.Reader, sc.controller_key, tlv_s3tbs_hash)
 	if err != nil {
 		panic(err)
 	}
@@ -148,7 +152,7 @@ func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma
 
 	var tlv_s3tbe TLVBuffer
 	tlv_s3tbe.writeAnonStruct()
-	tlv_s3tbe.writeOctetString(1, conrtoller_cert_matter)
+	tlv_s3tbe.writeOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbe.writeOctetString(3, tlv_s3tbs_out)
 	tlv_s3tbe.writeAnonStructEnd()
 
@@ -156,12 +160,12 @@ func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma
 	if err != nil {
 		panic(err)
 	}
-	shared_secret, err := controller_privkey.ECDH(pub)
+	shared_secret, err := sc.session_privkey.ECDH(pub)
 	if err != nil {
 		panic(err)
 	}
-	s3k_th := sigma1_payload
-	s3k_th = append(s3k_th, sigma2dec.payload...)
+	s3k_th := sc.sigma1payload
+	s3k_th = append(s3k_th, sc.sigma2dec.payload...)
 	s2 = sha256.New()
 	s2.Write(s3k_th)
 	transcript_hash := s2.Sum(nil)
@@ -206,5 +210,10 @@ func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma
 	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
 		panic(err)
 	}
-	return to_send, sigma2responder_session, keypack
+	sc.session = int(sigma2responder_session)
+
+	sc.i2rkey = keypack[:16]
+	sc.r2ikey = keypack[16:32]
+
+	return to_send
 }

@@ -126,11 +126,11 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 	return out
 }
 
-func (sc *SecureChannel)send(session uint16, data []byte) {
+func (sc *SecureChannel)send(data []byte) {
 	sc.counter = sc.counter + 1
 	var buffer bytes.Buffer
 	msg := Message {
-		sessionId: session,
+		sessionId: uint16(sc.session),
 		securityFlags: 0,
 		messageCounter: sc.counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
@@ -168,10 +168,11 @@ func (sc *SecureChannel)send(session uint16, data []byte) {
 func do_spake2p(pin int, udp *Channel) SecureChannel {
 	secure_channel := SecureChannel {
 		udp: udp,
+		session: 0,
 	}
 
 	pbkdf_request := PBKDFParamRequest()
-	secure_channel.send(0, pbkdf_request)
+	secure_channel.send(pbkdf_request)
 
 	pbkdf_responseS := secure_channel.receive()
 	pbkdf_response_salt := pbkdf_responseS.tlv.GetOctetStringRec([]int{4,2})
@@ -180,7 +181,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 
 
 	ack := AckWS(pbkdf_responseS.msg.messageCounter)
-	secure_channel.send(0, ack)
+	secure_channel.send(ack)
 
 	sctx := newSpaceCtx()
 	sctx.gen_w(pin, pbkdf_response_salt, int(pbkdf_response_iterations))
@@ -188,14 +189,14 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	sctx.calc_X()
 
 	pake1 := Pake1ParamRequest(sctx.X.as_bytes())
-	secure_channel.send(0, pake1)
+	secure_channel.send(pake1)
 
 	pake2s := secure_channel.receive()
 	pake2s.tlv.Dump(1)
 	pake2_pb := pake2s.tlv.GetOctetStringRec([]int{1})
 
 	ack = AckWS(pake2s.msg.messageCounter)
-	secure_channel.send(0, ack)
+	secure_channel.send(ack)
 
 	sctx.Y.from_bytes(pake2_pb)
 	sctx.calc_ZV()
@@ -205,12 +206,12 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	sctx.calc_hash(ttseed)
 
 	pake3 := Pake3ParamRequest(sctx.cA)
-	secure_channel.send(0, pake3)
+	secure_channel.send(pake3)
 
 
 	status_report := secure_channel.receive()
 	ack = AckWS(status_report.msg.messageCounter)
-	secure_channel.send(0, ack)
+	secure_channel.send(ack)
 
 	secure_channel = SecureChannel {
 		udp: udp,
@@ -246,20 +247,19 @@ func flow() {
 	}
 
 	secure_channel = do_spake2p(123456, &channel)
-	pbkdf_response_session := secure_channel.session
 
 	// send csr request
 	var tlv TLVBuffer
 	tlv.writeOctetString(0, create_random_bytes(32))
 	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
-	secure_channel.send(uint16(pbkdf_response_session), to_send)
+	secure_channel.send(to_send)
 
 
 	secure_channel.receive()//ack
 
 	csr_resp := secure_channel.receive()
 	ack := Ack3(csr_resp.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_session), ack)
+	secure_channel.send(ack)
 
 
 
@@ -273,7 +273,7 @@ func flow() {
 	var tlv4 TLVBuffer
 	tlv4.writeOctetString(0, CAMatterCert2())
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
-	secure_channel.send(uint16(pbkdf_response_session), to_send)
+	secure_channel.send(to_send)
 
 
 	rec_decoded := secure_channel.receive()
@@ -283,7 +283,7 @@ func flow() {
 
 	ds := secure_channel.receive()
 	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_session), ack)
+	secure_channel.send(ack)
 
 
 	noc_x509 := sign_cert(csrp, 2, "user")
@@ -296,73 +296,76 @@ func flow() {
 	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
-	secure_channel.send(uint16(pbkdf_response_session), to_send)
+	secure_channel.send(to_send)
 
 
 	secure_channel.receive() // ack
 	ds = secure_channel.receive()
 	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_session), ack)
+	secure_channel.send(ack)
 
 
 
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}
+	secure_channel.session = 0
 	//-------- sigma1
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
-	sigma1_payload := genSigma1(controller_privkey)
-	sigma1 := genSigma1Req2(sigma1_payload)
-	secure_channel.send(0, sigma1)
+	sigma_context := SigmaContext {
+		session_privkey: controller_privkey,
+	}
+	sigma_context.genSigma1()
+	sigma1 := genSigma1Req2(sigma_context.sigma1payload)
+	secure_channel.send(sigma1)
 
 
-	sigma2dec := secure_channel.receive()
-	ack = AckWS2(sigma2dec.msg.messageCounter)
-	secure_channel.send(0, ack)
+	sigma_context.sigma2dec = secure_channel.receive()
+	ack = AckWS2(sigma_context.sigma2dec.msg.messageCounter)
+	secure_channel.send(ack)
 
-	controller_key := ca.Generate_and_store_key_ecdsa("controller")
+	sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
 	controller_csr := x509.CertificateRequest {
-		PublicKey: &controller_key.PublicKey,
+		PublicKey: &sigma_context.controller_key.PublicKey,
 	}
 	controller_cert := sign_cert(&controller_csr, 9, "controller")
-	conrtoller_cert_matter := MatterCert2(controller_cert)
+	sigma_context.controller_matter_certificate = MatterCert2(controller_cert)
 
-	to_send, sigma2responder_session, keypack := sigma3(controller_privkey, sigma2dec, sigma1_payload, conrtoller_cert_matter, controller_key)
-	secure_channel.send(0, to_send)
+	to_send = sigma_context.sigma3()
+	secure_channel.send(to_send)
 
 	respx := secure_channel.receive()
 
 	ack = AckWS2(respx.msg.messageCounter)
-	secure_channel.send(0, ack)
+	secure_channel.send(ack)
 
-	i2rkey := keypack[:16]
-	r2ikey := keypack[16:32]
-	secure_channel.decrypt_key = r2ikey
-	secure_channel.encrypt_key = i2rkey
+	secure_channel.decrypt_key = sigma_context.r2ikey
+	secure_channel.encrypt_key = sigma_context.i2rkey
 	secure_channel.remote_node = []byte{2,0,0,0,0,0,0,0}
 	secure_channel.local_node = []byte{9,0,0,0,0,0,0,0}
+	secure_channel.session = sigma_context.session
 	//log.Println(hex.EncodeToString(keypack))
 
 
 	//commissioning complete
 	to_send = invokeCommand2(0, 0x30, 4, []byte{})
-	secure_channel.send(uint16(sigma2responder_session), to_send)
+	secure_channel.send(to_send)
 
 
 	respx = secure_channel.receive()
 	ack = Ack3(respx.msg.messageCounter)
-	secure_channel.send(uint16(sigma2responder_session), ack)
+	secure_channel.send(ack)
 
 
 	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
 	// cluster=6 on/off - command 1=on
 	to_send = invokeCommand2(1, 6, 1, []byte{})
-	secure_channel.send(uint16(sigma2responder_session), to_send)
+	secure_channel.send(to_send)
 
 	light_resp := secure_channel.receive()
 	light_resp.tlv.Dump(0)
 
 	ack = Ack3(light_resp.msg.messageCounter)
-	secure_channel.send(uint16(sigma2responder_session), ack)
+	secure_channel.send(ack)
 
 	//r1 := invokeRead(0, 0x28, 1)
 	//secure_channel.send(uint16(sigma2responder_session), r1)
@@ -370,11 +373,11 @@ func flow() {
 	//resp.tlv.Dump(0)
 
 	r1 := invokeRead(0, 0x1d, 0)
-	secure_channel.send(uint16(sigma2responder_session), r1)
+	secure_channel.send(r1)
 	resp := secure_channel.receive()
 	resp.tlv.Dump(0)
 	ack = Ack3(resp.msg.messageCounter)
-	secure_channel.send(uint16(sigma2responder_session), ack)
+	secure_channel.send(ack)
 }
 
 
