@@ -4,37 +4,20 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/ecdh"
-	"crypto/ecdsa"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
-	"io"
 	"log"
 	"net"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/hkdf"
 )
 
-func make_nonce(counter uint32) []byte{
-	var n bytes.Buffer
-	n.WriteByte(0)
-	binary.Write(&n, binary.LittleEndian, counter)
-	n.Write([]byte{0,0,0,0,0,0,0,0})
-	return n.Bytes()
-}
-func make_nonce2(counter uint32) []byte{
-	var n bytes.Buffer
-	n.WriteByte(0)
-	binary.Write(&n, binary.LittleEndian, counter)
-	n.Write([]byte{9,0,0,0,0,0,0,0})
-	return n.Bytes()
-}
+
 func make_nonce3(counter uint32, node []byte) []byte{
 	var n bytes.Buffer
 	n.WriteByte(0)
@@ -64,10 +47,7 @@ func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 	out.out_counter = 1
 	return out
 }
-func (ch *Channel)get_counter() int {
-	ch.out_counter = ch.out_counter + 1
-	return int(ch.out_counter)
-}
+
 func (ch *Channel)send(data []byte) {
 	ch.udp.WriteTo(data, &ch.remote_address)
 }
@@ -88,6 +68,7 @@ type SecureChannel struct {
 	remote_node []byte
 	local_node []byte
 	counter uint32
+	session int
 }
 
 func (sc *SecureChannel) receive() DecodedGeneric {
@@ -122,7 +103,6 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 		if len(decoder.Bytes()) > 0 {
 			tlvdata := make([]byte, decoder.Len())
 			n, _ := decoder.Read(tlvdata)
-			//out.tlv = tlvdec.Decode(decoder.Bytes())
 			out.payload = tlvdata[:n]
 		}
 	} else {
@@ -130,7 +110,6 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 		if len(decode_buffer.Bytes()) > 0 {
 			tlvdata := make([]byte, decode_buffer.Len())
 			n, _ := decode_buffer.Read(tlvdata)
-			//out.tlv = tlvdec.Decode(tlvdata[:n])
 			out.payload = tlvdata[:n]
 		}
 	}
@@ -186,6 +165,65 @@ func (sc *SecureChannel)send(session uint16, data []byte) {
 }
 
 
+func do_spake2p(pin int, udp *Channel) SecureChannel {
+	secure_channel := SecureChannel {
+		udp: udp,
+	}
+
+	pbkdf_request := PBKDFParamRequest()
+	secure_channel.send(0, pbkdf_request)
+
+	pbkdf_responseS := secure_channel.receive()
+	pbkdf_response_salt := pbkdf_responseS.tlv.GetOctetStringRec([]int{4,2})
+	pbkdf_response_iterations := pbkdf_responseS.tlv.GetIntRec([]int{4,1})
+	pbkdf_response_session := pbkdf_responseS.tlv.GetIntRec([]int{3})
+
+
+	ack := AckWS(pbkdf_responseS.msg.messageCounter)
+	secure_channel.send(0, ack)
+
+	sctx := newSpaceCtx()
+	sctx.gen_w(pin, pbkdf_response_salt, int(pbkdf_response_iterations))
+	sctx.gen_random_X()
+	sctx.calc_X()
+
+	pake1 := Pake1ParamRequest(sctx.X.as_bytes())
+	secure_channel.send(0, pake1)
+
+	pake2s := secure_channel.receive()
+	pake2s.tlv.Dump(1)
+	pake2_pb := pake2s.tlv.GetOctetStringRec([]int{1})
+
+	ack = AckWS(pake2s.msg.messageCounter)
+	secure_channel.send(0, ack)
+
+	sctx.Y.from_bytes(pake2_pb)
+	sctx.calc_ZV()
+	ttseed := []byte("CHIP PAKE V1 Commissioning")
+	ttseed = append(ttseed, pbkdf_request[6:]...) // 6 is size of proto header
+	ttseed = append(ttseed, pbkdf_responseS.payload...)
+	sctx.calc_hash(ttseed)
+
+	pake3 := Pake3ParamRequest(sctx.cA)
+	secure_channel.send(0, pake3)
+
+
+	status_report := secure_channel.receive()
+	ack = AckWS(status_report.msg.messageCounter)
+	secure_channel.send(0, ack)
+
+	secure_channel = SecureChannel {
+		udp: udp,
+		decrypt_key: sctx.decrypt_key,
+		encrypt_key: sctx.encrypt_key,
+		remote_node: []byte{0,0,0,0,0,0,0,0},
+		local_node: []byte{0,0,0,0,0,0,0,0},
+		session: int(pbkdf_response_session),
+	}
+
+	return secure_channel
+}
+
 func flow() {
 
 	var devices []Device
@@ -207,54 +245,8 @@ func flow() {
 		udp: &channel,
 	}
 
-	pbkdf_request := PBKDFParamRequest()
-	secure_channel.send(0, pbkdf_request)
-
-	pbkdf_response, _ := channel.receive()
-	pbkdf_response_decoded := decode(pbkdf_response)
-	//log.Println(pbkdf_response_decoded)
-
-	ack := AckWS(pbkdf_response_decoded.messageCounter)
-	secure_channel.send(0, ack)
-
-	sctx := newSpaceCtx()
-	sctx.gen_w(123456, pbkdf_response_decoded.PBKDFParamResponse.salt, pbkdf_response_decoded.PBKDFParamResponse.iterations)
-	sctx.gen_random_X()
-	sctx.calc_X()
-
-	pake1 := Pake1ParamRequest(sctx.X.as_bytes(), uint32(channel.get_counter()))
-	secure_channel.send(0, pake1)
-
-	pake2, _ := channel.receive()
-	//log.Printf("pake2 %s\n", hex.EncodeToString(pake2))
-	pake2_decoded := decode(pake2)
-	//log.Println(pake2_decoded)
-
-	ack = AckWS(pake2_decoded.messageCounter)
-	secure_channel.send(0, ack)
-
-	sctx.Y.from_bytes(pake2_decoded.PAKE2ParamResponse.pb)
-	sctx.calc_ZV()
-	ttseed := []byte("CHIP PAKE V1 Commissioning")
-	ttseed = append(ttseed, pbkdf_request[6:]...) // 6 is size of proto header
-	ttseed = append(ttseed, pbkdf_response[26:]...)
-	sctx.calc_hash(ttseed)
-
-	pake3 := Pake3ParamRequest(sctx.cA, uint32(channel.get_counter()))
-	secure_channel.send(0, pake3)
-
-	status_report, _ := channel.receive()
-	status_report_decoded := decode(status_report)
-	ack = AckWS(status_report_decoded.messageCounter)
-	secure_channel.send(0, ack)
-
-	secure_channel = SecureChannel {
-		udp: &channel,
-		decrypt_key: sctx.decrypt_key,
-		encrypt_key: sctx.encrypt_key,
-		remote_node: []byte{0,0,0,0,0,0,0,0},
-		local_node: []byte{0,0,0,0,0,0,0,0},
-	}
+	secure_channel = do_spake2p(123456, &channel)
+	pbkdf_response_session := secure_channel.session
 
 	// send csr request
 	bb := make([]byte, 32)
@@ -262,30 +254,22 @@ func flow() {
 	var tlv TLVBuffer
 	tlv.writeOctetString(0, bb)
 	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
-
-	//log.Printf("responder session %x\n", pbkdf_response_decoded.PBKDFParamResponse.responderSession)
-
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), to_send)
+	secure_channel.send(uint16(pbkdf_response_session), to_send)
 
 
-	//channel.receive() // ack
 	secure_channel.receive()//ack
 
 	ds := secure_channel.receive()
-
-
-	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), ack)
+	ack := Ack3(ds.msg.messageCounter)
+	secure_channel.send(uint16(pbkdf_response_session), ack)
 
 
 
 	nocsr := ds.tlv.GetOctetStringRec([]int{1,0,0,1,0})
 	tlv2 := tlvdec.Decode(nocsr)
-	//tlv2.Dump(0)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)
-	//log.Printf("csr %+v\n", csrp)
-	//log.Println(csrp.PublicKey)
+
 
 
 	//AddTrustedRootCertificate
@@ -293,7 +277,7 @@ func flow() {
 	tlv4.writeOctetString(0, CAMatterCert2())
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
 
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), to_send)
+	secure_channel.send(uint16(pbkdf_response_session), to_send)
 
 
 	rec_decoded := secure_channel.receive()
@@ -302,10 +286,8 @@ func flow() {
 
 
 	ds = secure_channel.receive()
-	//ds.tlv.Dump(0)
-
 	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), ack)
+	secure_channel.send(uint16(pbkdf_response_session), ack)
 
 
 	noc_x509 := sign_cert(csrp, 2, "user")
@@ -318,16 +300,13 @@ func flow() {
 	tlv5.writeUInt(4, TYPE_UINT_2, 101)
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), to_send)
+	secure_channel.send(uint16(pbkdf_response_session), to_send)
 
 
-	//channel.receive() // ack
-	secure_channel.receive()
+	secure_channel.receive() // ack
 	ds = secure_channel.receive()
-	//ds.tlv.Dump(0)
-
 	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(uint16(pbkdf_response_decoded.PBKDFParamResponse.responderSession), ack)
+	secure_channel.send(uint16(pbkdf_response_session), ack)
 
 
 
@@ -341,117 +320,17 @@ func flow() {
 
 
 	sigma2dec := secure_channel.receive()
-	//sigma2dec.tlv.Dump(0)
-
 	ack = AckWS2(sigma2dec.msg.messageCounter)
 	secure_channel.send(0, ack)
 
-	//sigma3
-	controller_key := ca.Generate_and_store_key_ecdsa("controller")
-	controller_csr := x509.CertificateRequest {
-		PublicKey: &controller_key.PublicKey,
-	}
-	controller_cert := sign_cert(&controller_csr, 9, "controller")
-	conrtoller_cert_matter := MatterCert2(controller_cert)
-
-	var tlv_s3tbs TLVBuffer
-	tlv_s3tbs.writeAnonStruct()
-	tlv_s3tbs.writeOctetString(1, conrtoller_cert_matter)
-	tlv_s3tbs.writeOctetString(3, controller_privkey.PublicKey().Bytes())
-	responder_public := sigma2dec.tlv.GetOctetStringRec([]int{3})
-	sigma2responder_session := sigma2dec.tlv.GetIntRec([]int{2})
-	tlv_s3tbs.writeOctetString(4, responder_public)
-	tlv_s3tbs.writeAnonStructEnd()
-	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
-	s2 := sha256.New()
-	s2.Write(tlv_s3tbs.data.Bytes())
-	tlv_s3tbs_hash := s2.Sum(nil)
-	sr, ss, err := ecdsa.Sign(rand.Reader, controller_key, tlv_s3tbs_hash)
-	if err != nil {
-		panic(err)
-	}
-	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
-
-	var tlv_s3tbe TLVBuffer
-	tlv_s3tbe.writeAnonStruct()
-	tlv_s3tbe.writeOctetString(1, conrtoller_cert_matter)
-	tlv_s3tbe.writeOctetString(3, tlv_s3tbs_out)
-	tlv_s3tbe.writeAnonStructEnd()
-
-	pub, err := ecdh.P256().NewPublicKey(responder_public)
-	if err != nil {
-		panic(err)
-	}
-	shared_secret, err := controller_privkey.ECDH(pub)
-	if err != nil {
-		panic(err)
-	}
-	//log.Println(shared_secret)
-	s3k_th := sigma1_payload
-	s3k_th = append(s3k_th, sigma2dec.payload...)
-	//log.Printf("transcript %s\n", hex.EncodeToString(s3k_th))
-	//log.Printf("transcript_a %s\n", hex.EncodeToString(genSigma1(controller_privkey)))
-	//log.Printf("transcript_b %s\n", hex.EncodeToString(sigma2dec.payload))
-	s2 = sha256.New()
-	s2.Write(s3k_th)
-	transcript_hash := s2.Sum(nil)
-	//log.Printf("transcript hash %s\n", hex.EncodeToString(transcript_hash))
-	s3_salt := make_ipk()
-	s3_salt = append(s3_salt, transcript_hash...)
-	//log.Printf("s3 salt %s\n", hex.EncodeToString(s3_salt))
-	//log.Printf("s3 shared %s\n", hex.EncodeToString(shared_secret))
-	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
-	s3k := make([]byte, 16)
-	if _, err := io.ReadFull(s3kengine, s3k); err != nil {
-		panic(err)
-	}
-
-
-	//log.Printf("key %s\n", hex.EncodeToString(s3k))
-	c, err := aes.NewCipher(s3k)
-	if err != nil {
-		panic(err)
-	}
-	nonce := make_nonce(999) // just for size
-	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
-	if err != nil {
-		panic(err)
-	}
-	CipherText := ccm.Seal(nil, []byte("NCASE_Sigma3N"), tlv_s3tbe.data.Bytes(), []byte{})
-	//log.Printf("ciphertext %s", hex.EncodeToString(CipherText))
-
-
-	var tlv_s3 TLVBuffer
-	tlv_s3.writeAnonStruct()
-	tlv_s3.writeOctetString(1, CipherText)
-	tlv_s3.writeAnonStructEnd()
-
-
-	to_send = genSigma3Req2(tlv_s3.data.Bytes())
+	to_send, sigma2responder_session, keypack := sigma3(controller_privkey, sigma2dec, sigma1_payload)
 	secure_channel.send(0, to_send)
-	// sigma3 sent
 
-	// status report
 	respx := secure_channel.receive()
 
 	ack = AckWS2(respx.msg.messageCounter)
 	secure_channel.send(0, ack)
 
-
-	// prepare session keys
-	ses_key_transcript := s3k_th
-	ses_key_transcript = append(ses_key_transcript, tlv_s3.data.Bytes()...)
-	s2 = sha256.New()
-	s2.Write(ses_key_transcript)
-	transcript_hash = s2.Sum(nil)
-	salt := make_ipk()
-	salt = append(salt, transcript_hash...)
-
-	keypackengine := hkdf.New(sha256.New, shared_secret, salt, []byte("SessionKeys"))
-	keypack := make([]byte, 16*3)
-	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
-		panic(err)
-	}
 	i2rkey := keypack[:16]
 	r2ikey := keypack[16:32]
 	secure_channel.decrypt_key = r2ikey
@@ -461,7 +340,7 @@ func flow() {
 	//log.Println(hex.EncodeToString(keypack))
 
 
-	//commistioning complete
+	//commissioning complete
 	to_send = invokeCommand2(0, 0x30, 4, []byte{})
 	secure_channel.send(uint16(sigma2responder_session), to_send)
 
@@ -491,6 +370,8 @@ func flow() {
 	secure_channel.send(uint16(sigma2responder_session), r1)
 	resp := secure_channel.receive()
 	resp.tlv.Dump(0)
+	ack = Ack3(resp.msg.messageCounter)
+	secure_channel.send(uint16(sigma2responder_session), ack)
 }
 
 

@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"crypto/aes"
 	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/binary"
 	"gomat/ca"
 	"io"
@@ -86,25 +88,7 @@ func genSigma1(privkey *ecdh.PrivateKey) []byte{
 	return tlv.data.Bytes()
 }
 
-func genSigma1Req(payload []byte) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: 1000,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: 0x30, //sigma1
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
 
-	buffer.Write(payload)
-	return buffer.Bytes()
-}
 func genSigma1Req2(payload []byte) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
@@ -113,42 +97,7 @@ func genSigma1Req2(payload []byte) []byte {
 			exchangeId: 0xba3f,
 			protocolId: 0x00,
 	}
-	/*
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: 1000,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: 0x30, //sigma1
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
-	*/
 	prot.encode(&buffer)
-
-	buffer.Write(payload)
-	return buffer.Bytes()
-}
-
-func genSigma3Req(payload []byte) []byte {
-	var buffer bytes.Buffer
-	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: 1001,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: 0x32, //sigma1
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}
-	msg.encode(&buffer)
 
 	buffer.Write(payload)
 	return buffer.Bytes()
@@ -162,20 +111,97 @@ func genSigma3Req2(payload []byte) []byte {
 		exchangeId: 0xba3f,
 		protocolId: 0x00,	}
 
-/*	msg := Message {
-		sessionId: 0x0,
-		securityFlags: 0,
-		messageCounter: 1001,
-		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
-		prot: ProtocolMessage{
-			exchangeFlags: 5,
-			opcode: 0x32, //sigma1
-			exchangeId: 0xba3f,
-			protocolId: 0x00,
-		},
-	}*/
 	prot.encode(&buffer)
 
 	buffer.Write(payload)
 	return buffer.Bytes()
+}
+
+func sigma3(controller_privkey *ecdh.PrivateKey, sigma2dec DecodedGeneric, sigma1_payload []byte) ([]byte, uint64, []byte) {
+	controller_key := ca.Generate_and_store_key_ecdsa("controller")
+	controller_csr := x509.CertificateRequest {
+		PublicKey: &controller_key.PublicKey,
+	}
+	controller_cert := sign_cert(&controller_csr, 9, "controller")
+	conrtoller_cert_matter := MatterCert2(controller_cert)
+
+	var tlv_s3tbs TLVBuffer
+	tlv_s3tbs.writeAnonStruct()
+	tlv_s3tbs.writeOctetString(1, conrtoller_cert_matter)
+	tlv_s3tbs.writeOctetString(3, controller_privkey.PublicKey().Bytes())
+	responder_public := sigma2dec.tlv.GetOctetStringRec([]int{3})
+	sigma2responder_session := sigma2dec.tlv.GetIntRec([]int{2})
+	tlv_s3tbs.writeOctetString(4, responder_public)
+	tlv_s3tbs.writeAnonStructEnd()
+	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
+	s2 := sha256.New()
+	s2.Write(tlv_s3tbs.data.Bytes())
+	tlv_s3tbs_hash := s2.Sum(nil)
+	sr, ss, err := ecdsa.Sign(rand.Reader, controller_key, tlv_s3tbs_hash)
+	if err != nil {
+		panic(err)
+	}
+	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
+
+	var tlv_s3tbe TLVBuffer
+	tlv_s3tbe.writeAnonStruct()
+	tlv_s3tbe.writeOctetString(1, conrtoller_cert_matter)
+	tlv_s3tbe.writeOctetString(3, tlv_s3tbs_out)
+	tlv_s3tbe.writeAnonStructEnd()
+
+	pub, err := ecdh.P256().NewPublicKey(responder_public)
+	if err != nil {
+		panic(err)
+	}
+	shared_secret, err := controller_privkey.ECDH(pub)
+	if err != nil {
+		panic(err)
+	}
+	s3k_th := sigma1_payload
+	s3k_th = append(s3k_th, sigma2dec.payload...)
+	s2 = sha256.New()
+	s2.Write(s3k_th)
+	transcript_hash := s2.Sum(nil)
+	s3_salt := make_ipk()
+	s3_salt = append(s3_salt, transcript_hash...)
+	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
+	s3k := make([]byte, 16)
+	if _, err := io.ReadFull(s3kengine, s3k); err != nil {
+		panic(err)
+	}
+
+	c, err := aes.NewCipher(s3k)
+	if err != nil {
+		panic(err)
+	}
+	nonce := make_nonce3(999, []byte{9,0,0,0,0,0,0,0}) // just for size
+	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	if err != nil {
+		panic(err)
+	}
+	CipherText := ccm.Seal(nil, []byte("NCASE_Sigma3N"), tlv_s3tbe.data.Bytes(), []byte{})
+
+	var tlv_s3 TLVBuffer
+	tlv_s3.writeAnonStruct()
+	tlv_s3.writeOctetString(1, CipherText)
+	tlv_s3.writeAnonStructEnd()
+
+
+	to_send := genSigma3Req2(tlv_s3.data.Bytes())
+
+	// prepare session keys
+	ses_key_transcript := s3k_th
+	ses_key_transcript = append(ses_key_transcript, tlv_s3.data.Bytes()...)
+	s2 = sha256.New()
+	s2.Write(ses_key_transcript)
+	transcript_hash = s2.Sum(nil)
+	salt := make_ipk()
+	salt = append(salt, transcript_hash...)
+
+	keypackengine := hkdf.New(sha256.New, shared_secret, salt, []byte("SessionKeys"))
+	keypack := make([]byte, 16*3)
+	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
+		panic(err)
+	}
+	return to_send, sigma2responder_session, keypack
 }

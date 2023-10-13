@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"gomat/tlvdec"
-	"log"
 )
 
 const TYPE_UINT_1 = 4
@@ -28,130 +26,6 @@ const SEC_CHAN_OPCODE_STATUS_REP = 0x40
 
 type TLVBuffer struct {
 	data bytes.Buffer
-}
-
-type TLVBufferDec struct {
-	data *bytes.Buffer
-}
-
-func (b *TLVBufferDec) checkAndSkip(d byte) error {
-	o, err := b.data.ReadByte()
-	if err != nil {
-		return err
-	}
-	if o != d {
-		b.data.UnreadByte()
-		return fmt.Errorf("unexpected byte %x, expected %x", o, d)
-	}
-	return nil
-}
-
-func (b *TLVBufferDec) checkAndSkipBytes(d []byte) error {
-	did_read := 0
-	for _, now := range d {
-		o, err := b.data.ReadByte()
-		if err != nil {
-			return err
-		}
-		did_read = did_read + 1
-		if o != now {
-			for i:=0; i<did_read; i++ {
-				b.data.UnreadByte()
-			}
-			return fmt.Errorf("unexpected byte %x, expected %x", o, d)
-		}
-	}
-	return nil
-}
-
-func (b *TLVBufferDec) readOctetString(itag byte) ([]byte, error) {
-	ctrl, err := b.data.ReadByte()
-	if err != nil {
-		return nil, err
-	}
-	tagtype := ctrl >>5
-	if tagtype != 1 {
-		return nil, fmt.Errorf("can't handle tag type %x", ctrl)
-	}
-	tag, err := b.data.ReadByte()
-	if err != nil {
-		return nil, err
-	}
-	if tag != itag {
-		return nil, fmt.Errorf("unexpected tag %d, expected %d", tag, itag)
-	}
-	tp := ctrl & 0x1f
-	if tp != 0x10 {
-		return nil, fmt.Errorf("can't handle octet string type %x", ctrl)
-	}
-	s, err := b.data.ReadByte()
-	if err != nil {
-		return nil, err
-	}
-	out := make([]byte, s)
-	n, err := b.data.Read(out)
-	if err != nil {
-		return nil, err
-	}
-	if n != int(s) {
-		return nil, fmt.Errorf("not able to read %d bytes", s)
-	}
-	return out, nil
-}
-
-func (b *TLVBufferDec) readUInt(itag byte) (uint64, error) {
-	ctrl, err := b.data.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-	tagtype := ctrl >>5
-	if tagtype != 1 {
-		return 0, fmt.Errorf("can't handle tag type %x", ctrl)
-	}
-	tag, err := b.data.ReadByte()
-	if err != nil {
-		return 0, err
-	}
-	if tag != itag {
-		return 0, fmt.Errorf("unexpected tag %d, expected %d", tag, itag)
-	}
-	tp := ctrl & 0x1f
-	if tp == TYPE_UINT_1 {
-		o, err := b.data.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		return uint64(o), nil
-
-	}
-	if tp == TYPE_UINT_2 {
-		var o uint16
-		binary.Read(b.data, binary.LittleEndian, &o)
-		if err != nil {
-			return 0, err
-		}
-		return uint64(o), nil
-
-	}
-	if tp == TYPE_UINT_4 {
-		var o uint32
-		binary.Read(b.data, binary.LittleEndian, &o)
-		if err != nil {
-			return 0, err
-		}
-		return uint64(o), nil
-
-	}
-	if tp == TYPE_UINT_8 {
-		var o uint64
-		binary.Read(b.data, binary.LittleEndian, &o)
-		if err != nil {
-			return 0, err
-		}
-		return uint64(o), nil
-
-	}
-	return 0, fmt.Errorf("can't handle uint string type %x", ctrl)
 }
 
 
@@ -325,7 +199,7 @@ func (m *Message) encodeBase(data *bytes.Buffer) {
 		data.Write(m.destinationNodeId)
 	}
 }
-
+/*
 func (m *Message) encode(data *bytes.Buffer) {
 	data.WriteByte(m.calcMessageFlags())
 	binary.Write(data, binary.LittleEndian, uint16(m.sessionId))
@@ -342,7 +216,7 @@ func (m *Message) encode(data *bytes.Buffer) {
 	data.WriteByte(m.prot.opcode)
 	binary.Write(data, binary.LittleEndian, uint16(m.prot.exchangeId))
 	binary.Write(data, binary.LittleEndian, uint16(m.prot.protocolId))
-}
+}*/
 
 func (m *Message) decode(data *bytes.Buffer) error {
 	var err error
@@ -393,6 +267,7 @@ func (m *Message) decode(data *bytes.Buffer) error {
 	}
 	return nil
 }
+
 func (m *Message) decodeBase(data *bytes.Buffer) error {
 	var err error
 	m.flags, err = data.ReadByte()
@@ -456,125 +331,7 @@ func PBKDFParamRequest() []byte {
 }
 
 
-type PBKDFParamResponse struct {
-	initiatorRandom []byte
-	responderRandom []byte
-	responderSession int
-	iterations int
-	salt []byte
-}
-type PAKE2ParamResponse struct {
-	pb []byte
-	cb []byte
-}
-
-type StatusReport struct {
-	generalCode uint16
-	protocolId uint32
-	protocolCode uint16
-}
-func (d StatusReport)dump() {
-	fmt.Printf(" generalCode  : %d\n", d.generalCode)
-	fmt.Printf(" protocolId   : %d\n", d.protocolId)
-	fmt.Printf(" protocolCode : %d\n", d.protocolCode)
-}
-
-type AllResp struct {
-	messageCounter uint32
-	sourceNodeId []byte
-	PBKDFParamResponse *PBKDFParamResponse
-	PAKE2ParamResponse *PAKE2ParamResponse
-	StatusReport StatusReport
-}
-
-func (d PBKDFParamResponse)dump() {
-	fmt.Printf(" initiatorRandom : %s\n", hex.EncodeToString(d.initiatorRandom))
-	fmt.Printf(" responderRandom : %s\n", hex.EncodeToString(d.responderRandom))
-	fmt.Printf(" responderSession: %d\n", d.responderSession)
-	fmt.Printf(" iterations      : %d\n", d.iterations)
-	fmt.Printf(" salt            : %s\n", hex.EncodeToString(d.salt))
-}
-
-func decodeStatusReport(buf *bytes.Buffer) AllResp {
-	log.Printf("status report data %s", hex.EncodeToString(buf.Bytes()))
-	var StatusReport StatusReport
-	binary.Read(buf, binary.LittleEndian, &StatusReport.generalCode)
-	binary.Read(buf, binary.LittleEndian, &StatusReport.protocolId)
-	binary.Read(buf, binary.LittleEndian, &StatusReport.protocolCode)
-
-	return AllResp{
-		StatusReport: StatusReport,
-	}
-}
-
-func decodePBKDFParamResponse(buf *bytes.Buffer) AllResp {
-	var out PBKDFParamResponse
-	var tlv TLVBufferDec
-	tlv.data = buf
-	err := tlv.checkAndSkip(0x15)
-	if err != nil {
-		panic(err)
-	}
-	out.initiatorRandom, err = tlv.readOctetString(1)
-	if err != nil {
-		panic(err)
-	}
-	out.responderRandom, err = tlv.readOctetString(2)
-	if err != nil {
-		panic(err)
-	}
-	responderSession, err := tlv.readUInt(3)
-	if err != nil {
-		panic(err)
-	}
-	out.responderSession = int(responderSession)
-	err = tlv.checkAndSkipBytes([]byte{0x35, 0x4})
-	if err != nil {
-		panic(err)
-	}
-	iterations, err := tlv.readUInt(1)
-	if err != nil {
-		panic(err)
-	}
-	out.iterations = int(iterations)
-	out.salt, err = tlv.readOctetString(2)
-	if err != nil {
-		panic(err)
-	}
-
-	//out.dump()
-
-	var o AllResp
-	o.PBKDFParamResponse = &out
-
-	return o
-}
-
-func decodePAKE2ParamResponse(buf *bytes.Buffer) AllResp {
-	log.Println("decoding pake2")
-	var out PAKE2ParamResponse
-	var tlv TLVBufferDec
-	tlv.data = buf
-	err := tlv.checkAndSkip(0x15)
-	if err != nil {
-		panic(err)
-	}
-	out.pb, err = tlv.readOctetString(1)
-	if err != nil {
-		panic(err)
-	}
-	out.cb, err = tlv.readOctetString(2)
-	if err != nil {
-		panic(err)
-	}
-
-	var o AllResp
-	o.PAKE2ParamResponse = &out
-
-	return o
-}
-
-func Pake1ParamRequest(key []byte, counter uint32) []byte {
+func Pake1ParamRequest(key []byte) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
@@ -593,7 +350,7 @@ func Pake1ParamRequest(key []byte, counter uint32) []byte {
 	return buffer.Bytes()
 }
 
-func Pake3ParamRequest(key []byte, counter uint32) []byte {
+func Pake3ParamRequest(key []byte) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
@@ -640,34 +397,6 @@ func AckWS2(counter uint32) []byte {
 
 
 
-func decode(data []byte) AllResp {
-	var msg Message
-	buf := bytes.NewBuffer(data)
-	msg.decode(buf)
-	//msg.dump()
-
-	switch msg.prot.protocolId {
-	case PROTOCOL_ID_SECURE_CHANNEL:
-		switch msg.prot.opcode {
-		case SEC_CHAN_OPCODE_PBKDF_RESP:
-			resp := decodePBKDFParamResponse(buf)
-			resp.messageCounter = msg.messageCounter
-			resp.sourceNodeId = msg.sourceNodeId
-			return resp
-		case SEC_CHAN_OPCODE_PAKE2:
-			resp := decodePAKE2ParamResponse(buf)
-			resp.messageCounter = msg.messageCounter
-			resp.sourceNodeId = msg.sourceNodeId
-			return resp
-		case SEC_CHAN_OPCODE_STATUS_REP:
-			resp := decodeStatusReport(buf)
-			resp.messageCounter = msg.messageCounter
-			resp.sourceNodeId = msg.sourceNodeId
-			return resp
-		}
-	}
-	return AllResp{}
-}
 
 func decodegen(data []byte) DecodedGeneric {
 	//log.Printf("goinf to decvode %s\n", hex.EncodeToString(data))
