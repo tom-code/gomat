@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
@@ -114,19 +113,28 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 		}
 	}
 
-	// do not decode status report today
 	if out.proto.protocolId == 0 {
-		if out.proto.opcode == 0x40 {
+		if out.proto.opcode == 0x10 {  // standalone ack
+			return sc.receive()
+		}
+	}
+
+	ack := AckGen(out.proto, out.msg.messageCounter)
+	sc.send(ack)
+
+	if out.proto.protocolId == 0 {
+		if out.proto.opcode == 0x40 {  // status report
 			return out
 		}
 	}
-	if len(out.payload) >0 {
+	if len(out.payload) > 0 {
 		out.tlv = tlvdec.Decode(out.payload)
 	}
 	return out
 }
 
 func (sc *SecureChannel)send(data []byte) {
+
 	sc.counter = sc.counter + 1
 	var buffer bytes.Buffer
 	msg := Message {
@@ -137,9 +145,7 @@ func (sc *SecureChannel)send(data []byte) {
 	}
 	msg.encodeBase(&buffer)
 	if len(sc.encrypt_key) == 0 {
-		log.Printf("-- %s\n", hex.EncodeToString(buffer.Bytes()))
 		buffer.Write(data)
-		log.Printf("-- %s\n", hex.EncodeToString(buffer.Bytes()))
 	} else {
 
 		header_slice := buffer.Bytes()
@@ -180,8 +186,6 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	pbkdf_response_session := pbkdf_responseS.tlv.GetIntRec([]int{3})
 
 
-	ack := AckWS(pbkdf_responseS.msg.messageCounter)
-	secure_channel.send(ack)
 
 	sctx := newSpaceCtx()
 	sctx.gen_w(pin, pbkdf_response_salt, int(pbkdf_response_iterations))
@@ -195,8 +199,6 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	pake2s.tlv.Dump(1)
 	pake2_pb := pake2s.tlv.GetOctetStringRec([]int{1})
 
-	ack = AckWS(pake2s.msg.messageCounter)
-	secure_channel.send(ack)
 
 	sctx.Y.from_bytes(pake2_pb)
 	sctx.calc_ZV()
@@ -209,9 +211,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	secure_channel.send(pake3)
 
 
-	status_report := secure_channel.receive()
-	ack = AckWS(status_report.msg.messageCounter)
-	secure_channel.send(ack)
+	/*status_report :=*/ secure_channel.receive()
 
 	secure_channel = SecureChannel {
 		udp: udp,
@@ -255,12 +255,9 @@ func flow() {
 	secure_channel.send(to_send)
 
 
-	secure_channel.receive()//ack
 
+	log.Println("--------------------------------------------------")
 	csr_resp := secure_channel.receive()
-	ack := Ack3(csr_resp.msg.messageCounter)
-	secure_channel.send(ack)
-
 
 
 	nocsr := csr_resp.tlv.GetOctetStringRec([]int{1,0,0,1,0})
@@ -276,14 +273,7 @@ func flow() {
 	secure_channel.send(to_send)
 
 
-	rec_decoded := secure_channel.receive()
-	rec_decoded.msg.dump()
-	rec_decoded.proto.dump()
-
-
-	ds := secure_channel.receive()
-	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(ack)
+	/*ds :=*/ secure_channel.receive()
 
 
 	noc_x509 := sign_cert(csrp, 2, "user")
@@ -298,13 +288,7 @@ func flow() {
 
 	secure_channel.send(to_send)
 
-
-	secure_channel.receive() // ack
-	ds = secure_channel.receive()
-	ack = Ack3(ds.msg.messageCounter)
-	secure_channel.send(ack)
-
-
+	/*ds =*/ secure_channel.receive()
 
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}
@@ -320,8 +304,6 @@ func flow() {
 
 
 	sigma_context.sigma2dec = secure_channel.receive()
-	ack = AckWS2(sigma_context.sigma2dec.msg.messageCounter)
-	secure_channel.send(ack)
 
 	sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
 	controller_csr := x509.CertificateRequest {
@@ -333,10 +315,7 @@ func flow() {
 	to_send = sigma_context.sigma3()
 	secure_channel.send(to_send)
 
-	respx := secure_channel.receive()
-
-	ack = AckWS2(respx.msg.messageCounter)
-	secure_channel.send(ack)
+	/*respx :=*/ secure_channel.receive()
 
 	secure_channel.decrypt_key = sigma_context.r2ikey
 	secure_channel.encrypt_key = sigma_context.i2rkey
@@ -351,9 +330,7 @@ func flow() {
 	secure_channel.send(to_send)
 
 
-	respx = secure_channel.receive()
-	ack = Ack3(respx.msg.messageCounter)
-	secure_channel.send(ack)
+	/*respx =*/ secure_channel.receive()
 
 
 	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
@@ -364,9 +341,6 @@ func flow() {
 	light_resp := secure_channel.receive()
 	light_resp.tlv.Dump(0)
 
-	ack = Ack3(light_resp.msg.messageCounter)
-	secure_channel.send(ack)
-
 	//r1 := invokeRead(0, 0x28, 1)
 	//secure_channel.send(uint16(sigma2responder_session), r1)
 	//resp := secure_channel.receive()
@@ -376,8 +350,6 @@ func flow() {
 	secure_channel.send(r1)
 	resp := secure_channel.receive()
 	resp.tlv.Dump(0)
-	ack = Ack3(resp.msg.messageCounter)
-	secure_channel.send(ack)
 }
 
 

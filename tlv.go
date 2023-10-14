@@ -120,10 +120,10 @@ type ProtocolMessage struct {
 func (m *ProtocolMessage)decode(data *bytes.Buffer) {
 	m.exchangeFlags, _ = data.ReadByte()
 	m.opcode, _ = data.ReadByte()
-	binary.Read(data, binary.LittleEndian, m.exchangeId)
-	binary.Read(data, binary.LittleEndian, m.protocolId)
+	binary.Read(data, binary.LittleEndian, &m.exchangeId)
+	binary.Read(data, binary.LittleEndian, &m.protocolId)
 	if (m.exchangeFlags & 0x2) != 0 {
-		binary.Read(data, binary.LittleEndian, m.ackCounter)
+		binary.Read(data, binary.LittleEndian, &m.ackCounter)
 	}
 }
 
@@ -199,24 +199,7 @@ func (m *Message) encodeBase(data *bytes.Buffer) {
 		data.Write(m.destinationNodeId)
 	}
 }
-/*
-func (m *Message) encode(data *bytes.Buffer) {
-	data.WriteByte(m.calcMessageFlags())
-	binary.Write(data, binary.LittleEndian, uint16(m.sessionId))
-	data.WriteByte(m.securityFlags)
-	binary.Write(data, binary.LittleEndian, uint32(m.messageCounter))
-	if len(m.sourceNodeId) == 8 {
-		data.Write(m.sourceNodeId)
-	}
-	if len(m.destinationNodeId) > 0 {
-		data.Write(m.destinationNodeId)
-	}
 
-	data.WriteByte(m.prot.exchangeFlags)
-	data.WriteByte(m.prot.opcode)
-	binary.Write(data, binary.LittleEndian, uint16(m.prot.exchangeId))
-	binary.Write(data, binary.LittleEndian, uint16(m.prot.protocolId))
-}*/
 
 func (m *Message) decode(data *bytes.Buffer) error {
 	var err error
@@ -368,26 +351,13 @@ func Pake3ParamRequest(key []byte) []byte {
 	return buffer.Bytes()
 }
 
-func AckWS(counter uint32) []byte {
+func AckGen(p ProtocolMessage, counter uint32) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
 		exchangeFlags: 3,
 		opcode: SEC_CHAN_OPCODE_ACK,
-		exchangeId: 0xba3e,
-		protocolId: 0x00,
-	}
-	prot.encode(&buffer)
-	binary.Write(&buffer, binary.LittleEndian, counter)
-	return buffer.Bytes()
-}
-func AckWS2(counter uint32) []byte {
-	var buffer bytes.Buffer
-
-	prot:= ProtocolMessage{
-		exchangeFlags: 3,
-		opcode: SEC_CHAN_OPCODE_ACK,
-		exchangeId: 0xba3f,
+		exchangeId: p.exchangeId,
 		protocolId: 0x00,
 	}
 	prot.encode(&buffer)
@@ -489,18 +459,5 @@ func invokeRead(endpoint, cluster, attr byte) []byte {
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
 	buffer.Write(tlv.data.Bytes())
 
-	return buffer.Bytes()
-}
-
-func Ack3(counter uint32) []byte {
-	var buffer bytes.Buffer
-	buffer.WriteByte(3) // flags
-	buffer.WriteByte(SEC_CHAN_OPCODE_ACK) // opcode
-	var exchange_id uint16
-	binary.Write(&buffer, binary.LittleEndian, exchange_id)
-	var protocol_id uint16 
-	protocol_id = 0
-	binary.Write(&buffer, binary.LittleEndian, protocol_id)
-	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }

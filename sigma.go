@@ -181,12 +181,12 @@ func (sc *SigmaContext)sigma3() []byte {
 	if err != nil {
 		panic(err)
 	}
-	nonce := make_nonce3(999, []byte{9,0,0,0,0,0,0,0}) // just for size
+	nonce := []byte("NCASE_Sigma3N")
 	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 	if err != nil {
 		panic(err)
 	}
-	CipherText := ccm.Seal(nil, []byte("NCASE_Sigma3N"), tlv_s3tbe.data.Bytes(), []byte{})
+	CipherText := ccm.Seal(nil, nonce, tlv_s3tbe.data.Bytes(), []byte{})
 
 	var tlv_s3 TLVBuffer
 	tlv_s3.writeAnonStruct()
