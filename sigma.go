@@ -10,7 +10,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
-	"gomat/ca"
 	"io"
 
 	"golang.org/x/crypto/hkdf"
@@ -18,8 +17,9 @@ import (
 
 
 func compressedFabric() []byte {
-	cacert := ca.LoadCert("ca-cert.pem")
-	capub := cacert.PublicKey.(*ecdsa.PublicKey)
+	//cacert := ca.LoadCert("ca-cert.pem")
+	//cacert := certificate_manager.ca_certificate
+	capub := certificate_manager.ca_private_key.PublicKey
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 
 	
@@ -69,7 +69,8 @@ func (sc *SigmaContext)genSigma1() {
 
 	var destination_message bytes.Buffer
 	destination_message.Write(initiatorRandom)
-	cacert := ca.LoadCert("ca-cert.pem")
+	//cacert := ca.LoadCert("ca-cert.pem")
+	cacert := certificate_manager.ca_certificate
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 

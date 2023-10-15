@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/ecdh"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/binary"
@@ -238,12 +239,13 @@ func do_sigma(secure_channel SecureChannel) SecureChannel {
 
 	sigma_context.sigma2dec = secure_channel.receive()
 
-	sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
+	/*sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
 	controller_csr := x509.CertificateRequest {
 		PublicKey: &sigma_context.controller_key.PublicKey,
 	}
-	controller_cert := sign_cert(&controller_csr, 9, "controller")
-	sigma_context.controller_matter_certificate = MatterCert2(controller_cert)
+	controller_cert := sign_cert(&controller_csr, 9, "controller")*/
+	sigma_context.controller_key = certificate_manager.get_privkey("ctrl")
+	sigma_context.controller_matter_certificate = MatterCert2(certificate_manager.get_certificate("ctrl"))
 
 	to_send := sigma_context.sigma3()
 	secure_channel.send(to_send)
@@ -258,8 +260,24 @@ func do_sigma(secure_channel SecureChannel) SecureChannel {
 	return secure_channel
 }
 
-func flow() {
 
+func filter_devices(devices []Device, qr QrContent) Device {
+	for _, device := range(devices) {
+		if device.D != fmt.Sprintf("%d", qr.discriminator) {
+			continue
+		}
+		if device.VendorId != int(qr.vendor) {
+			continue
+		}
+		if device.ProductId != int(qr.product) {
+			continue
+		}
+		return device
+	}
+	panic("not foind")
+}
+
+func discover_with_qr(qr string) Device {
 	var devices []Device
 	var err error
 	for i:=0; i<5; i++ {
@@ -272,8 +290,28 @@ func flow() {
 		}
 
 	}
-	device := devices[0]
+	device := filter_devices(devices, decode_qr_text("MT:-24J0AFN00SIQ663000"))
+	return device
+}
 
+func flow(device Device) {
+
+	/*
+	var devices []Device
+	var err error
+	for i:=0; i<5; i++ {
+		devices, err = discover("en0")
+		if err != nil {
+			panic(err)
+		}
+		if len(devices) > 0 {
+			break
+		}
+
+	}
+	device := filter_devices(devices, decode_qr_text("MT:-24J0AFN00SIQ663000"))
+	device.Dump()
+*/
 	channel := NewChannel(device.addrs[1], 5540, 55555)
 	secure_channel := SecureChannel {
 		udp: &channel,
@@ -297,11 +335,14 @@ func flow() {
 	tlv2 := tlvdec.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)
+	if err != nil {
+		panic(err)
+	}
 
 
 	//AddTrustedRootCertificate
 	var tlv4 TLVBuffer
-	tlv4.writeOctetString(0, CAMatterCert2())
+	tlv4.writeOctetString(0, MatterCert2(certificate_manager.ca_certificate))
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
 	secure_channel.send(to_send)
 
@@ -309,7 +350,8 @@ func flow() {
 	/*ds :=*/ secure_channel.receive()
 
 
-	noc_x509 := sign_cert(csrp, 2, "user")
+	//noc_x509 := sign_cert(csrp, 2, "user")
+	noc_x509 := certificate_manager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
 	noc_matter := MatterCert2(noc_x509)
 	//AddNOC
 	var tlv5 TLVBuffer
@@ -357,7 +399,23 @@ func flow() {
 	resp.tlv.Dump(0)
 }
 
+func flow2(device Device) {
 
+	channel := NewChannel(device.addrs[1], 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+		counter: 500,
+	}
+	secure_channel = do_sigma(secure_channel)
+
+	to_send := invokeCommand2(1, 6, 0, []byte{})
+	secure_channel.send(to_send)
+
+	light_resp := secure_channel.receive()
+	light_resp.tlv.Dump(0)
+}
+
+var certificate_manager *CertManager
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "mama",
@@ -366,7 +424,17 @@ func main() {
 	var flowCmd = &cobra.Command{
 		Use:   "flow",
 		Run: func(cmd *cobra.Command, args []string) {
-		  flow()
+		  certificate_manager = NewCertManager()
+		  certificate_manager.load()
+		  flow(discover_with_qr("MT:-24J0AFN00SIQ663000"))
+		},
+	}
+	var flow2Cmd = &cobra.Command{
+		Use:   "flow2",
+		Run: func(cmd *cobra.Command, args []string) {
+		  certificate_manager = NewCertManager()
+		  certificate_manager.load()
+		  flow2(discover_with_qr("MT:-24J0AFN00SIQ663000"))
 		},
 	}
 	var cakeygenCmd = &cobra.Command{
@@ -375,12 +443,30 @@ func main() {
 		  ca.Create_ca_cert()
 		},
 	}
+	var cacreateuserCmd = &cobra.Command{
+		Use:   "ca-createuser",
+		Run: func(cmd *cobra.Command, args []string) {
+		  cm := NewCertManager()
+		  cm.load()
+		  cm.create_user(9, "ctrl")
+		},
+	}
+	var cabootCmd = &cobra.Command{
+		Use:   "ca-bootstrap",
+		Run: func(cmd *cobra.Command, args []string) {
+		  bootstrap_ca()
+		  NewCertManager().load()
+		},
+	}
 	var testCmd = &cobra.Command{
 		Use:   "test",
 		Run: func(cmd *cobra.Command, args []string) {
 		},
 	}
+	rootCmd.AddCommand(cacreateuserCmd)
+	rootCmd.AddCommand(cabootCmd)
 	rootCmd.AddCommand(flowCmd)
+	rootCmd.AddCommand(flow2Cmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(cakeygenCmd)
 	rootCmd.Execute()

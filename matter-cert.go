@@ -52,7 +52,8 @@ func MatterCert2(in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 
-	cacert := ca.LoadCert("ca-cert.pem")
+	//cacert := ca.LoadCert("ca-cert.pem")
+	cacert := certificate_manager.ca_certificate
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 	xide := sha1.New()
