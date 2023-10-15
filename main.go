@@ -225,6 +225,39 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	return secure_channel
 }
 
+func do_sigma(secure_channel SecureChannel) SecureChannel {
+
+	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
+	sigma_context := SigmaContext {
+		session_privkey: controller_privkey,
+	}
+	sigma_context.genSigma1()
+	sigma1 := genSigma1Req2(sigma_context.sigma1payload)
+	secure_channel.send(sigma1)
+
+
+	sigma_context.sigma2dec = secure_channel.receive()
+
+	sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
+	controller_csr := x509.CertificateRequest {
+		PublicKey: &sigma_context.controller_key.PublicKey,
+	}
+	controller_cert := sign_cert(&controller_csr, 9, "controller")
+	sigma_context.controller_matter_certificate = MatterCert2(controller_cert)
+
+	to_send := sigma_context.sigma3()
+	secure_channel.send(to_send)
+
+	/*respx :=*/ secure_channel.receive()
+
+	secure_channel.decrypt_key = sigma_context.r2ikey
+	secure_channel.encrypt_key = sigma_context.i2rkey
+	secure_channel.remote_node = []byte{2,0,0,0,0,0,0,0}
+	secure_channel.local_node = []byte{9,0,0,0,0,0,0,0}
+	secure_channel.session = sigma_context.session
+	return secure_channel
+}
+
 func flow() {
 
 	var devices []Device
@@ -293,36 +326,8 @@ func flow() {
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
-	//-------- sigma1
-	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
-	sigma_context := SigmaContext {
-		session_privkey: controller_privkey,
-	}
-	sigma_context.genSigma1()
-	sigma1 := genSigma1Req2(sigma_context.sigma1payload)
-	secure_channel.send(sigma1)
 
-
-	sigma_context.sigma2dec = secure_channel.receive()
-
-	sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
-	controller_csr := x509.CertificateRequest {
-		PublicKey: &sigma_context.controller_key.PublicKey,
-	}
-	controller_cert := sign_cert(&controller_csr, 9, "controller")
-	sigma_context.controller_matter_certificate = MatterCert2(controller_cert)
-
-	to_send = sigma_context.sigma3()
-	secure_channel.send(to_send)
-
-	/*respx :=*/ secure_channel.receive()
-
-	secure_channel.decrypt_key = sigma_context.r2ikey
-	secure_channel.encrypt_key = sigma_context.i2rkey
-	secure_channel.remote_node = []byte{2,0,0,0,0,0,0,0}
-	secure_channel.local_node = []byte{9,0,0,0,0,0,0,0}
-	secure_channel.session = sigma_context.session
-	//log.Println(hex.EncodeToString(keypack))
+	secure_channel = do_sigma(secure_channel)
 
 
 	//commissioning complete
