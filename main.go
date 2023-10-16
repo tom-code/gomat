@@ -294,7 +294,7 @@ func discover_with_qr(qr string) Device {
 	return device
 }
 
-func flow(fabric *Fabric, device Device) {
+func commision(fabric *Fabric, device Device) {
 
 	/*
 	var devices []Device
@@ -399,7 +399,7 @@ func flow(fabric *Fabric, device Device) {
 	resp.tlv.Dump(0)
 }
 
-func flow2(fabric *Fabric, device Device) {
+func light_off(fabric *Fabric, device Device) {
 
 	channel := NewChannel(device.addrs[1], 5540, 55555)
 	secure_channel := SecureChannel {
@@ -458,21 +458,23 @@ func main() {
 		Short: "matter manager",
 	}
 	var flowCmd = &cobra.Command{
-		Use:   "flow",
+		Use:   "commision",
 		Run: func(cmd *cobra.Command, args []string) {
 			qr, _ := cmd.Flags().GetString("qr")
 			fabric := newFabric()
-			flow(fabric, discover_with_qr(qr))
+			commision(fabric, discover_with_qr(qr))
 		},
 	}
 	flowCmd.Flags().StringP("qr", "q", "", "qr text")
 	var flow2Cmd = &cobra.Command{
-		Use:   "flow2",
+		Use:   "light_off",
 		Run: func(cmd *cobra.Command, args []string) {
+		  qr, _ := cmd.Flags().GetString("qr")
 		  fabric := newFabric()
-		  flow2(fabric, discover_with_qr("MT:-24J0AFN00SIQ663000"))
+		  light_off(fabric, discover_with_qr(qr))
 		},
 	}
+	flow2Cmd.Flags().StringP("qr", "q", "", "qr text")
 	var cakeygenCmd = &cobra.Command{
 		Use:   "ca-keygen",
 		Run: func(cmd *cobra.Command, args []string) {
