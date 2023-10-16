@@ -5,16 +5,20 @@ import (
 	"crypto/aes"
 	"crypto/ecdh"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
 	"fmt"
 	"gomat/ca"
 	"gomat/tlvdec"
+	"io"
 	"log"
 	"net"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/hkdf"
 )
 
 
@@ -226,28 +230,23 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	return secure_channel
 }
 
-func do_sigma(secure_channel SecureChannel) SecureChannel {
+func do_sigma(fabric *Fabric, secure_channel SecureChannel) SecureChannel {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
 	sigma_context := SigmaContext {
 		session_privkey: controller_privkey,
 	}
-	sigma_context.genSigma1()
+	sigma_context.genSigma1(fabric)
 	sigma1 := genSigma1Req2(sigma_context.sigma1payload)
 	secure_channel.send(sigma1)
 
 
 	sigma_context.sigma2dec = secure_channel.receive()
 
-	/*sigma_context.controller_key = ca.Generate_and_store_key_ecdsa("controller")
-	controller_csr := x509.CertificateRequest {
-		PublicKey: &sigma_context.controller_key.PublicKey,
-	}
-	controller_cert := sign_cert(&controller_csr, 9, "controller")*/
-	sigma_context.controller_key = certificate_manager.get_privkey("ctrl")
-	sigma_context.controller_matter_certificate = MatterCert2(certificate_manager.get_certificate("ctrl"))
+	sigma_context.controller_key = fabric.certificateManager.get_privkey("ctrl")
+	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.get_certificate("ctrl"))
 
-	to_send := sigma_context.sigma3()
+	to_send := sigma_context.sigma3(fabric)
 	secure_channel.send(to_send)
 
 	/*respx :=*/ secure_channel.receive()
@@ -263,6 +262,7 @@ func do_sigma(secure_channel SecureChannel) SecureChannel {
 
 func filter_devices(devices []Device, qr QrContent) Device {
 	for _, device := range(devices) {
+		log.Printf("%s %d\n", device.D, qr.discriminator)
 		if device.D != fmt.Sprintf("%d", qr.discriminator) {
 			continue
 		}
@@ -290,11 +290,11 @@ func discover_with_qr(qr string) Device {
 		}
 
 	}
-	device := filter_devices(devices, decode_qr_text("MT:-24J0AFN00SIQ663000"))
+	device := filter_devices(devices, decode_qr_text(qr))
 	return device
 }
 
-func flow(device Device) {
+func flow(fabric *Fabric, device Device) {
 
 	/*
 	var devices []Device
@@ -342,7 +342,7 @@ func flow(device Device) {
 
 	//AddTrustedRootCertificate
 	var tlv4 TLVBuffer
-	tlv4.writeOctetString(0, MatterCert2(certificate_manager.ca_certificate))
+	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.ca_certificate))
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
 	secure_channel.send(to_send)
 
@@ -351,8 +351,8 @@ func flow(device Device) {
 
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
-	noc_x509 := certificate_manager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
-	noc_matter := MatterCert2(noc_x509)
+	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
+	noc_matter := MatterCert2(fabric, noc_x509)
 	//AddNOC
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
@@ -369,7 +369,7 @@ func flow(device Device) {
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
 
-	secure_channel = do_sigma(secure_channel)
+	secure_channel = do_sigma(fabric, secure_channel)
 
 
 	//commissioning complete
@@ -399,14 +399,14 @@ func flow(device Device) {
 	resp.tlv.Dump(0)
 }
 
-func flow2(device Device) {
+func flow2(fabric *Fabric, device Device) {
 
 	channel := NewChannel(device.addrs[1], 5540, 55555)
 	secure_channel := SecureChannel {
 		udp: &channel,
 		counter: 500,
 	}
-	secure_channel = do_sigma(secure_channel)
+	secure_channel = do_sigma(fabric, secure_channel)
 
 	to_send := invokeCommand2(1, 6, 0, []byte{})
 	secure_channel.send(to_send)
@@ -415,7 +415,43 @@ func flow2(device Device) {
 	light_resp.tlv.Dump(0)
 }
 
-var certificate_manager *CertManager
+type Fabric struct {
+	id uint64
+	certificateManager *CertManager
+}
+
+func (fabric Fabric) compressedFabric() []byte {
+	capub := fabric.certificateManager.ca_private_key.PublicKey
+	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
+
+	hkdfz := hkdf.New(sha256.New, capublic_key[1:], []byte{0,0,0,0,0,0,0,0x10}, []byte("CompressedFabric"))
+	key := make([]byte, 8)
+	if _, err := io.ReadFull(hkdfz, key); err != nil {
+		panic(err)
+	}
+	//log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
+	return key
+}
+func (fabric Fabric) make_ipk() []byte {
+	ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
+	hkdfz := hkdf.New(sha256.New, ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
+	key := make([]byte, 16)
+	if _, err := io.ReadFull(hkdfz, key); err != nil {
+		panic(err)
+	}
+	return key
+}
+
+//var certificate_manager *CertManager
+func newFabric() *Fabric {
+	out:= &Fabric{
+		id: 0x10,
+		certificateManager: NewCertManager(),
+	}
+	out.certificateManager.load()
+	return out
+}
+
 func main() {
 	var rootCmd = &cobra.Command{
 		Use:   "mama",
@@ -424,17 +460,17 @@ func main() {
 	var flowCmd = &cobra.Command{
 		Use:   "flow",
 		Run: func(cmd *cobra.Command, args []string) {
-		  certificate_manager = NewCertManager()
-		  certificate_manager.load()
-		  flow(discover_with_qr("MT:-24J0AFN00SIQ663000"))
+			qr, _ := cmd.Flags().GetString("qr")
+			fabric := newFabric()
+			flow(fabric, discover_with_qr(qr))
 		},
 	}
+	flowCmd.Flags().StringP("qr", "q", "", "qr text")
 	var flow2Cmd = &cobra.Command{
 		Use:   "flow2",
 		Run: func(cmd *cobra.Command, args []string) {
-		  certificate_manager = NewCertManager()
-		  certificate_manager.load()
-		  flow2(discover_with_qr("MT:-24J0AFN00SIQ663000"))
+		  fabric := newFabric()
+		  flow2(fabric, discover_with_qr("MT:-24J0AFN00SIQ663000"))
 		},
 	}
 	var cakeygenCmd = &cobra.Command{
@@ -463,11 +499,26 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 		},
 	}
+	var discoverCmd = &cobra.Command{
+		Use:   "discover",
+		Run: func(cmd *cobra.Command, args []string) {
+			devices, err := discover("en0")
+			if err != nil {
+				panic(err)
+			}
+			for _, device := range devices {
+				device.Dump()
+			}
+
+
+		},
+	}
 	rootCmd.AddCommand(cacreateuserCmd)
 	rootCmd.AddCommand(cabootCmd)
 	rootCmd.AddCommand(flowCmd)
 	rootCmd.AddCommand(flow2Cmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(cakeygenCmd)
+	rootCmd.AddCommand(discoverCmd)
 	rootCmd.Execute()
 }

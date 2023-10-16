@@ -3,17 +3,12 @@ package main
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/hex"
-	"fmt"
-	"gomat/ca"
 	"math/big"
 	"strconv"
-	"time"
 )
 
 
@@ -48,12 +43,12 @@ func CAConvertDN(in pkix.Name, out *TLVBuffer) {
 	}
 }
 
-func MatterCert2(in *x509.Certificate) []byte {
+func MatterCert2(fabric *Fabric, in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 
 	//cacert := ca.LoadCert("ca-cert.pem")
-	cacert := certificate_manager.ca_certificate
+	cacert := fabric.certificateManager.ca_certificate
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 	xide := sha1.New()
@@ -110,93 +105,4 @@ func MatterCert2(in *x509.Certificate) []byte {
 	tlv3.writeOctetString(11, s4)
 	tlv3.writeAnonStructEnd()
 	return tlv3.data.Bytes()
-}
-func CAMatterCert2() []byte {
-	cacert := ca.LoadCert("ca-cert.pem")
-	return MatterCert2(cacert)
-}
-
-func sign_cert(req *x509.CertificateRequest, node_id uint64, name string) *x509.Certificate {
-	cacert := ca.LoadCert("ca-cert.pem")
-	pub := ca.Load_public_key("ca-public.pem").(*ecdsa.PublicKey)
-	priv_ca := ca.Load_priv_key("ca-private.pem")
-
-
-	public_key_auth := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
-	sh := sha1.New()
-	sh.Write(public_key_auth)
-	sha_auth := sh.Sum(nil)
-
-	public_key_subj := req.PublicKey.(*ecdsa.PublicKey)
-	public_key_subj2 := elliptic.Marshal(elliptic.P256(), public_key_subj.X, public_key_subj.Y)
-	shp := sha1.New()
-	shp.Write(public_key_subj2)
-	sha_subj := shp.Sum(nil)
-
-	subj := pkix.Name{
-	}
-
-	node_id_string := fmt.Sprintf("%016x", node_id)
-	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
-	valname_fabric, err := asn1.MarshalWithParams("0000000000000010", "utf8")
-
-	subj.ExtraNames = []pkix.AttributeTypeAndValue{
-		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,1},
-			Value: asn1.RawValue{FullBytes: valname},
-		},
-		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,5},
-			Value: asn1.RawValue{FullBytes: valname_fabric},
-		},
-	}
-
-	var template x509.Certificate
-	template.Version = 3
-	template.SignatureAlgorithm = x509.ECDSAWithSHA256
-	template.NotBefore = time.Now()
-	template.NotAfter = time.Now().AddDate(1, 0, 0)
-	template.Subject = subj
-	template.IsCA = false
-	template.SerialNumber = big.NewInt(10001)
-
-	extkeyusa, _ := hex.DecodeString("301406082B0601050507030206082B06010505070301")
-	template.ExtraExtensions = []pkix.Extension{
-		{
-			Id: asn1.ObjectIdentifier{2,5,29,19}, // basic constraints
-			Critical: true,
-			Value: []byte{0x30, 0x03, 0x01, 0x01, 0xff},
-		},
-		{
-			Id: asn1.ObjectIdentifier{2,5,29,15},  // keyUsage
-			Critical: true,
-			Value: []byte{3,2,7,0x80},
-		},
-		{
-			Id: asn1.ObjectIdentifier{2,5,29,37},  // ExtkeyUsage
-			Critical: true,
-			Value: extkeyusa,
-		},
-		{
-			Id: asn1.ObjectIdentifier{2,5,29,14},  //subjectKeyId
-			Critical: false,
-			Value: append([]byte{0x04,0x14}, sha_subj...),
-		},
-		{
-			Id: asn1.ObjectIdentifier{2,5,29,35},  // authorityKeyId
-			Critical: false,
-			Value: append([]byte{0x30, 0x16, 0x80, 0x14}, sha_auth...),
-		},
-	}
-
-	cert_bytes, err := x509.CreateCertificate(rand.Reader, &template, cacert, public_key_subj, priv_ca)
-	if err != nil {
-		panic(err)
-	}
-	out_parsed, err := x509.ParseCertificate(cert_bytes)
-	if err != nil {
-		panic(err)
-	}
-	ca.Store_cert(name, cert_bytes)
-	return out_parsed
 }

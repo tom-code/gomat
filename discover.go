@@ -20,11 +20,13 @@ type Device struct {
 	VendorId int
 	ProductId int
 	D string
+	DN string
 }
 
 func (d Device)Dump() {
 	fmt.Printf("name: %s\n", d.name)
 	fmt.Printf("host: %s\n", d.host)
+	fmt.Printf("DN:   %s\n", d.DN)
 	fmt.Printf("addrs: %v\n", d.addrs)
 	fmt.Printf("PH: %s\n", d.PH)
 	fmt.Printf("CM: %s\n", d.CM)
@@ -82,6 +84,9 @@ func discover(iface string) ([]Device, error) {
 				}
 				if strings.HasPrefix(s, "D=") {
 					dev.D = s[2:]
+				}
+				if strings.HasPrefix(s, "DN=") {
+					dev.DN = s[3:]
 				}
 			}
 			devices = append(devices, dev)
