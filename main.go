@@ -16,6 +16,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/hkdf"
@@ -294,30 +295,81 @@ func discover_with_qr(qr string) Device {
 	return device
 }
 
-func commision(fabric *Fabric, device Device) {
+func commision(fabric *Fabric, device_ip net.IP, pin int) {
 
-	/*
-	var devices []Device
-	var err error
-	for i:=0; i<5; i++ {
-		devices, err = discover("en0")
-		if err != nil {
-			panic(err)
-		}
-		if len(devices) > 0 {
-			break
-		}
-
-	}
-	device := filter_devices(devices, decode_qr_text("MT:-24J0AFN00SIQ663000"))
-	device.Dump()
-*/
-	channel := NewChannel(device.addrs[1], 5540, 55555)
+	channel := NewChannel(device_ip, 5540, 55555)
 	secure_channel := SecureChannel {
 		udp: &channel,
 	}
 
-	secure_channel = do_spake2p(123456, &channel)
+	secure_channel = do_spake2p(pin, &channel)
+
+	// send csr request
+	var tlv TLVBuffer
+	tlv.writeOctetString(0, create_random_bytes(32))
+	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
+	secure_channel.send(to_send)
+
+	csr_resp := secure_channel.receive()
+
+	nocsr := csr_resp.tlv.GetOctetStringRec([]int{1,0,0,1,0})
+	tlv2 := tlvdec.Decode(nocsr)
+	csr := tlv2.GetOctetStringRec([]int{1})
+	csrp, err := x509.ParseCertificateRequest(csr)
+	if err != nil {
+		panic(err)
+	}
+
+	//AddTrustedRootCertificate
+	var tlv4 TLVBuffer
+	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.ca_certificate))
+	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
+	secure_channel.send(to_send)
+
+
+	/*ds :=*/ secure_channel.receive()
+
+
+	//noc_x509 := sign_cert(csrp, 2, "user")
+	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
+	noc_matter := MatterCert2(fabric, noc_x509)
+	//AddNOC
+	var tlv5 TLVBuffer
+	tlv5.writeOctetString(0, noc_matter)
+	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
+	tlv5.writeUInt(3, TYPE_UINT_2, 9)   // admin subject !
+	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
+	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
+
+	secure_channel.send(to_send)
+
+	/*ds =*/ secure_channel.receive()
+
+	secure_channel.decrypt_key = []byte{}
+	secure_channel.encrypt_key = []byte{}
+	secure_channel.session = 0
+
+	secure_channel = do_sigma(fabric, secure_channel)
+
+
+	//commissioning complete
+	to_send = invokeCommand2(0, 0x30, 4, []byte{})
+	secure_channel.send(to_send)
+
+
+	/*respx =*/ secure_channel.receive()
+}
+
+func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
+	//fmt.Println(device)
+	//fmt.Println(device.addrs)
+
+	channel := NewChannel(device_ip, 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+	}
+
+	secure_channel = do_spake2p(pin, &channel)
 
 	// send csr request
 	var tlv TLVBuffer
@@ -327,9 +379,7 @@ func commision(fabric *Fabric, device Device) {
 
 
 
-	log.Println("--------------------------------------------------")
 	csr_resp := secure_channel.receive()
-
 
 	nocsr := csr_resp.tlv.GetOctetStringRec([]int{1,0,0,1,0})
 	tlv2 := tlvdec.Decode(nocsr)
@@ -457,15 +507,22 @@ func main() {
 		Use:   "mama",
 		Short: "matter manager",
 	}
-	var flowCmd = &cobra.Command{
-		Use:   "commision",
+	var commissionCmd = &cobra.Command{
+		Use:   "commission",
 		Run: func(cmd *cobra.Command, args []string) {
-			qr, _ := cmd.Flags().GetString("qr")
+			ip, _ := cmd.Flags().GetString("ip")
+			pin, _ := cmd.Flags().GetString("pin")
 			fabric := newFabric()
-			commision(fabric, discover_with_qr(qr))
+			pinn, err := strconv.Atoi(pin)
+			if err != nil {
+				panic(err)
+			}
+			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
+			commision(fabric, net.ParseIP(ip), pinn)
 		},
 	}
-	flowCmd.Flags().StringP("qr", "q", "", "qr text")
+	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
+	commissionCmd.Flags().StringP("pin", "p", "", "pin")
 	var flow2Cmd = &cobra.Command{
 		Use:   "light_off",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -499,25 +556,36 @@ func main() {
 	var testCmd = &cobra.Command{
 		Use:   "test",
 		Run: func(cmd *cobra.Command, args []string) {
+			decode_manual_code("11400441207")
 		},
 	}
 	var discoverCmd = &cobra.Command{
 		Use:   "discover",
 		Run: func(cmd *cobra.Command, args []string) {
-			devices, err := discover("en0")
+			device, _ := cmd.Flags().GetString("device")
+			qrtext, _ := cmd.Flags().GetString("qr")
+			devices, err := discover(device)
 			if err != nil {
 				panic(err)
 			}
+			if len(qrtext) > 0 {
+				qr := decode_qr_text(qrtext)
+				device := filter_devices(devices, qr)
+				devices = []Device{device}
+			}
 			for _, device := range devices {
 				device.Dump()
+				fmt.Println("")
 			}
 
 
 		},
 	}
+	discoverCmd.Flags().StringP("device", "d", "", "network device")
+	discoverCmd.Flags().StringP("qr", "q", "", "qr code")
 	rootCmd.AddCommand(cacreateuserCmd)
 	rootCmd.AddCommand(cabootCmd)
-	rootCmd.AddCommand(flowCmd)
+	rootCmd.AddCommand(commissionCmd)
 	rootCmd.AddCommand(flow2Cmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(cakeygenCmd)
