@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"gomat/tlvdec"
+	randm "math/rand"
 )
 
 const TYPE_UINT_1 = 4
@@ -421,6 +422,7 @@ func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 	buffer.WriteByte(5) // flags
 	buffer.WriteByte(8) // opcode
 	var exchange_id uint16
+	exchange_id = uint16(randm.Intn(0xffff))
 	binary.Write(&buffer, binary.LittleEndian, exchange_id)
 	var protocol_id uint16 
 	protocol_id = 1

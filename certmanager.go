@@ -24,6 +24,10 @@ import (
 )
 
 
+func cert_id_to_name(id uint64) string {
+	return fmt.Sprintf("%d", id)
+}
+
 type CertManager struct {
 	fabric uint64
 	ca_certificate *x509.Certificate
@@ -49,13 +53,11 @@ func (cm *CertManager)get_privkey(name string) *ecdsa.PrivateKey {
 }
 
 func (cm *CertManager)create_user(node_id uint64, name string) {
-	privkey := ca.Generate_and_store_key_ecdsa("pem/"+name)
-	cm.sign_cert(&privkey.PublicKey, node_id, "pem/"+name)
+	id := fmt.Sprintf("%d", node_id)
+	privkey := ca.Generate_and_store_key_ecdsa("pem/"+id)
+	cm.sign_cert(&privkey.PublicKey, node_id, "pem/"+id)
 }
 func (cm *CertManager)sign_cert(user_pubkey *ecdsa.PublicKey, node_id uint64, name string) *x509.Certificate {
-	//cacert := ca.LoadCert("ca-cert.pem")
-	//pub := ca.Load_public_key("ca-public.pem").(*ecdsa.PublicKey)
-	//priv_ca := ca.Load_priv_key("ca-private.pem")
 
 
 	public_key_auth := elliptic.Marshal(elliptic.P256(), cm.ca_private_key.PublicKey.X, cm.ca_private_key.PublicKey.Y)

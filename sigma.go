@@ -27,6 +27,7 @@ type SigmaContext struct {
 
 	sigma2dec DecodedGeneric
 	sigma1payload []byte
+	exchange uint16
 }
 
 func (sc *SigmaContext)genSigma1(fabric *Fabric) {
@@ -76,12 +77,12 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric) {
 }
 
 
-func genSigma1Req2(payload []byte) []byte {
+func genSigma1Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
 			exchangeFlags: 5,
 			opcode: 0x30, //sigma1
-			exchangeId: 0xba3f,
+			exchangeId: exchange,
 			protocolId: 0x00,
 	}
 	prot.encode(&buffer)
@@ -90,12 +91,12 @@ func genSigma1Req2(payload []byte) []byte {
 	return buffer.Bytes()
 }
 
-func genSigma3Req2(payload []byte) []byte {
+func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
 		opcode: 0x32, //sigma1
-		exchangeId: 0xba3f,
+		exchangeId: exchange,
 		protocolId: 0x00,	}
 
 	prot.encode(&buffer)
@@ -171,7 +172,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	tlv_s3.writeAnonStructEnd()
 
 
-	to_send := genSigma3Req2(tlv_s3.data.Bytes())
+	to_send := genSigma3Req2(tlv_s3.data.Bytes(), sc.exchange)
 
 	// prepare session keys
 	ses_key_transcript := s3k_th

@@ -17,6 +17,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	randm "math/rand"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/hkdf"
@@ -239,18 +240,21 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) SecureChannel {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
+	log.Println(len(controller_privkey.Bytes()))
+	log.Println(len(controller_privkey.PublicKey().Bytes()))
 	sigma_context := SigmaContext {
 		session_privkey: controller_privkey,
+		exchange: uint16(randm.Intn(0xffff)),
 	}
 	sigma_context.genSigma1(fabric)
-	sigma1 := genSigma1Req2(sigma_context.sigma1payload)
+	sigma1 := genSigma1Req2(sigma_context.sigma1payload, sigma_context.exchange)
 	secure_channel.send(sigma1)
 
 
 	sigma_context.sigma2dec = secure_channel.receive()
 
-	sigma_context.controller_key = fabric.certificateManager.get_privkey("ctrl")
-	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.get_certificate("ctrl"))
+	sigma_context.controller_key = fabric.certificateManager.get_privkey(cert_id_to_name(controller_id))
+	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.get_certificate(cert_id_to_name(controller_id)))
 
 	to_send := sigma_context.sigma3(fabric)
 	secure_channel.send(to_send)
@@ -300,7 +304,11 @@ func discover_with_qr(qr string) Device {
 	return device
 }
 
-func commision(fabric *Fabric, device_ip net.IP, pin int) {
+func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) {
+	//var controller_id uint64
+	//var device_id uint64
+	//controller_id = 9
+	//device_id = 2
 
 	channel := NewChannel(device_ip, 5540, 55555)
 	secure_channel := SecureChannel {
@@ -336,13 +344,13 @@ func commision(fabric *Fabric, device_ip net.IP, pin int) {
 
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
-	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
+	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), device_id, "device")
 	noc_matter := MatterCert2(fabric, noc_x509)
 	//AddNOC
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
 	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
-	tlv5.writeUInt(3, TYPE_UINT_2, 9)   // admin subject !
+	tlv5.writeUInt(3, TYPE_UINT_2, controller_id)   // admin subject !
 	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
 
@@ -354,7 +362,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
 
-	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
+	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
 
 
 	//commissioning complete
@@ -373,7 +381,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int) {
 		log.Printf("commissioning error: %d\n", commisioning_result)
 	}
 }
-
+/*
 func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 	//fmt.Println(device)
 	//fmt.Println(device.addrs)
@@ -411,7 +419,7 @@ func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.send(to_send)
 
 
-	/*ds :=*/ secure_channel.receive()
+	secure_channel.receive()
 
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
@@ -427,7 +435,7 @@ func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 
 	secure_channel.send(to_send)
 
-	/*ds =*/ secure_channel.receive()
+	secure_channel.receive()
 
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}
@@ -441,7 +449,7 @@ func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.send(to_send)
 
 
-	/*respx =*/ secure_channel.receive()
+	secure_channel.receive()
 
 
 	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
@@ -461,22 +469,47 @@ func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.send(r1)
 	resp := secure_channel.receive()
 	resp.tlv.Dump(0)
-}
+}*/
 
-func light_off(fabric *Fabric, device Device) {
+func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 
-	channel := NewChannel(device.addrs[1], 5540, 55555)
+	channel := NewChannel(ip, 5540, 55555)
 	secure_channel := SecureChannel {
 		udp: &channel,
-		counter: 500,
+		counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
+	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
 
 	to_send := invokeCommand2(1, 6, 0, []byte{})
 	secure_channel.send(to_send)
 
-	light_resp := secure_channel.receive()
-	light_resp.tlv.Dump(0)
+	resp := secure_channel.receive()
+	status, err := resp.tlv.GetIntRec([]int{1,0,1,1,0})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("result status: %d\n", status)
+}
+
+
+func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
+
+	channel := NewChannel(ip, 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+		counter: uint32(randm.Intn(0xffffffff)),
+	}
+	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+
+	to_send := invokeCommand2(1, 6, 1, []byte{})
+	secure_channel.send(to_send)
+
+	resp := secure_channel.receive()
+	status, err := resp.tlv.GetIntRec([]int{1,0,1,1,0})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("result status: %d\n", status)
 }
 
 type Fabric struct {
@@ -518,7 +551,7 @@ func newFabric() *Fabric {
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "mama",
+		Use:   "gomat",
 		Short: "matter manager",
 	}
 	var commissionCmd = &cobra.Command{
@@ -532,20 +565,29 @@ func main() {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			commision(fabric, net.ParseIP(ip), pinn)
+			commision(fabric, net.ParseIP(ip), pinn, 9, 2)
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
 	commissionCmd.Flags().StringP("pin", "p", "", "pin")
-	var flow2Cmd = &cobra.Command{
-		Use:   "light_off",
+	var offCmd = &cobra.Command{
+		Use:   "cmd_off",
 		Run: func(cmd *cobra.Command, args []string) {
-		  qr, _ := cmd.Flags().GetString("qr")
 		  fabric := newFabric()
-		  light_off(fabric, discover_with_qr(qr))
+		  ip, _ := cmd.Flags().GetString("ip")
+		  command_off(fabric, net.ParseIP(ip), 9, 2)
 		},
 	}
-	flow2Cmd.Flags().StringP("qr", "q", "", "qr text")
+	offCmd.Flags().StringP("ip", "i", "", "ip address")
+	var onCmd = &cobra.Command{
+		Use:   "cmd_on",
+		Run: func(cmd *cobra.Command, args []string) {
+		  fabric := newFabric()
+		  ip, _ := cmd.Flags().GetString("ip")
+		  command_on(fabric, net.ParseIP(ip), 9, 2)
+		},
+	}
+	onCmd.Flags().StringP("ip", "i", "", "ip address")
 	var cakeygenCmd = &cobra.Command{
 		Use:   "ca-keygen",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -553,9 +595,9 @@ func main() {
 		},
 	}
 	var cacreateuserCmd = &cobra.Command{
-		Use:   "ca-createuser",
+		Use:   "ca-createuser [id]",
 		Run: func(cmd *cobra.Command, args []string) {
-		  ids, _ := cmd.Flags().GetString("id")
+		  ids := args[0]
 		  id, err := strconv.Atoi(ids)
 		  if err != nil {
 			panic(err)
@@ -564,6 +606,7 @@ func main() {
 		  cm.load()
 		  cm.create_user(uint64(id), "ctrl")
 		},
+		Args: cobra.MinimumNArgs(1),
 	}
 	cacreateuserCmd.Flags().StringP("id", "i", "", "user id")
 	var cabootCmd = &cobra.Command{
@@ -625,7 +668,8 @@ func main() {
 	rootCmd.AddCommand(cacreateuserCmd)
 	rootCmd.AddCommand(cabootCmd)
 	rootCmd.AddCommand(commissionCmd)
-	rootCmd.AddCommand(flow2Cmd)
+	rootCmd.AddCommand(offCmd)
+	rootCmd.AddCommand(onCmd)
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(cakeygenCmd)
 	rootCmd.AddCommand(discoverCmd)
