@@ -70,9 +70,9 @@ func (i TlvItem)GetOctetStringRec(tag []int) []byte {
 	return []byte{}
 }
 
-func (i TlvItem)GetIntRec(tag []int) uint64 {
+func (i TlvItem)GetIntRec(tag []int) (uint64, error) {
 	if len(tag) == 0 {
-		return i.valueInt
+		return i.valueInt, nil
 	}
 	if i.Type == TypeList {
 		for _, d := range i.valueList {
@@ -81,7 +81,7 @@ func (i TlvItem)GetIntRec(tag []int) uint64 {
 			}
 		}
 	}
-	return 0
+	return 0, fmt.Errorf("no found")
 }
 
 

@@ -114,6 +114,14 @@ type QrContent struct {
 	passcode uint32
 }
 
+func (qr QrContent)dump() {
+	fmt.Printf("version:  %d\n", qr.version)
+	fmt.Printf("vendor:   %d\n", qr.vendor)
+	fmt.Printf("product:  %d\n", qr.product)
+	fmt.Printf("passcode: %d\n", qr.passcode)
+	fmt.Printf("discriminator: %d\n", qr.discriminator)
+}
+
 func decode_qr_text(in string) QrContent {
 	if !strings.HasPrefix(in, "MT:") {
 		panic("wrong qr")
@@ -135,19 +143,17 @@ func decode_qr_text(in string) QrContent {
 
 
 func decode_manual_code(in string) QrContent {
-	fmt.Println(in)
+	in = strings.Replace(in, "-", "", -1)
+	fmt.Printf("normalized code: %s\n", in)
 	first_group := in[0:1]
 	second_group := in[1:6]
 	third_group := in[6:10]
-	fourth := in[10:11]
+	//fourth := in[10:11]
 	first, _ := strconv.Atoi(first_group)
 	second, _ := strconv.Atoi(second_group)
 	third, _ := strconv.Atoi(third_group)
-	fmt.Printf("%d %d %s\n", second, third, fourth)
 	p := second & 0x3fff + third<<14
-	fmt.Println(p)
 	d := (first&3 <<10) + (second>>6)&0x300
-	fmt.Printf("%x\n", d)
 	return QrContent{
 		passcode: uint32(p),
 		discriminator4: uint16(d),

@@ -188,9 +188,14 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 
 	pbkdf_responseS := secure_channel.receive()
 	pbkdf_response_salt := pbkdf_responseS.tlv.GetOctetStringRec([]int{4,2})
-	pbkdf_response_iterations := pbkdf_responseS.tlv.GetIntRec([]int{4,1})
-	pbkdf_response_session := pbkdf_responseS.tlv.GetIntRec([]int{3})
-
+	pbkdf_response_iterations, err := pbkdf_responseS.tlv.GetIntRec([]int{4,1})
+	if err != nil {
+		panic("can't get pbkdf_response_iterations")
+	}
+	pbkdf_response_session, err := pbkdf_responseS.tlv.GetIntRec([]int{3})
+	if err != nil {
+		panic("can't get pbkdf_response_session")
+	}
 
 
 	sctx := newSpaceCtx()
@@ -202,7 +207,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	secure_channel.send(pake1)
 
 	pake2s := secure_channel.receive()
-	pake2s.tlv.Dump(1)
+	//pake2s.tlv.Dump(1)
 	pake2_pb := pake2s.tlv.GetOctetStringRec([]int{1})
 
 
@@ -231,7 +236,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	return secure_channel
 }
 
-func do_sigma(fabric *Fabric, secure_channel SecureChannel) SecureChannel {
+func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) SecureChannel {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
 	sigma_context := SigmaContext {
@@ -254,8 +259,8 @@ func do_sigma(fabric *Fabric, secure_channel SecureChannel) SecureChannel {
 
 	secure_channel.decrypt_key = sigma_context.r2ikey
 	secure_channel.encrypt_key = sigma_context.i2rkey
-	secure_channel.remote_node = []byte{2,0,0,0,0,0,0,0}
-	secure_channel.local_node = []byte{9,0,0,0,0,0,0,0}
+	secure_channel.remote_node = id_to_bytes(device_id)
+	secure_channel.local_node = id_to_bytes(controller_id)
 	secure_channel.session = sigma_context.session
 	return secure_channel
 }
@@ -349,7 +354,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
 
-	secure_channel = do_sigma(fabric, secure_channel)
+	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
 
 
 	//commissioning complete
@@ -357,7 +362,16 @@ func commision(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.send(to_send)
 
 
-	/*respx =*/ secure_channel.receive()
+	respx := secure_channel.receive()
+	commisioning_result, err := respx.tlv.GetIntRec([]int{1, 0, 0, 1, 0})
+	if err != nil {
+		panic(err)
+	}
+	if commisioning_result == 0 {
+		log.Printf("commissioning OK\n")
+	} else {
+		log.Printf("commissioning error: %d\n", commisioning_result)
+	}
 }
 
 func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
@@ -419,7 +433,7 @@ func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
 
-	secure_channel = do_sigma(fabric, secure_channel)
+	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
 
 
 	//commissioning complete
@@ -456,7 +470,7 @@ func light_off(fabric *Fabric, device Device) {
 		udp: &channel,
 		counter: 500,
 	}
-	secure_channel = do_sigma(fabric, secure_channel)
+	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
 
 	to_send := invokeCommand2(1, 6, 0, []byte{})
 	secure_channel.send(to_send)
@@ -541,11 +555,17 @@ func main() {
 	var cacreateuserCmd = &cobra.Command{
 		Use:   "ca-createuser",
 		Run: func(cmd *cobra.Command, args []string) {
+		  ids, _ := cmd.Flags().GetString("id")
+		  id, err := strconv.Atoi(ids)
+		  if err != nil {
+			panic(err)
+		  }
 		  cm := NewCertManager()
 		  cm.load()
-		  cm.create_user(9, "ctrl")
+		  cm.create_user(uint64(id), "ctrl")
 		},
 	}
+	cacreateuserCmd.Flags().StringP("id", "i", "", "user id")
 	var cabootCmd = &cobra.Command{
 		Use:   "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -577,9 +597,28 @@ func main() {
 				device.Dump()
 				fmt.Println("")
 			}
-
-
 		},
+	}
+	var decodeQrCmd = &cobra.Command{
+		Use:   "decode-qr",
+		Short: "decode text representation of qr code",
+		Run: func(cmd *cobra.Command, args []string) {
+			qrtext := args[0]
+			qr := decode_qr_text(qrtext)
+			qr.dump()
+		},
+		Args: cobra.MinimumNArgs(1),
+	}
+	var decodeManualCmd = &cobra.Command{
+		Use:   "decode-mc",
+		Short: "decode manual pairing code",
+		Run: func(cmd *cobra.Command, args []string) {
+			text := args[0]
+			content := decode_manual_code(text)
+			fmt.Printf("passcode: %d\n", content.passcode)
+			fmt.Printf("discriminator4: %d\n", content.discriminator4)
+		},
+		Args: cobra.MinimumNArgs(1),
 	}
 	discoverCmd.Flags().StringP("device", "d", "", "network device")
 	discoverCmd.Flags().StringP("qr", "q", "", "qr code")
@@ -590,5 +629,7 @@ func main() {
 	rootCmd.AddCommand(testCmd)
 	rootCmd.AddCommand(cakeygenCmd)
 	rootCmd.AddCommand(discoverCmd)
+	rootCmd.AddCommand(decodeQrCmd)
+	rootCmd.AddCommand(decodeManualCmd)
 	rootCmd.Execute()
 }

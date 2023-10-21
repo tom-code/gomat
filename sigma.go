@@ -111,7 +111,10 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	tlv_s3tbs.writeOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbs.writeOctetString(3, sc.session_privkey.PublicKey().Bytes())
 	responder_public := sc.sigma2dec.tlv.GetOctetStringRec([]int{3})
-	sigma2responder_session := sc.sigma2dec.tlv.GetIntRec([]int{2})
+	sigma2responder_session, err := sc.sigma2dec.tlv.GetIntRec([]int{2})
+	if err != nil {
+		panic("can't get sigma2responder_session")
+	}
 	tlv_s3tbs.writeOctetString(4, responder_public)
 	tlv_s3tbs.writeAnonStructEnd()
 	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
