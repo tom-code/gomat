@@ -11,7 +11,6 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"fmt"
-	"gomat/ca"
 	"gomat/tlvdec"
 	"io"
 	"log"
@@ -305,10 +304,6 @@ func discover_with_qr(qr string) Device {
 }
 
 func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) {
-	//var controller_id uint64
-	//var device_id uint64
-	//controller_id = 9
-	//device_id = 2
 
 	channel := NewChannel(device_ip, 5540, 55555)
 	secure_channel := SecureChannel {
@@ -381,95 +376,6 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 		log.Printf("commissioning error: %d\n", commisioning_result)
 	}
 }
-/*
-func commisionTMP(fabric *Fabric, device_ip net.IP, pin int) {
-	//fmt.Println(device)
-	//fmt.Println(device.addrs)
-
-	channel := NewChannel(device_ip, 5540, 55555)
-	secure_channel := SecureChannel {
-		udp: &channel,
-	}
-
-	secure_channel = do_spake2p(pin, &channel)
-
-	// send csr request
-	var tlv TLVBuffer
-	tlv.writeOctetString(0, create_random_bytes(32))
-	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
-	secure_channel.send(to_send)
-
-
-
-	csr_resp := secure_channel.receive()
-
-	nocsr := csr_resp.tlv.GetOctetStringRec([]int{1,0,0,1,0})
-	tlv2 := tlvdec.Decode(nocsr)
-	csr := tlv2.GetOctetStringRec([]int{1})
-	csrp, err := x509.ParseCertificateRequest(csr)
-	if err != nil {
-		panic(err)
-	}
-
-
-	//AddTrustedRootCertificate
-	var tlv4 TLVBuffer
-	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.ca_certificate))
-	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
-	secure_channel.send(to_send)
-
-
-	secure_channel.receive()
-
-
-	//noc_x509 := sign_cert(csrp, 2, "user")
-	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), 2, "device")
-	noc_matter := MatterCert2(fabric, noc_x509)
-	//AddNOC
-	var tlv5 TLVBuffer
-	tlv5.writeOctetString(0, noc_matter)
-	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
-	tlv5.writeUInt(3, TYPE_UINT_2, 9)   // admin subject !
-	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
-	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
-
-	secure_channel.send(to_send)
-
-	secure_channel.receive()
-
-	secure_channel.decrypt_key = []byte{}
-	secure_channel.encrypt_key = []byte{}
-	secure_channel.session = 0
-
-	secure_channel = do_sigma(fabric, 9, 2, secure_channel)
-
-
-	//commissioning complete
-	to_send = invokeCommand2(0, 0x30, 4, []byte{})
-	secure_channel.send(to_send)
-
-
-	secure_channel.receive()
-
-
-	//LIGHT ON!!!!!!!!!!!!!!!!!!!!!
-	// cluster=6 on/off - command 1=on
-	to_send = invokeCommand2(1, 6, 1, []byte{})
-	secure_channel.send(to_send)
-
-	light_resp := secure_channel.receive()
-	light_resp.tlv.Dump(0)
-
-	//r1 := invokeRead(0, 0x28, 1)
-	//secure_channel.send(uint16(sigma2responder_session), r1)
-	//resp := secure_channel.receive()
-	//resp.tlv.Dump(0)
-
-	r1 := invokeRead(0, 0x1d, 0)
-	secure_channel.send(r1)
-	resp := secure_channel.receive()
-	resp.tlv.Dump(0)
-}*/
 
 func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 
@@ -558,18 +464,28 @@ func main() {
 		Use:   "commission",
 		Run: func(cmd *cobra.Command, args []string) {
 			ip, _ := cmd.Flags().GetString("ip")
+			if len(ip) == 0 {
+				panic("ip address is required")
+			}
 			pin, _ := cmd.Flags().GetString("pin")
+			if len(pin) == 0 {
+				panic("passcode is required")
+			}
 			fabric := newFabric()
+			device_id,_ := cmd.Flags().GetUint64("device-id")
+			controller_id,_ := cmd.Flags().GetUint64("controller-id")
 			pinn, err := strconv.Atoi(pin)
 			if err != nil {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			commision(fabric, net.ParseIP(ip), pinn, 9, 2)
+			commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
 	commissionCmd.Flags().StringP("pin", "p", "", "pin")
+	commissionCmd.Flags().Uint64P("device-id", "", 2, "device id")
+	commissionCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
 	var offCmd = &cobra.Command{
 		Use:   "cmd_off",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -588,12 +504,6 @@ func main() {
 		},
 	}
 	onCmd.Flags().StringP("ip", "i", "", "ip address")
-	var cakeygenCmd = &cobra.Command{
-		Use:   "ca-keygen",
-		Run: func(cmd *cobra.Command, args []string) {
-		  ca.Create_ca_cert()
-		},
-	}
 	var cacreateuserCmd = &cobra.Command{
 		Use:   "ca-createuser [id]",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -614,12 +524,6 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 		  bootstrap_ca()
 		  NewCertManager().load()
-		},
-	}
-	var testCmd = &cobra.Command{
-		Use:   "test",
-		Run: func(cmd *cobra.Command, args []string) {
-			decode_manual_code("11400441207")
 		},
 	}
 	var discoverCmd = &cobra.Command{
@@ -670,8 +574,6 @@ func main() {
 	rootCmd.AddCommand(commissionCmd)
 	rootCmd.AddCommand(offCmd)
 	rootCmd.AddCommand(onCmd)
-	rootCmd.AddCommand(testCmd)
-	rootCmd.AddCommand(cakeygenCmd)
 	rootCmd.AddCommand(discoverCmd)
 	rootCmd.AddCommand(decodeQrCmd)
 	rootCmd.AddCommand(decodeManualCmd)
