@@ -245,7 +245,7 @@ func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_cha
 		session_privkey: controller_privkey,
 		exchange: uint16(randm.Intn(0xffff)),
 	}
-	sigma_context.genSigma1(fabric)
+	sigma_context.genSigma1(fabric, device_id)
 	sigma1 := genSigma1Req2(sigma_context.sigma1payload, sigma_context.exchange)
 	secure_channel.send(sigma1)
 
@@ -491,18 +491,26 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 		  fabric := newFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
-		  command_off(fabric, net.ParseIP(ip), 9, 2)
+		  device_id,_ := cmd.Flags().GetUint64("device-id")
+		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
+		  command_off(fabric, net.ParseIP(ip), controller_id, device_id)
 		},
 	}
+	offCmd.Flags().Uint64P("device-id", "", 2, "device id")
+	offCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
 	offCmd.Flags().StringP("ip", "i", "", "ip address")
 	var onCmd = &cobra.Command{
 		Use:   "cmd_on",
 		Run: func(cmd *cobra.Command, args []string) {
 		  fabric := newFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
-		  command_on(fabric, net.ParseIP(ip), 9, 2)
+		  device_id,_ := cmd.Flags().GetUint64("device-id")
+		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
+		  command_on(fabric, net.ParseIP(ip), controller_id, device_id)
 		},
 	}
+	onCmd.Flags().Uint64P("device-id", "", 2, "device id")
+	onCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
 	onCmd.Flags().StringP("ip", "i", "", "ip address")
 	var cacreateuserCmd = &cobra.Command{
 		Use:   "ca-createuser [id]",

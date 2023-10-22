@@ -30,7 +30,7 @@ type SigmaContext struct {
 	exchange uint16
 }
 
-func (sc *SigmaContext)genSigma1(fabric *Fabric) {
+func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	var tlv TLVBuffer
 	tlv.writeAnonStruct()
 	
@@ -55,7 +55,7 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric) {
 	binary.Write(&destination_message, binary.LittleEndian, fabric_id)
 
 	var node uint64
-	node = 2
+	node = device_id
 	binary.Write(&destination_message, binary.LittleEndian, node)
 
 	key := fabric.make_ipk()

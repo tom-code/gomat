@@ -74,9 +74,9 @@ func (cm *CertManager)sign_cert(user_pubkey *ecdsa.PublicKey, node_id uint64, na
 	subj := pkix.Name{
 	}
 
-	node_id_string := fmt.Sprintf("%016x", node_id)
+	node_id_string := fmt.Sprintf("%016X", node_id)
 	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
-	fabric_string := fmt.Sprintf("%016x", cm.fabric)
+	fabric_string := fmt.Sprintf("%016X", cm.fabric)
 	valname_fabric, err := asn1.MarshalWithParams(fabric_string, "utf8")
 
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{

@@ -10,8 +10,8 @@ This is attempt to light bulb using matter protocol.
 
 - create directory to hold keys and certificates `mkdir pem`
 - generate CA key and certificate using `gomat ca-bootstrap`
-- generate controller key and certificate using `gomat ca-createuser 9`
-  - 9 is example node-id of controller
+- generate controller key and certificate using `gomat ca-createuser 100`
+  - 100 is example node-id of controller
 - find device IP
   - discover command can be used to discover matter devices and their ip address
 - find device commissioning passcode/pin
@@ -24,5 +24,5 @@ This is attempt to light bulb using matter protocol.
     - device commissioning passcode/pin
     - ca key and certificate
     - controller node key and certificate
-  - example: `gomat commission --ip 192.168.5.178 --pin 123456`
+  - example: `gomat commission --ip 192.168.5.178 --pin 123456 --controller-id 100 --device-id 500`
 

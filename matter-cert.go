@@ -32,13 +32,13 @@ func CAConvertDNValue(in any) uint64 {
 func CAConvertDN(in pkix.Name, out *TLVBuffer) {
 	for _, extra := range in.Names {
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,1}) { //node-id
-			out.writeUInt(17, TYPE_UINT_1, CAConvertDNValue(extra.Value))
+			out.writeUInt(17, TYPE_UINT_8, CAConvertDNValue(extra.Value))
 		}
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4}) { //matter-rcac-id
-			out.writeUInt(20, TYPE_UINT_1, CAConvertDNValue(extra.Value))
+			out.writeUInt(20, TYPE_UINT_8, CAConvertDNValue(extra.Value))
 		}
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,5}) { //matter-fabric-id
-			out.writeUInt(21, TYPE_UINT_1, CAConvertDNValue(extra.Value))
+			out.writeUInt(21, TYPE_UINT_8, CAConvertDNValue(extra.Value))
 		}
 	}
 }
