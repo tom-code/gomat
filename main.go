@@ -418,6 +418,38 @@ func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 	fmt.Printf("result status: %d\n", status)
 }
 
+func command_list_fabrics(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
+
+	channel := NewChannel(ip, 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+		counter: uint32(randm.Intn(0xffffffff)),
+	}
+	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+
+	to_send := invokeRead(0, 0x3e, 1)
+	secure_channel.send(to_send)
+
+	resp := secure_channel.receive()
+	resp.tlv.Dump(0)
+}
+
+func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id uint64, endpoint, cluster, attr byte) {
+
+	channel := NewChannel(ip, 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+		counter: uint32(randm.Intn(0xffffffff)),
+	}
+	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+
+	to_send := invokeRead(endpoint, cluster, attr)
+	secure_channel.send(to_send)
+
+	resp := secure_channel.receive()
+	resp.tlv.Dump(0)
+}
+
 type Fabric struct {
 	id uint64
 	certificateManager *CertManager
@@ -427,7 +459,10 @@ func (fabric Fabric) compressedFabric() []byte {
 	capub := fabric.certificateManager.ca_private_key.PublicKey
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 
-	hkdfz := hkdf.New(sha256.New, capublic_key[1:], []byte{0,0,0,0,0,0,0,0x10}, []byte("CompressedFabric"))
+	var fabric_big_endian bytes.Buffer
+	binary.Write(&fabric_big_endian, binary.BigEndian, fabric.id)
+
+	hkdfz := hkdf.New(sha256.New, capublic_key[1:], fabric_big_endian.Bytes(), []byte("CompressedFabric"))
 	key := make([]byte, 8)
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
 		panic(err)
@@ -447,9 +482,10 @@ func (fabric Fabric) make_ipk() []byte {
 
 //var certificate_manager *CertManager
 func newFabric() *Fabric {
+	fabric := 0x99
 	out:= &Fabric{
-		id: 0x10,
-		certificateManager: NewCertManager(),
+		id: uint64(fabric),
+		certificateManager: NewCertManager(uint64(fabric)),
 	}
 	out.certificateManager.load()
 	return out
@@ -512,6 +548,39 @@ func main() {
 	onCmd.Flags().Uint64P("device-id", "", 2, "device id")
 	onCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
 	onCmd.Flags().StringP("ip", "i", "", "ip address")
+
+	var list_fabricsCmd = &cobra.Command{
+		Use:   "cmd_list_fabrics",
+		Run: func(cmd *cobra.Command, args []string) {
+		  fabric := newFabric()
+		  ip, _ := cmd.Flags().GetString("ip")
+		  device_id,_ := cmd.Flags().GetUint64("device-id")
+		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
+		  command_list_fabrics(fabric, net.ParseIP(ip), controller_id, device_id)
+		},
+	}
+	list_fabricsCmd.Flags().Uint64P("device-id", "", 2, "device id")
+	list_fabricsCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
+	list_fabricsCmd.Flags().StringP("ip", "i", "", "ip address")
+
+	var readCmd = &cobra.Command{
+		Use:   "cmd_read [endpoint] [cluster] [attribute]",
+		Run: func(cmd *cobra.Command, args []string) {
+		  fabric := newFabric()
+		  ip, _ := cmd.Flags().GetString("ip")
+		  device_id,_ := cmd.Flags().GetUint64("device-id")
+		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
+		  endpoint, _ := strconv.ParseInt(args[0], 0, 16)
+		  cluster, _ := strconv.ParseInt(args[1], 0, 16)
+		  attr, _ := strconv.ParseInt(args[2], 0, 16)
+		  command_generic_read(fabric, net.ParseIP(ip), controller_id, device_id, byte(endpoint), byte(cluster), byte(attr))
+		},
+		Args: cobra.MinimumNArgs(3),
+	}
+	readCmd.Flags().Uint64P("device-id", "", 2, "device id")
+	readCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
+	readCmd.Flags().StringP("ip", "i", "", "ip address")
+
 	var cacreateuserCmd = &cobra.Command{
 		Use:   "ca-createuser [id]",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -520,7 +589,7 @@ func main() {
 		  if err != nil {
 			panic(err)
 		  }
-		  cm := NewCertManager()
+		  cm := NewCertManager(0x99)
 		  cm.load()
 		  cm.create_user(uint64(id), "ctrl")
 		},
@@ -531,7 +600,7 @@ func main() {
 		Use:   "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
 		  bootstrap_ca()
-		  NewCertManager().load()
+		  NewCertManager(0x99).load()
 		},
 	}
 	var discoverCmd = &cobra.Command{
@@ -582,8 +651,10 @@ func main() {
 	rootCmd.AddCommand(commissionCmd)
 	rootCmd.AddCommand(offCmd)
 	rootCmd.AddCommand(onCmd)
+	rootCmd.AddCommand(readCmd)
 	rootCmd.AddCommand(discoverCmd)
 	rootCmd.AddCommand(decodeQrCmd)
 	rootCmd.AddCommand(decodeManualCmd)
+	rootCmd.AddCommand(list_fabricsCmd)
 	rootCmd.Execute()
 }

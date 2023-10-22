@@ -34,9 +34,9 @@ type CertManager struct {
 	ca_private_key *ecdsa.PrivateKey
 }
 
-func NewCertManager() *CertManager {
+func NewCertManager(fabric uint64) *CertManager {
 	return &CertManager{
-		fabric: 0x10,
+		fabric: fabric,
 	}
 }
 

@@ -8,11 +8,12 @@ import (
 	"strings"
 )
 
-const TypeInt         = 1
-const TypeBool 		  = 2
+const TypeInt = 1
+const TypeBool  = 2
 const TypeUTF8String  = 3
 const TypeOctetString = 4
-const TypeList		  = 5
+const TypeList = 5
+const TypeNull = 6
 
 type TlvItem struct {
 	Tag int
@@ -42,6 +43,7 @@ func (i TlvItem)Dump(pad int) {
 	fmt.Printf(pads)
 	fmt.Printf("tag  %d <%s>", i.Tag, i.types)
 	switch i.Type {
+	case TypeNull: fmt.Printf("null\n")
 	case TypeInt: fmt.Printf("int %d\n", i.valueInt)
 	case TypeBool: fmt.Printf("bool %v\n", i.valueBool)
 	case TypeUTF8String: fmt.Printf("string %s\n", i.valueString)
@@ -54,6 +56,20 @@ func (i TlvItem)Dump(pad int) {
 		//fmt.Println()
 	default: fmt.Printf("unknown %d\n", i.Type)
 	}
+}
+
+func (i TlvItem)GetItemRec(tag []int) *TlvItem {
+	if len(tag) == 0 {
+		return &i
+	}
+	if i.Type == TypeList {
+		for _, d := range i.valueList {
+			if d.Tag == tag[0] {
+				return d.GetItemRec(tag[1:])
+			}
+		}
+	}
+	return nil
 }
 
 func (i TlvItem)GetOctetStringRec(tag []int) []byte {
@@ -176,6 +192,10 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 			binary.Read(buf, binary.LittleEndian, &size)
 			current.valueOctetString = make([]byte, size)
 			buf.Read(current.valueOctetString)
+		case 0x14:
+			current.types = "null"
+			current.Type = TypeNull
+			current.Tag = readByte(buf)
 		case 0x15:
 			current.types = "struct"
 			current.Type = TypeList
