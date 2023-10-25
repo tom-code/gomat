@@ -47,7 +47,6 @@ func MatterCert2(fabric *Fabric, in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 
-	//cacert := ca.LoadCert("ca-cert.pem")
 	cacert := fabric.certificateManager.ca_certificate
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)

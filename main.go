@@ -187,6 +187,9 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	secure_channel.send(pbkdf_request)
 
 	pbkdf_responseS := secure_channel.receive()
+	if pbkdf_responseS.proto.opcode != SEC_CHAN_OPCODE_PBKDF_RESP {
+		panic("SEC_CHAN_OPCODE_PBKDF_RESP not received")
+	}
 	pbkdf_response_salt := pbkdf_responseS.tlv.GetOctetStringRec([]int{4,2})
 	pbkdf_response_iterations, err := pbkdf_responseS.tlv.GetIntRec([]int{4,1})
 	if err != nil {
@@ -207,6 +210,9 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	secure_channel.send(pake1)
 
 	pake2s := secure_channel.receive()
+	if pake2s.proto.opcode != SEC_CHAN_OPCODE_PAKE2 {
+		panic("SEC_CHAN_OPCODE_PAKE2 not received")
+	}
 	//pake2s.tlv.Dump(1)
 	pake2_pb := pake2s.tlv.GetOctetStringRec([]int{1})
 
@@ -251,6 +257,9 @@ func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_cha
 
 
 	sigma_context.sigma2dec = secure_channel.receive()
+	if sigma_context.sigma2dec.proto.opcode != 0x31 {
+		panic("sigma2 not received")
+	}
 
 	sigma_context.controller_key = fabric.certificateManager.get_privkey(cert_id_to_name(controller_id))
 	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.get_certificate(cert_id_to_name(controller_id)))
@@ -344,7 +353,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	//AddNOC
 	var tlv5 TLVBuffer
 	tlv5.writeOctetString(0, noc_matter)
-	tlv5.writeOctetString(2, []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}) //ipk
+	tlv5.writeOctetString(2, fabric.ipk) //ipk
 	tlv5.writeUInt(3, TYPE_UINT_2, controller_id)   // admin subject !
 	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
 	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
@@ -453,6 +462,7 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 type Fabric struct {
 	id uint64
 	certificateManager *CertManager
+	ipk []byte
 }
 
 func (fabric Fabric) compressedFabric() []byte {
@@ -471,8 +481,8 @@ func (fabric Fabric) compressedFabric() []byte {
 	return key
 }
 func (fabric Fabric) make_ipk() []byte {
-	ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
-	hkdfz := hkdf.New(sha256.New, ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
+	//ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
+	hkdfz := hkdf.New(sha256.New, fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
 	key := make([]byte, 16)
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
 		panic(err)
@@ -486,6 +496,7 @@ func newFabric() *Fabric {
 	out:= &Fabric{
 		id: uint64(fabric),
 		certificateManager: NewCertManager(uint64(fabric)),
+		ipk: []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf},
 	}
 	out.certificateManager.load()
 	return out
@@ -599,8 +610,9 @@ func main() {
 	var cabootCmd = &cobra.Command{
 		Use:   "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
-		  bootstrap_ca()
-		  NewCertManager(0x99).load()
+		  //cm := NewCertManager(0x99)
+		  fabric := newFabric()
+		  fabric.certificateManager.bootstrap_ca()
 		},
 	}
 	var discoverCmd = &cobra.Command{

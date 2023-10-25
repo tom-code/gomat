@@ -19,7 +19,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"gomat/ca"
+	"log"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -41,6 +43,11 @@ func NewCertManager(fabric uint64) *CertManager {
 }
 
 func (cm *CertManager)load() {
+	_, err := os.Stat("pem/ca-private.pem")
+	if err != nil {
+		log.Printf("can't open CA key. continue anyway %s\n", err.Error())
+		return
+	}
 	cm.ca_private_key = ca.Load_priv_key("pem/ca-private.pem").(*ecdsa.PrivateKey)
 	cm.ca_certificate = ca.LoadCert("pem/ca-cert.pem")
 }
@@ -137,15 +144,16 @@ func (cm *CertManager)sign_cert(user_pubkey *ecdsa.PublicKey, node_id uint64, na
 		panic(err)
 	}
 	ca.Store_cert(name, cert_bytes)
+	log.Printf("Signed certificate for node 0x%x\n", node_id)
 	return out_parsed
 }
 
-func bootstrap_ca() {
+func (cm *CertManager)bootstrap_ca() {
 	ca.Generate_and_store_key_ecdsa("pem/ca")
-	Create_ca_cert()
+	cm.Create_ca_cert()
 }
 
-func Create_ca_cert() {
+func (cm *CertManager)Create_ca_cert() {
 
 	pub := ca.Load_public_key("pem/ca-public.pem").(*ecdsa.PublicKey)
 	priv_ca := ca.Load_priv_key("pem/ca-private.pem")
@@ -207,4 +215,5 @@ func Create_ca_cert() {
 		panic(err)
 	}
 	ca.Store_cert("pem/ca", cert_bytes)
+	log.Println("CA certificate was created")
 }
