@@ -15,7 +15,11 @@ import (
 )
 
 type CertificateManager interface {
+	// load previous state of certificate manager
+	// this shall succeed even for first time
 	Load()
+
+	// bootstrap certificate authority - generate CA keys
 	BootstrapCa()
 	GetCaPublicKey() ecdsa.PublicKey
 	GetCaCertificate() *x509.Certificate

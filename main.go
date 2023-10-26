@@ -298,6 +298,12 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 	resp.tlv.Dump(0)
 }
 
+func createBasicFabric() *Fabric {
+	cert_manager := NewCertManager(0x99)
+	cert_manager.Load()
+	fabric := newFabric(0x99, cert_manager)
+	return fabric
+}
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -315,7 +321,7 @@ func main() {
 			if len(pin) == 0 {
 				panic("passcode is required")
 			}
-			fabric := newFabric()
+			fabric := createBasicFabric()
 			device_id,_ := cmd.Flags().GetUint64("device-id")
 			controller_id,_ := cmd.Flags().GetUint64("controller-id")
 			pinn, err := strconv.Atoi(pin)
@@ -333,7 +339,7 @@ func main() {
 	var offCmd = &cobra.Command{
 		Use:   "cmd_off",
 		Run: func(cmd *cobra.Command, args []string) {
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
 		  device_id,_ := cmd.Flags().GetUint64("device-id")
 		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
@@ -346,7 +352,7 @@ func main() {
 	var onCmd = &cobra.Command{
 		Use:   "cmd_on",
 		Run: func(cmd *cobra.Command, args []string) {
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
 		  device_id,_ := cmd.Flags().GetUint64("device-id")
 		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
@@ -360,7 +366,7 @@ func main() {
 	var list_fabricsCmd = &cobra.Command{
 		Use:   "cmd_list_fabrics",
 		Run: func(cmd *cobra.Command, args []string) {
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
 		  device_id,_ := cmd.Flags().GetUint64("device-id")
 		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
@@ -374,7 +380,7 @@ func main() {
 	var readCmd = &cobra.Command{
 		Use:   "cmd_read [endpoint] [cluster] [attribute]",
 		Run: func(cmd *cobra.Command, args []string) {
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  ip, _ := cmd.Flags().GetString("ip")
 		  device_id,_ := cmd.Flags().GetUint64("device-id")
 		  controller_id,_ := cmd.Flags().GetUint64("controller-id")
@@ -398,7 +404,7 @@ func main() {
 			panic(err)
 		  }
 		  //cm := NewCertManager(0x99)
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  fabric.certificateManager.Load()
 		  fabric.certificateManager.CreateUser(uint64(id))
 		},
@@ -409,7 +415,7 @@ func main() {
 		Use:   "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
 		  //cm := NewCertManager(0x99)
-		  fabric := newFabric()
+		  fabric := createBasicFabric()
 		  fabric.certificateManager.BootstrapCa()
 		},
 	}

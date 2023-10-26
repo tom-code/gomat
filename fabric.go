@@ -41,14 +41,12 @@ func (fabric Fabric) make_ipk() []byte {
 	return key
 }
 
-func newFabric() *Fabric {
-	fabric := 0x99
-	ca := NewCertManager(uint64(fabric))
+
+func newFabric(id uint64, certman CertificateManager) *Fabric {
 	out:= &Fabric{
-		id: uint64(fabric),
-		certificateManager: ca,
+		id: id,
+		certificateManager: certman,
 		ipk: []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf},
 	}
-	ca.Load()
 	return out
 }
