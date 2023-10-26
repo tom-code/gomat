@@ -17,12 +17,13 @@ import (
 
 
 func do_spake2p(pin int, udp *Channel) SecureChannel {
+	exchange := uint16(randm.Intn(0xffff))
 	secure_channel := SecureChannel {
 		udp: udp,
 		session: 0,
 	}
 
-	pbkdf_request := PBKDFParamRequest()
+	pbkdf_request := PBKDFParamRequest(exchange)
 	secure_channel.send(pbkdf_request)
 
 	pbkdf_responseS := secure_channel.receive()
@@ -45,7 +46,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	sctx.gen_random_X()
 	sctx.calc_X()
 
-	pake1 := Pake1ParamRequest(sctx.X.as_bytes())
+	pake1 := Pake1ParamRequest(exchange, sctx.X.as_bytes())
 	secure_channel.send(pake1)
 
 	pake2s := secure_channel.receive()
@@ -63,7 +64,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	ttseed = append(ttseed, pbkdf_responseS.payload...)
 	sctx.calc_hash(ttseed)
 
-	pake3 := Pake3ParamRequest(sctx.cA)
+	pake3 := Pake3ParamRequest(exchange, sctx.cA)
 	secure_channel.send(pake3)
 
 
@@ -84,8 +85,6 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) SecureChannel {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
-	log.Println(len(controller_privkey.Bytes()))
-	log.Println(len(controller_privkey.PublicKey().Bytes()))
 	sigma_context := SigmaContext {
 		session_privkey: controller_privkey,
 		exchange: uint16(randm.Intn(0xffff)),

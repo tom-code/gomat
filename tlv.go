@@ -291,13 +291,13 @@ func (m *Message) decodeBase(data *bytes.Buffer) error {
 
 
 
-func PBKDFParamRequest() []byte {
+func PBKDFParamRequest(exchange uint16) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
 		opcode: SEC_CHAN_OPCODE_PBKDF_REQ,
-		exchangeId: 0xba3e,
+		exchangeId: exchange,
 		protocolId: 0x00,
 	}
 	prot.encode(&buffer)	
@@ -315,13 +315,13 @@ func PBKDFParamRequest() []byte {
 }
 
 
-func Pake1ParamRequest(key []byte) []byte {
+func Pake1ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
 		opcode: SEC_CHAN_OPCODE_PAKE1,
-		exchangeId: 0xba3e,
+		exchangeId: exchange,
 		protocolId: 0x00,
 	}
 	prot.encode(&buffer)	
@@ -334,12 +334,12 @@ func Pake1ParamRequest(key []byte) []byte {
 	return buffer.Bytes()
 }
 
-func Pake3ParamRequest(key []byte) []byte {
+func Pake3ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
 		opcode: SEC_CHAN_OPCODE_PAKE3,
-		exchangeId: 0xba3e,
+		exchangeId: exchange,
 		protocolId: 0x00,
 	}
 	prot.encode(&buffer)
