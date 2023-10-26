@@ -1,19 +1,14 @@
 package main
 
-// requirements:
-// - create, manage, own CA certificate and private key
-// - sign device certificate (no need to store?)
-// - create/sign/own controller certificate and private key
-//    - this is key of user accessing devices
-//    - it can be admin or moreregular user
-//    - we may want to support multiple of them
-
 import (
 	"crypto/ecdsa"
 	"crypto/x509"
 
 )
 
+// matter certificate manager interface
+// all generated certificates must be compatible with matter
+//   - this means that after they are reencoded to matter format and back their signature must match
 type CertificateManager interface {
 	// load previous state of certificate manager
 	// this shall succeed even for first time
@@ -24,9 +19,16 @@ type CertificateManager interface {
 	GetCaPublicKey() ecdsa.PublicKey
 	GetCaCertificate() *x509.Certificate
 
+	// CreateUser creates keys and certificate for node with specific id
+	// it must be possible to later retrieve node keys using GetPrivkey and certificate using GetCertificate
 	CreateUser(node_id uint64)
+
+	// retrieve certificate of specified node (previously created by CreateUser)
 	GetCertificate(id uint64) *x509.Certificate
+
+	// retrieve key of specified node (previously created by CreateUser)
 	GetPrivkey(id uint64) *ecdsa.PrivateKey
 
+	// create and sign certificate using local CA keys
 	SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) *x509.Certificate
 }

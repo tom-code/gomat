@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"fmt"
+	"gomat/onboarding_payload"
 	"gomat/tlvdec"
 	"gomat/tlvenc"
 	"log"
@@ -117,16 +118,16 @@ func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_cha
 }
 
 
-func filter_devices(devices []Device, qr QrContent) Device {
+func filter_devices(devices []Device, qr onboarding_payload.QrContent) Device {
 	for _, device := range(devices) {
-		log.Printf("%s %d\n", device.D, qr.discriminator)
-		if device.D != fmt.Sprintf("%d", qr.discriminator) {
+		log.Printf("%s %d\n", device.D, qr.Discriminator)
+		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
 			continue
 		}
-		if device.VendorId != int(qr.vendor) {
+		if device.VendorId != int(qr.Vendor) {
 			continue
 		}
-		if device.ProductId != int(qr.product) {
+		if device.ProductId != int(qr.Product) {
 			continue
 		}
 		return device
@@ -147,7 +148,7 @@ func discover_with_qr(qr string) Device {
 		}
 
 	}
-	device := filter_devices(devices, decode_qr_text(qr))
+	device := filter_devices(devices, onboarding_payload.DecodeQrText(qr))
 	return device
 }
 
@@ -429,7 +430,7 @@ func main() {
 				panic(err)
 			}
 			if len(qrtext) > 0 {
-				qr := decode_qr_text(qrtext)
+				qr := onboarding_payload.DecodeQrText(qrtext)
 				device := filter_devices(devices, qr)
 				devices = []Device{device}
 			}
@@ -444,8 +445,8 @@ func main() {
 		Short: "decode text representation of qr code",
 		Run: func(cmd *cobra.Command, args []string) {
 			qrtext := args[0]
-			qr := decode_qr_text(qrtext)
-			qr.dump()
+			qr := onboarding_payload.DecodeQrText(qrtext)
+			qr.Dump()
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
@@ -454,9 +455,9 @@ func main() {
 		Short: "decode manual pairing code",
 		Run: func(cmd *cobra.Command, args []string) {
 			text := args[0]
-			content := decode_manual_code(text)
-			fmt.Printf("passcode: %d\n", content.passcode)
-			fmt.Printf("discriminator4: %d\n", content.discriminator4)
+			content := onboarding_payload.DecodeManualPairingCode(text)
+			fmt.Printf("passcode: %d\n", content.Passcode)
+			fmt.Printf("discriminator4: %d\n", content.Discriminator4)
 		},
 		Args: cobra.MinimumNArgs(1),
 	}

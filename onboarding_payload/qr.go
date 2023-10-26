@@ -1,17 +1,15 @@
-package main
+package onboarding_payload
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
-
-const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-."
+const qr_alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-."
 
 func a2n(a byte) uint32 {
-	for i:=0; i<len(alphabet); i++ {
-		if alphabet[i] == a {
+	for i:=0; i<len(qr_alphabet); i++ {
+		if qr_alphabet[i] == a {
 			return uint32(i)
 		}
 	}
@@ -106,23 +104,23 @@ func b38_decode(in string) BitBuffer {
 }
 
 type QrContent struct {
-	version byte
-	vendor uint16
-	product uint16
-	discriminator uint16
-	discriminator4 uint16
-	passcode uint32
+	Version byte
+	Vendor uint16
+	Product uint16
+	Discriminator uint16
+	Discriminator4 uint16
+	Passcode uint32
 }
 
-func (qr QrContent)dump() {
-	fmt.Printf("version:  %d\n", qr.version)
-	fmt.Printf("vendor:   %d\n", qr.vendor)
-	fmt.Printf("product:  %d\n", qr.product)
-	fmt.Printf("passcode: %d\n", qr.passcode)
-	fmt.Printf("discriminator: %d\n", qr.discriminator)
+func (qr QrContent)Dump() {
+	fmt.Printf("version:  %d\n", qr.Version)
+	fmt.Printf("vendor:   %d\n", qr.Vendor)
+	fmt.Printf("product:  %d\n", qr.Product)
+	fmt.Printf("passcode: %d\n", qr.Passcode)
+	fmt.Printf("discriminator: %d\n", qr.Discriminator)
 }
 
-func decode_qr_text(in string) QrContent {
+func DecodeQrText(in string) QrContent {
 	if !strings.HasPrefix(in, "MT:") {
 		panic("wrong qr")
 	}
@@ -131,31 +129,13 @@ func decode_qr_text(in string) QrContent {
 	bb := b38_decode(in)
 
 	bb.reset_ptr()
-	out.version = byte(bb.get_number(3))
-	out.vendor = uint16(bb.get_number(16))
-	out.product = uint16(bb.get_number(16))
+	out.Version = byte(bb.get_number(3))
+	out.Vendor = uint16(bb.get_number(16))
+	out.Product = uint16(bb.get_number(16))
 	bb.get_number(2) // custom flow
 	bb.get_number(8) // discovery capabilities
-	out.discriminator = uint16(bb.get_number(12))
-	out.passcode = uint32(bb.get_number(27))
+	out.Discriminator = uint16(bb.get_number(12))
+	out.Passcode = uint32(bb.get_number(27))
 	return out
 }
 
-
-func decode_manual_code(in string) QrContent {
-	in = strings.Replace(in, "-", "", -1)
-	fmt.Printf("normalized code: %s\n", in)
-	first_group := in[0:1]
-	second_group := in[1:6]
-	third_group := in[6:10]
-	//fourth := in[10:11]
-	first, _ := strconv.Atoi(first_group)
-	second, _ := strconv.Atoi(second_group)
-	third, _ := strconv.Atoi(third_group)
-	p := second & 0x3fff + third<<14
-	d := (first&3 <<10) + (second>>6)&0x300
-	return QrContent{
-		passcode: uint32(p),
-		discriminator4: uint16(d),
-	}
-}
