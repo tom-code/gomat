@@ -44,7 +44,7 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	var destination_message bytes.Buffer
 	destination_message.Write(initiatorRandom)
 	//cacert := ca.LoadCert("ca-cert.pem")
-	cacert := fabric.certificateManager.ca_certificate
+	cacert := fabric.certificateManager.GetCaCertificate()
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 

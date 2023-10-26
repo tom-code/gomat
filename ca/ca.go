@@ -1,5 +1,5 @@
 package ca
-
+/*
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"os"
 )
-
 
 func Generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -90,4 +89,4 @@ func LoadCert(file string) *x509.Certificate {
 		panic(err)
 	}
 	return cert
-}
+}*/

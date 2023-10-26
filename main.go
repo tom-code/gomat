@@ -5,21 +5,17 @@ import (
 	"crypto/aes"
 	"crypto/ecdh"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/binary"
 	"fmt"
 	"gomat/tlvdec"
-	"io"
 	"log"
 	"net"
 	"strconv"
 	randm "math/rand"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/hkdf"
 )
 
 
@@ -261,8 +257,8 @@ func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_cha
 		panic("sigma2 not received")
 	}
 
-	sigma_context.controller_key = fabric.certificateManager.get_privkey(cert_id_to_name(controller_id))
-	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.get_certificate(cert_id_to_name(controller_id)))
+	sigma_context.controller_key = fabric.certificateManager.GetPrivkey(controller_id)
+	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.certificateManager.GetCertificate(controller_id))
 
 	to_send := sigma_context.sigma3(fabric)
 	secure_channel.send(to_send)
@@ -339,7 +335,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 
 	//AddTrustedRootCertificate
 	var tlv4 TLVBuffer
-	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.ca_certificate))
+	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.GetCaCertificate()))
 	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
 	secure_channel.send(to_send)
 
@@ -348,7 +344,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
-	noc_x509 := fabric.certificateManager.sign_cert(csrp.PublicKey.(*ecdsa.PublicKey), device_id, "device")
+	noc_x509 := fabric.certificateManager.SignCertificate(csrp.PublicKey.(*ecdsa.PublicKey), device_id)
 	noc_matter := MatterCert2(fabric, noc_x509)
 	//AddNOC
 	var tlv5 TLVBuffer
@@ -459,48 +455,6 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 	resp.tlv.Dump(0)
 }
 
-type Fabric struct {
-	id uint64
-	certificateManager *CertManager
-	ipk []byte
-}
-
-func (fabric Fabric) compressedFabric() []byte {
-	capub := fabric.certificateManager.ca_private_key.PublicKey
-	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
-
-	var fabric_big_endian bytes.Buffer
-	binary.Write(&fabric_big_endian, binary.BigEndian, fabric.id)
-
-	hkdfz := hkdf.New(sha256.New, capublic_key[1:], fabric_big_endian.Bytes(), []byte("CompressedFabric"))
-	key := make([]byte, 8)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
-	}
-	//log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
-	return key
-}
-func (fabric Fabric) make_ipk() []byte {
-	//ipk := []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf}
-	hkdfz := hkdf.New(sha256.New, fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
-	key := make([]byte, 16)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
-	}
-	return key
-}
-
-//var certificate_manager *CertManager
-func newFabric() *Fabric {
-	fabric := 0x99
-	out:= &Fabric{
-		id: uint64(fabric),
-		certificateManager: NewCertManager(uint64(fabric)),
-		ipk: []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf},
-	}
-	out.certificateManager.load()
-	return out
-}
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -600,9 +554,10 @@ func main() {
 		  if err != nil {
 			panic(err)
 		  }
-		  cm := NewCertManager(0x99)
-		  cm.load()
-		  cm.create_user(uint64(id), "ctrl")
+		  //cm := NewCertManager(0x99)
+		  fabric := newFabric()
+		  fabric.certificateManager.Load()
+		  fabric.certificateManager.CreateUser(uint64(id))
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
@@ -612,7 +567,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 		  //cm := NewCertManager(0x99)
 		  fabric := newFabric()
-		  fabric.certificateManager.bootstrap_ca()
+		  fabric.certificateManager.BootstrapCa()
 		},
 	}
 	var discoverCmd = &cobra.Command{
