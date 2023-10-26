@@ -6,13 +6,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"gomat/tlvdec"
+	"gomat/tlvenc"
 	randm "math/rand"
 )
-
-const TYPE_UINT_1 = 4
-const TYPE_UINT_2 = 5
-const TYPE_UINT_4 = 6
-const TYPE_UINT_8 = 7
 
 
 const PROTOCOL_ID_SECURE_CHANNEL = 0
@@ -25,90 +21,6 @@ const SEC_CHAN_OPCODE_PAKE2      = 0x23
 const SEC_CHAN_OPCODE_PAKE3      = 0x24
 const SEC_CHAN_OPCODE_STATUS_REP = 0x40
 
-type TLVBuffer struct {
-	data bytes.Buffer
-}
-
-
-func (b *TLVBuffer) writeRaw(raw []byte) {
-	b.data.Write(raw)
-}
-
-
-func (b *TLVBuffer) writeControl(ctrl byte) {
-	binary.Write(&b.data, binary.BigEndian, ctrl)
-}
-
-func (b *TLVBuffer) writeTagContentSpecific(tag byte) {
-	binary.Write(&b.data, binary.BigEndian, tag)
-}
-
-func (b *TLVBuffer) writeUInt(tag byte, typ int, val uint64) {
-	var ctrl byte
-	ctrl = 0x1 << 5
-	ctrl = ctrl | byte(typ)
-	b.data.WriteByte(ctrl)
-	b.data.WriteByte(tag)
-	switch typ {
-	case TYPE_UINT_1: b.data.WriteByte(byte(val))
-	case TYPE_UINT_2: binary.Write(&b.data, binary.LittleEndian, uint16(val))
-	case TYPE_UINT_4: binary.Write(&b.data, binary.LittleEndian, uint32(val))
-	case TYPE_UINT_8: binary.Write(&b.data, binary.LittleEndian, uint64(val))
-	}
-}
-
-func (b *TLVBuffer) writeOctetString(tag byte, data []byte) {
-	var ctrl byte
-	ctrl = 0x1 << 5
-	if len(data) > 0xff {
-		ctrl = ctrl | 0x11
-		b.data.WriteByte(ctrl)
-		b.data.WriteByte(tag)
-		var ln uint16
-		ln = uint16(len(data))
-		binary.Write(&b.data, binary.LittleEndian, ln)
-	} else {
-		ctrl = ctrl | 0x10
-		b.data.WriteByte(ctrl)
-		b.data.WriteByte(tag)
-		b.data.WriteByte(byte(len(data)))
-	}
-	b.data.Write(data)
-}
-
-func (b *TLVBuffer) writeBool(tag byte, val bool) {
-	var ctrl byte
-	ctrl = 0x1 << 5
-	if val {
-		ctrl = ctrl | 0x9
-	} else {
-		ctrl = ctrl | 0x8
-	}
-	b.data.WriteByte(ctrl)
-	b.data.WriteByte(tag)
-}
-
-func (b *TLVBuffer) writeAnonStruct() {
-	b.data.WriteByte(0x15)
-}
-func (b *TLVBuffer) writeAnonList() {
-	b.data.WriteByte(0x17)
-}
-func (b *TLVBuffer) writeStruct(tag byte) {
-	b.data.WriteByte(0x35)
-	b.data.WriteByte(tag)
-}
-func (b *TLVBuffer) writeArray(tag byte) {
-	b.data.WriteByte(0x36)
-	b.data.WriteByte(tag)
-}
-func (b *TLVBuffer) writeList(tag byte) {
-	b.data.WriteByte(0x37)
-	b.data.WriteByte(tag)
-}
-func (b *TLVBuffer) writeAnonStructEnd() {
-	b.data.WriteByte(0x18)
-}
 
 
 type ProtocolMessage struct {
@@ -301,16 +213,16 @@ func PBKDFParamRequest(exchange uint16) []byte {
 		protocolId: 0x00,
 	}
 	prot.encode(&buffer)	
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
 	initiator_random := make([]byte, 32)
 	rand.Read(initiator_random)
-	tlv.writeOctetString(0x1, initiator_random)  // initiator random
-	tlv.writeUInt(0x2, TYPE_UINT_2, 0x0001)      //initator session-id
-	tlv.writeUInt(0x3, TYPE_UINT_1, 0x00)        // passcode id
-	tlv.writeBool(0x4, false)                    // has pbkdf
-	tlv.writeAnonStructEnd()
-	buffer.Write(tlv.data.Bytes())
+	tlv.WriteOctetString(0x1, initiator_random)  // initiator random
+	tlv.WriteUInt(0x2, tlvenc.TYPE_UINT_2, 0x0001)      //initator session-id
+	tlv.WriteUInt(0x3, tlvenc.TYPE_UINT_1, 0x00)        // passcode id
+	tlv.WriteBool(0x4, false)                    // has pbkdf
+	tlv.WriteAnonStructEnd()
+	buffer.Write(tlv.Bytes())
 	return buffer.Bytes()
 }
 
@@ -326,11 +238,11 @@ func Pake1ParamRequest(exchange uint16, key []byte) []byte {
 	}
 	prot.encode(&buffer)	
 
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-	tlv.writeOctetString(0x1, key)
-	tlv.writeAnonStructEnd()
-	buffer.Write(tlv.data.Bytes())
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteOctetString(0x1, key)
+	tlv.WriteAnonStructEnd()
+	buffer.Write(tlv.Bytes())
 	return buffer.Bytes()
 }
 
@@ -344,11 +256,11 @@ func Pake3ParamRequest(exchange uint16, key []byte) []byte {
 	}
 	prot.encode(&buffer)
 
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-	tlv.writeOctetString(0x1, key)
-	tlv.writeAnonStructEnd()
-	buffer.Write(tlv.data.Bytes())
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteOctetString(0x1, key)
+	tlv.WriteAnonStructEnd()
+	buffer.Write(tlv.Bytes())
 	return buffer.Bytes()
 }
 
@@ -397,25 +309,25 @@ type DecodedGeneric struct {
 
 func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-		tlv.writeBool(0, false)
-		tlv.writeBool(1, false)
-		tlv.writeArray(2)
-			tlv.writeAnonStruct()
-				tlv.writeList(0)
-					tlv.writeUInt(0, TYPE_UINT_1, uint64(endpoint))
-					tlv.writeUInt(1, TYPE_UINT_1, uint64(cluster))
-					tlv.writeUInt(2, TYPE_UINT_1, uint64(command))
-				tlv.writeAnonStructEnd()
-				tlv.writeStruct(1)
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
+		tlv.WriteBool(0, false)
+		tlv.WriteBool(1, false)
+		tlv.WriteArray(2)
+			tlv.WriteAnonStruct()
+				tlv.WriteList(0)
+					tlv.WriteUInt(0, tlvenc.TYPE_UINT_1, uint64(endpoint))
+					tlv.WriteUInt(1, tlvenc.TYPE_UINT_1, uint64(cluster))
+					tlv.WriteUInt(2, tlvenc.TYPE_UINT_1, uint64(command))
+				tlv.WriteAnonStructEnd()
+				tlv.WriteStruct(1)
 					//tlv.writeOctetString(0, payload)
-					tlv.writeRaw(payload)
-				tlv.writeAnonStructEnd()
-			tlv.writeAnonStructEnd()
-		tlv.writeAnonStructEnd()
-		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
-	tlv.writeAnonStructEnd()
+					tlv.WriteRaw(payload)
+				tlv.WriteAnonStructEnd()
+			tlv.WriteAnonStructEnd()
+		tlv.WriteAnonStructEnd()
+		tlv.WriteUInt(0xff, tlvenc.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 
 	var buffer bytes.Buffer
@@ -427,28 +339,28 @@ func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
 	var protocol_id uint16 
 	protocol_id = 1
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
-	buffer.Write(tlv.data.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }
 
 func invokeRead(endpoint, cluster, attr byte) []byte {
 
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
-		tlv.writeArray(0)
-			tlv.writeAnonList()
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
+		tlv.WriteArray(0)
+			tlv.WriteAnonList()
 				//tlv.writeList(0)
 					//tlv.writeBool(0, false)
-					tlv.writeUInt(2, TYPE_UINT_1, uint64(endpoint))
-					tlv.writeUInt(3, TYPE_UINT_1, uint64(cluster))
-					tlv.writeUInt(4, TYPE_UINT_1, uint64(attr))
+					tlv.WriteUInt(2, tlvenc.TYPE_UINT_1, uint64(endpoint))
+					tlv.WriteUInt(3, tlvenc.TYPE_UINT_1, uint64(cluster))
+					tlv.WriteUInt(4, tlvenc.TYPE_UINT_1, uint64(attr))
 				//tlv.writeAnonStructEnd()
-			tlv.writeAnonStructEnd()
-		tlv.writeAnonStructEnd()
-		tlv.writeBool(3, true)
-		tlv.writeUInt(0xff, TYPE_UINT_1, 10)
-	tlv.writeAnonStructEnd()
+			tlv.WriteAnonStructEnd()
+		tlv.WriteAnonStructEnd()
+		tlv.WriteBool(3, true)
+		tlv.WriteUInt(0xff, tlvenc.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 
 	var buffer bytes.Buffer
@@ -459,7 +371,7 @@ func invokeRead(endpoint, cluster, attr byte) []byte {
 	var protocol_id uint16 
 	protocol_id = 1
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
-	buffer.Write(tlv.data.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }

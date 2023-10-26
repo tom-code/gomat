@@ -7,10 +7,11 @@ import (
 	"crypto/x509"
 	"fmt"
 	"gomat/tlvdec"
+	"gomat/tlvenc"
 	"log"
+	randm "math/rand"
 	"net"
 	"strconv"
-	randm "math/rand"
 
 	"github.com/spf13/cobra"
 )
@@ -160,9 +161,9 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	secure_channel = do_spake2p(pin, &channel)
 
 	// send csr request
-	var tlv TLVBuffer
-	tlv.writeOctetString(0, create_random_bytes(32))
-	to_send := invokeCommand2(0, 0x3e, 4, tlv.data.Bytes())
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteOctetString(0, create_random_bytes(32))
+	to_send := invokeCommand2(0, 0x3e, 4, tlv.Bytes())
 	secure_channel.send(to_send)
 
 	csr_resp := secure_channel.receive()
@@ -176,9 +177,9 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	}
 
 	//AddTrustedRootCertificate
-	var tlv4 TLVBuffer
-	tlv4.writeOctetString(0, MatterCert2(fabric, fabric.certificateManager.GetCaCertificate()))
-	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.data.Bytes())
+	var tlv4 tlvenc.TLVBuffer
+	tlv4.WriteOctetString(0, MatterCert2(fabric, fabric.certificateManager.GetCaCertificate()))
+	to_send = invokeCommand2(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.send(to_send)
 
 
@@ -189,12 +190,12 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	noc_x509 := fabric.certificateManager.SignCertificate(csrp.PublicKey.(*ecdsa.PublicKey), device_id)
 	noc_matter := MatterCert2(fabric, noc_x509)
 	//AddNOC
-	var tlv5 TLVBuffer
-	tlv5.writeOctetString(0, noc_matter)
-	tlv5.writeOctetString(2, fabric.ipk) //ipk
-	tlv5.writeUInt(3, TYPE_UINT_2, controller_id)   // admin subject !
-	tlv5.writeUInt(4, TYPE_UINT_2, 101) // admin vendorid ??
-	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.data.Bytes())
+	var tlv5 tlvenc.TLVBuffer
+	tlv5.WriteOctetString(0, noc_matter)
+	tlv5.WriteOctetString(2, fabric.ipk) //ipk
+	tlv5.WriteUInt(3, tlvenc.TYPE_UINT_2, controller_id)   // admin subject !
+	tlv5.WriteUInt(4, tlvenc.TYPE_UINT_2, 101) // admin vendorid ??
+	to_send = invokeCommand2(0, 0x3e, 0x6, tlv5.Bytes())
 
 	secure_channel.send(to_send)
 

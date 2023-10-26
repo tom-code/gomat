@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	"gomat/tlvenc"
 	"io"
 
 	"golang.org/x/crypto/hkdf"
@@ -31,15 +32,15 @@ type SigmaContext struct {
 }
 
 func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
-	var tlv TLVBuffer
-	tlv.writeAnonStruct()
+	var tlv tlvenc.TLVBuffer
+	tlv.WriteAnonStruct()
 	
 	initiatorRandom := make([]byte, 32)
 	rand.Read(initiatorRandom)
-	tlv.writeOctetString(1, initiatorRandom)
+	tlv.WriteOctetString(1, initiatorRandom)
 
 	sessionId := 222
-	tlv.writeUInt(2, TYPE_UINT_2, uint64(sessionId))
+	tlv.WriteUInt(2, tlvenc.TYPE_UINT_2, uint64(sessionId))
 
 	var destination_message bytes.Buffer
 	destination_message.Write(initiatorRandom)
@@ -67,13 +68,13 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	destinationIdentifier := mac.Sum(nil)
 	//log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
 
-	tlv.writeOctetString(3, destinationIdentifier)
+	tlv.WriteOctetString(3, destinationIdentifier)
 
 
-	tlv.writeOctetString(4, sc.session_privkey.PublicKey().Bytes())
-	tlv.writeAnonStructEnd()
+	tlv.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
+	tlv.WriteAnonStructEnd()
 	//return tlv.data.Bytes()
-	sc.sigma1payload = tlv.data.Bytes()
+	sc.sigma1payload = tlv.Bytes()
 }
 
 
@@ -107,20 +108,20 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 
 func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 
-	var tlv_s3tbs TLVBuffer
-	tlv_s3tbs.writeAnonStruct()
-	tlv_s3tbs.writeOctetString(1, sc.controller_matter_certificate)
-	tlv_s3tbs.writeOctetString(3, sc.session_privkey.PublicKey().Bytes())
+	var tlv_s3tbs tlvenc.TLVBuffer
+	tlv_s3tbs.WriteAnonStruct()
+	tlv_s3tbs.WriteOctetString(1, sc.controller_matter_certificate)
+	tlv_s3tbs.WriteOctetString(3, sc.session_privkey.PublicKey().Bytes())
 	responder_public := sc.sigma2dec.tlv.GetOctetStringRec([]int{3})
 	sigma2responder_session, err := sc.sigma2dec.tlv.GetIntRec([]int{2})
 	if err != nil {
 		panic("can't get sigma2responder_session")
 	}
-	tlv_s3tbs.writeOctetString(4, responder_public)
-	tlv_s3tbs.writeAnonStructEnd()
+	tlv_s3tbs.WriteOctetString(4, responder_public)
+	tlv_s3tbs.WriteAnonStructEnd()
 	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
 	s2 := sha256.New()
-	s2.Write(tlv_s3tbs.data.Bytes())
+	s2.Write(tlv_s3tbs.Bytes())
 	tlv_s3tbs_hash := s2.Sum(nil)
 	sr, ss, err := ecdsa.Sign(rand.Reader, sc.controller_key, tlv_s3tbs_hash)
 	if err != nil {
@@ -128,11 +129,11 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	}
 	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
 
-	var tlv_s3tbe TLVBuffer
-	tlv_s3tbe.writeAnonStruct()
-	tlv_s3tbe.writeOctetString(1, sc.controller_matter_certificate)
-	tlv_s3tbe.writeOctetString(3, tlv_s3tbs_out)
-	tlv_s3tbe.writeAnonStructEnd()
+	var tlv_s3tbe tlvenc.TLVBuffer
+	tlv_s3tbe.WriteAnonStruct()
+	tlv_s3tbe.WriteOctetString(1, sc.controller_matter_certificate)
+	tlv_s3tbe.WriteOctetString(3, tlv_s3tbs_out)
+	tlv_s3tbe.WriteAnonStructEnd()
 
 	pub, err := ecdh.P256().NewPublicKey(responder_public)
 	if err != nil {
@@ -164,19 +165,19 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	if err != nil {
 		panic(err)
 	}
-	CipherText := ccm.Seal(nil, nonce, tlv_s3tbe.data.Bytes(), []byte{})
+	CipherText := ccm.Seal(nil, nonce, tlv_s3tbe.Bytes(), []byte{})
 
-	var tlv_s3 TLVBuffer
-	tlv_s3.writeAnonStruct()
-	tlv_s3.writeOctetString(1, CipherText)
-	tlv_s3.writeAnonStructEnd()
+	var tlv_s3 tlvenc.TLVBuffer
+	tlv_s3.WriteAnonStruct()
+	tlv_s3.WriteOctetString(1, CipherText)
+	tlv_s3.WriteAnonStructEnd()
 
 
-	to_send := genSigma3Req2(tlv_s3.data.Bytes(), sc.exchange)
+	to_send := genSigma3Req2(tlv_s3.Bytes(), sc.exchange)
 
 	// prepare session keys
 	ses_key_transcript := s3k_th
-	ses_key_transcript = append(ses_key_transcript, tlv_s3.data.Bytes()...)
+	ses_key_transcript = append(ses_key_transcript, tlv_s3.Bytes()...)
 	s2 = sha256.New()
 	s2.Write(ses_key_transcript)
 	transcript_hash = s2.Sum(nil)
