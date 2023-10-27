@@ -11,18 +11,18 @@ import (
 )
 
 type Channel struct {
-	udp net.PacketConn
-	remote_address net.UDPAddr
+	Udp net.PacketConn
+	Remote_address net.UDPAddr
 }
 
 func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 	var out Channel
-	out.remote_address = net.UDPAddr{
+	out.Remote_address = net.UDPAddr{
 		IP : remote_ip,
 		Port: remote_port,
 	}
 	var err error
-	out.udp, err = net.ListenPacket("udp", fmt.Sprintf(":%d", local_port))
+	out.Udp, err = net.ListenPacket("udp", fmt.Sprintf(":%d", local_port))
 	if err != nil {
 		panic(err)
 	}
@@ -30,11 +30,11 @@ func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 }
 
 func (ch *Channel)send(data []byte) {
-	ch.udp.WriteTo(data, &ch.remote_address)
+	ch.Udp.WriteTo(data, &ch.Remote_address)
 }
 func (ch *Channel)receive() ([]byte, error) {
 	buf := make([]byte, 1024)
-	n, _, errx := ch.udp.ReadFrom(buf)
+	n, _, errx := ch.Udp.ReadFrom(buf)
 	if errx != nil {
 		panic(errx)
 	}
@@ -52,17 +52,17 @@ func make_nonce3(counter uint32, node []byte) []byte{
 
 
 type SecureChannel struct {
-	udp *Channel
+	Udp *Channel
 	encrypt_key []byte
 	decrypt_key []byte
 	remote_node []byte
 	local_node []byte
-	counter uint32
+	Counter uint32
 	session int
 }
 
-func (sc *SecureChannel) receive() DecodedGeneric {
-	data, _ := sc.udp.receive()
+func (sc *SecureChannel) Receive() DecodedGeneric {
+	data, _ := sc.Udp.receive()
 	decode_buffer := bytes.NewBuffer(data)
 	var out DecodedGeneric
 	out.msg.decodeBase(decode_buffer)
@@ -106,12 +106,12 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 
 	if out.proto.protocolId == 0 {
 		if out.proto.opcode == 0x10 {  // standalone ack
-			return sc.receive()
+			return sc.Receive()
 		}
 	}
 
 	ack := AckGen(out.proto, out.msg.messageCounter)
-	sc.send(ack)
+	sc.Send(ack)
 
 	if out.proto.protocolId == 0 {
 		if out.proto.opcode == 0x40 {  // status report
@@ -119,19 +119,19 @@ func (sc *SecureChannel) receive() DecodedGeneric {
 		}
 	}
 	if len(out.payload) > 0 {
-		out.tlv = tlvdec.Decode(out.payload)
+		out.Tlv = tlvdec.Decode(out.payload)
 	}
 	return out
 }
 
-func (sc *SecureChannel)send(data []byte) {
+func (sc *SecureChannel)Send(data []byte) {
 
-	sc.counter = sc.counter + 1
+	sc.Counter = sc.Counter + 1
 	var buffer bytes.Buffer
 	msg := Message {
 		sessionId: uint16(sc.session),
 		securityFlags: 0,
-		messageCounter: sc.counter,
+		messageCounter: sc.Counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 	}
 	msg.encodeBase(&buffer)
@@ -143,7 +143,7 @@ func (sc *SecureChannel)send(data []byte) {
 		add2 := make([]byte, len(header_slice))
 		copy(add2, header_slice)
 
-		nonce := make_nonce3(sc.counter, sc.local_node)
+		nonce := make_nonce3(sc.Counter, sc.local_node)
 
 		c, err := aes.NewCipher(sc.encrypt_key)
 		if err != nil {
@@ -158,5 +158,5 @@ func (sc *SecureChannel)send(data []byte) {
 	}
 
 
-	sc.udp.send(buffer.Bytes())
+	sc.Udp.send(buffer.Bytes())
 }

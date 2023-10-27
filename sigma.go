@@ -45,7 +45,7 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	var destination_message bytes.Buffer
 	destination_message.Write(initiatorRandom)
 	//cacert := ca.LoadCert("ca-cert.pem")
-	cacert := fabric.certificateManager.GetCaCertificate()
+	cacert := fabric.CertificateManager.GetCaCertificate()
 	capub := cacert.PublicKey.(*ecdsa.PublicKey)
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 
@@ -112,8 +112,8 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	tlv_s3tbs.WriteAnonStruct()
 	tlv_s3tbs.WriteOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbs.WriteOctetString(3, sc.session_privkey.PublicKey().Bytes())
-	responder_public := sc.sigma2dec.tlv.GetOctetStringRec([]int{3})
-	sigma2responder_session, err := sc.sigma2dec.tlv.GetIntRec([]int{2})
+	responder_public := sc.sigma2dec.Tlv.GetOctetStringRec([]int{3})
+	sigma2responder_session, err := sc.sigma2dec.Tlv.GetIntRec([]int{2})
 	if err != nil {
 		panic("can't get sigma2responder_session")
 	}

@@ -292,7 +292,7 @@ func decodegen(data []byte) DecodedGeneric {
 	tlvdata := make([]byte, buf.Available())
 	n, _ := buf.Read(tlvdata)
 	//log.Printf("tlv data %s", hex.EncodeToString(tlvdata[:n]))
-	out.tlv = tlvdec.Decode(tlvdata[:n])
+	out.Tlv = tlvdec.Decode(tlvdata[:n])
 	out.payload = tlvdata[:n]
 
 	return out
@@ -302,13 +302,13 @@ func decodegen(data []byte) DecodedGeneric {
 type DecodedGeneric struct {
 	msg Message
 	proto ProtocolMessage
-	tlv tlvdec.TlvItem
+	Tlv tlvdec.TlvItem
 	payload []byte
 }
 
 
 
-func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
+func InvokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 
 	var tlv tlvenc.TLVBuffer
 	tlv.WriteAnonStruct()
@@ -345,7 +345,7 @@ func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 	return buffer.Bytes()
 }
 
-func invokeRead(endpoint, cluster, attr byte) []byte {
+func InvokeRead(endpoint, cluster, attr byte) []byte {
 
 	var tlv tlvenc.TLVBuffer
 	tlv.WriteAnonStruct()

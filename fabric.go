@@ -13,12 +13,12 @@ import (
 
 type Fabric struct {
 	id uint64
-	certificateManager CertificateManager
+	CertificateManager CertificateManager
 	ipk []byte
 }
 
 func (fabric Fabric) compressedFabric() []byte {
-	capub := fabric.certificateManager.GetCaPublicKey()
+	capub := fabric.CertificateManager.GetCaPublicKey()
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 
 	var fabric_big_endian bytes.Buffer
@@ -45,7 +45,7 @@ func (fabric Fabric) make_ipk() []byte {
 func NewFabric(id uint64, certman CertificateManager) *Fabric {
 	out:= &Fabric{
 		id: id,
-		certificateManager: certman,
+		CertificateManager: certman,
 		ipk: []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf},
 	}
 	return out

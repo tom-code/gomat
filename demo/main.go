@@ -1,4 +1,4 @@
-package gomat
+package main
 
 import (
 	"fmt"
@@ -9,10 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/tom-code/gomat/onboarding_payload"
+	"github.com/tom-code/gomat"
 )
 
 
-func filter_devices(devices []Device, qr onboarding_payload.QrContent) Device {
+func filter_devices(devices []gomat.Device, qr onboarding_payload.QrContent) gomat.Device {
 	for _, device := range(devices) {
 		log.Printf("%s %d\n", device.D, qr.Discriminator)
 		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
@@ -29,11 +30,11 @@ func filter_devices(devices []Device, qr onboarding_payload.QrContent) Device {
 	panic("not foind")
 }
 
-func discover_with_qr(qr string) Device {
-	var devices []Device
+func discover_with_qr(qr string) gomat.Device {
+	var devices []gomat.Device
 	var err error
 	for i:=0; i<5; i++ {
-		devices, err = Discover("en0")
+		devices, err = gomat.Discover("en0")
 		if err != nil {
 			panic(err)
 		}
@@ -47,16 +48,16 @@ func discover_with_qr(qr string) Device {
 }
 
 
-func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
+func command_off(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64) {
 
-	channel := NewChannel(ip, 5540, 55555)
-	secure_channel := SecureChannel {
+	channel := gomat.NewChannel(ip, 5540, 55555)
+	secure_channel := gomat.SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
-	to_send := InvokeCommand(1, 6, 0, []byte{})
+	to_send := gomat.InvokeCommand(1, 6, 0, []byte{})
 	secure_channel.Send(to_send)
 
 	resp := secure_channel.Receive()
@@ -68,16 +69,16 @@ func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 }
 
 
-func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
+func command_on(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64) {
 
-	channel := NewChannel(ip, 5540, 55555)
-	secure_channel := SecureChannel {
+	channel := gomat.NewChannel(ip, 5540, 55555)
+	secure_channel := gomat.SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
-	to_send := InvokeCommand(1, 6, 1, []byte{})
+	to_send := gomat.InvokeCommand(1, 6, 1, []byte{})
 	secure_channel.Send(to_send)
 
 	resp := secure_channel.Receive()
@@ -88,46 +89,46 @@ func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 	fmt.Printf("result status: %d\n", status)
 }
 
-func command_list_fabrics(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
+func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64) {
 
-	channel := NewChannel(ip, 5540, 55555)
-	secure_channel := SecureChannel {
+	channel := gomat.NewChannel(ip, 5540, 55555)
+	secure_channel := gomat.SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
-	to_send := InvokeRead(0, 0x3e, 1)
+	to_send := gomat.InvokeRead(0, 0x3e, 1)
 	secure_channel.Send(to_send)
 
 	resp := secure_channel.Receive()
 	resp.Tlv.Dump(0)
 }
 
-func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id uint64, endpoint, cluster, attr byte) {
+func command_generic_read(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64, endpoint, cluster, attr byte) {
 
-	channel := NewChannel(ip, 5540, 55555)
-	secure_channel := SecureChannel {
+	channel := gomat.NewChannel(ip, 5540, 55555)
+	secure_channel := gomat.SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
-	to_send := InvokeRead(endpoint, cluster, attr)
+	to_send := gomat.InvokeRead(endpoint, cluster, attr)
 	secure_channel.Send(to_send)
 
 	resp := secure_channel.Receive()
 	resp.Tlv.Dump(0)
 }
 
-func createBasicFabric(id uint64) *Fabric {
-	cert_manager := NewCertManager(id)
+func createBasicFabric(id uint64) *gomat.Fabric {
+	cert_manager := gomat.NewCertManager(id)
 	cert_manager.Load()
-	fabric := NewFabric(id, cert_manager)
+	fabric := gomat.NewFabric(id, cert_manager)
 	return fabric
 }
 
-func createBasicFabricFromCmd(cmd *cobra.Command) *Fabric {
+func createBasicFabricFromCmd(cmd *cobra.Command) *gomat.Fabric {
 	fabric_id_str, _ := cmd.Flags().GetString("fabric")
 	id, err := strconv.ParseUint(fabric_id_str, 0, 64)
 	if err != nil {
@@ -136,18 +137,18 @@ func createBasicFabricFromCmd(cmd *cobra.Command) *Fabric {
 	return createBasicFabric(id)
 }
 
-func connectDeviceFromCmd(cmd *cobra.Command) SecureChannel {
+func connectDeviceFromCmd(cmd *cobra.Command) gomat.SecureChannel {
 	fabric := createBasicFabricFromCmd(cmd)
 	ip, _ := cmd.Flags().GetString("ip")
 	device_id,_ := cmd.Flags().GetUint64("device-id")
 	controller_id,_ := cmd.Flags().GetUint64("controller-id")
 
-	channel := NewChannel(net.ParseIP(ip), 5540, 55555)
-	secure_channel := SecureChannel {
+	channel := gomat.NewChannel(net.ParseIP(ip), 5540, 55555)
+	secure_channel := gomat.SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 	return secure_channel
 }
 
@@ -176,7 +177,7 @@ func main() {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
+			gomat.Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
@@ -271,14 +272,14 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("device")
 			qrtext, _ := cmd.Flags().GetString("qr")
-			devices, err := Discover(device)
+			devices, err := gomat.Discover(device)
 			if err != nil {
 				panic(err)
 			}
 			if len(qrtext) > 0 {
 				qr := onboarding_payload.DecodeQrText(qrtext)
 				device := filter_devices(devices, qr)
-				devices = []Device{device}
+				devices = []gomat.Device{device}
 			}
 			for _, device := range devices {
 				device.Dump()
