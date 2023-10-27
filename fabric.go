@@ -42,7 +42,7 @@ func (fabric Fabric) make_ipk() []byte {
 }
 
 
-func newFabric(id uint64, certman CertificateManager) *Fabric {
+func NewFabric(id uint64, certman CertificateManager) *Fabric {
 	out:= &Fabric{
 		id: id,
 		certificateManager: certman,

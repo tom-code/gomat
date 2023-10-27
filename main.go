@@ -123,7 +123,7 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 func createBasicFabric(id uint64) *Fabric {
 	cert_manager := NewCertManager(id)
 	cert_manager.Load()
-	fabric := newFabric(id, cert_manager)
+	fabric := NewFabric(id, cert_manager)
 	return fabric
 }
 
