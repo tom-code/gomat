@@ -1,4 +1,4 @@
-package main
+package gomat
 
 import (
 	"crypto/ecdsa"

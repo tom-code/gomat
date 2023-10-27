@@ -1,8 +1,7 @@
-package main
+package gomat
 
 import (
 	"fmt"
-	"gomat/onboarding_payload"
 	"log"
 	randm "math/rand"
 	"net"

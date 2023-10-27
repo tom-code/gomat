@@ -1,4 +1,4 @@
-package main
+package gomat
 
 import (
 	"crypto/ecdsa"
@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"gomat/tlvenc"
 	"math/big"
 	"strconv"
 )

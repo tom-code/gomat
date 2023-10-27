@@ -1,12 +1,10 @@
-package main
+package gomat
 
 import (
 	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
-	"gomat/tlvdec"
-	"gomat/tlvenc"
 	"log"
 	randm "math/rand"
 	"net"

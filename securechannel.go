@@ -1,11 +1,10 @@
-package main
+package gomat
 
 import (
 	"bytes"
 	"crypto/aes"
 	"encoding/binary"
 	"fmt"
-	"gomat/tlvdec"
 	"net"
 )
 

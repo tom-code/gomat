@@ -1,12 +1,10 @@
-package main
+package gomat
 
 import (
 	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"gomat/tlvdec"
-	"gomat/tlvenc"
 	randm "math/rand"
 )
 

@@ -1,4 +1,4 @@
-package main
+package gomat
 
 import (
 	"bytes"
@@ -10,7 +10,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
-	"gomat/tlvenc"
 	"io"
 
 	"golang.org/x/crypto/hkdf"
