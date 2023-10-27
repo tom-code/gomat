@@ -54,7 +54,7 @@ func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 		udp: &channel,
 		counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
 	to_send := invokeCommand(1, 6, 0, []byte{})
 	secure_channel.send(to_send)
@@ -75,7 +75,7 @@ func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 		udp: &channel,
 		counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
 	to_send := invokeCommand(1, 6, 1, []byte{})
 	secure_channel.send(to_send)
@@ -95,7 +95,7 @@ func command_list_fabrics(fabric *Fabric, ip net.IP, controller_id, device_id ui
 		udp: &channel,
 		counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
 	to_send := invokeRead(0, 0x3e, 1)
 	secure_channel.send(to_send)
@@ -111,7 +111,7 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 		udp: &channel,
 		counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
 	to_send := invokeRead(endpoint, cluster, attr)
 	secure_channel.send(to_send)
@@ -134,6 +134,21 @@ func createBasicFabricFromCmd(cmd *cobra.Command) *Fabric {
 		panic(fmt.Sprintf("invalid fabric id %s", fabric_id_str))
 	}
 	return createBasicFabric(id)
+}
+
+func connectDeviceFromCmd(cmd *cobra.Command) SecureChannel {
+	fabric := createBasicFabricFromCmd(cmd)
+	ip, _ := cmd.Flags().GetString("ip")
+	device_id,_ := cmd.Flags().GetUint64("device-id")
+	controller_id,_ := cmd.Flags().GetUint64("controller-id")
+
+	channel := NewChannel(net.ParseIP(ip), 5540, 55555)
+	secure_channel := SecureChannel {
+		udp: &channel,
+		counter: uint32(randm.Intn(0xffffffff)),
+	}
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	return secure_channel
 }
 
 func main() {

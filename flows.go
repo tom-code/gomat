@@ -14,7 +14,7 @@ import (
 
 
 
-func do_spake2p(pin int, udp *Channel) SecureChannel {
+func Spake2pExchange(pin int, udp *Channel) SecureChannel {
 	exchange := uint16(randm.Intn(0xffff))
 	secure_channel := SecureChannel {
 		udp: udp,
@@ -80,7 +80,7 @@ func do_spake2p(pin int, udp *Channel) SecureChannel {
 	return secure_channel
 }
 
-func do_sigma(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) SecureChannel {
+func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) SecureChannel {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
 	sigma_context := SigmaContext {
@@ -120,7 +120,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 		udp: &channel,
 	}
 
-	secure_channel = do_spake2p(pin, &channel)
+	secure_channel = Spake2pExchange(pin, &channel)
 
 	// send csr request
 	var tlv tlvenc.TLVBuffer
@@ -167,7 +167,7 @@ func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	secure_channel.encrypt_key = []byte{}
 	secure_channel.session = 0
 
-	secure_channel = do_sigma(fabric, controller_id, device_id, secure_channel)
+	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
 
 	//commissioning complete

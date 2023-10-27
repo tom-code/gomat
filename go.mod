@@ -1,4 +1,4 @@
-module gomat
+module github.com/tom-code/gomat
 
 go 1.21.0
 
