@@ -12,6 +12,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/tom-code/gomat/tlvenc"
 	"golang.org/x/crypto/hkdf"
 )
 

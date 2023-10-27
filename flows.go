@@ -8,6 +8,9 @@ import (
 	"log"
 	randm "math/rand"
 	"net"
+
+	"github.com/tom-code/gomat/tlvdec"
+	"github.com/tom-code/gomat/tlvenc"
 )
 
 

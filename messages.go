@@ -6,6 +6,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	randm "math/rand"
+
+	"github.com/tom-code/gomat/tlvdec"
+	"github.com/tom-code/gomat/tlvenc"
 )
 
 

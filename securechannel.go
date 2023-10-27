@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+
+	"github.com/tom-code/gomat/tlvdec"
 )
 
 type Channel struct {

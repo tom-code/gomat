@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/tom-code/gomat/onboarding_payload"
 )
 
 
