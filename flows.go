@@ -114,7 +114,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	return secure_channel
 }
 
-func commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) {
+func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) {
 
 	channel := NewChannel(device_ip, 5540, 55555)
 	secure_channel := SecureChannel {
