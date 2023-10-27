@@ -12,7 +12,6 @@ import (
 type Channel struct {
 	udp net.PacketConn
 	remote_address net.UDPAddr
-	out_counter uint32
 }
 
 func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
@@ -26,7 +25,6 @@ func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 	if err != nil {
 		panic(err)
 	}
-	out.out_counter = 1
 	return out
 }
 

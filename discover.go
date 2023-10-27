@@ -49,7 +49,7 @@ func parseVP(vp string) (int, int) {
 	return vid, pid
 }
 
-func discover(iface string) ([]Device, error) {
+func Discover(iface string) ([]Device, error) {
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	defer close(entriesCh)
 	devices := []Device{}

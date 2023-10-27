@@ -307,7 +307,7 @@ type DecodedGeneric struct {
 
 
 
-func invokeCommand2(endpoint, cluster, command byte, payload []byte) []byte {
+func invokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 
 	var tlv tlvenc.TLVBuffer
 	tlv.WriteAnonStruct()

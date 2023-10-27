@@ -5,6 +5,7 @@ This is attempt to light bulb using matter protocol.
 - prototyping phase
 - it can commission device and send commands to it
 - commisioning does not implement any non-required steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
+- correct error handling is not really present - errors usually leads to panic
 
 ### how to use test application
 
