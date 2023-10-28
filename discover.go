@@ -10,7 +10,7 @@ import (
 )
 
 
-type Device struct {
+type DiscoveredDevice struct {
 	name string
 	host string
 	addrs []net.IP
@@ -23,7 +23,7 @@ type Device struct {
 	DN string
 }
 
-func (d Device)Dump() {
+func (d DiscoveredDevice)Dump() {
 	fmt.Printf("name: %s\n", d.name)
 	fmt.Printf("host: %s\n", d.host)
 	fmt.Printf("DN:   %s\n", d.DN)
@@ -49,10 +49,10 @@ func parseVP(vp string) (int, int) {
 	return vid, pid
 }
 
-func Discover(iface string) ([]Device, error) {
+func Discover(iface string) ([]DiscoveredDevice, error) {
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	defer close(entriesCh)
-	devices := []Device{}
+	devices := []DiscoveredDevice{}
 	go func() {
     	for entry := range entriesCh {
         	fmt.Printf("Got new entry: %+v\n", entry)
@@ -66,7 +66,7 @@ func Discover(iface string) ([]Device, error) {
 			if entry.AddrV6 != nil {
 				addrs = append(addrs, entry.AddrV4)
 			}
-			dev := Device {
+			dev := DiscoveredDevice {
 				name: entry.Name,
 				host: entry.Host,
 				addrs: addrs,

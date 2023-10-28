@@ -154,6 +154,13 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 }
 
 func (cm *CertManager)BootstrapCa() {
+
+	_, err := os.Stat("pem/ca-private.pem")
+	if err == nil {
+		log.Printf("CA private key already present - skipping bootstrap\n")
+		return
+	}
+
 	generate_and_store_key_ecdsa("pem/ca")
 	cm.create_ca_cert()
 }

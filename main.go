@@ -12,7 +12,7 @@ import (
 )
 
 
-func filter_devices(devices []Device, qr onboarding_payload.QrContent) Device {
+func filter_devices(devices []DiscoveredDevice, qr onboarding_payload.QrContent) DiscoveredDevice {
 	for _, device := range(devices) {
 		log.Printf("%s %d\n", device.D, qr.Discriminator)
 		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
@@ -29,8 +29,8 @@ func filter_devices(devices []Device, qr onboarding_payload.QrContent) Device {
 	panic("not foind")
 }
 
-func discover_with_qr(qr string) Device {
-	var devices []Device
+func discover_with_qr(qr string) DiscoveredDevice {
+	var devices []DiscoveredDevice
 	var err error
 	for i:=0; i<5; i++ {
 		devices, err = Discover("en0")
@@ -278,7 +278,7 @@ func main() {
 			if len(qrtext) > 0 {
 				qr := onboarding_payload.DecodeQrText(qrtext)
 				device := filter_devices(devices, qr)
-				devices = []Device{device}
+				devices = []DiscoveredDevice{device}
 			}
 			for _, device := range devices {
 				device.Dump()
