@@ -1,4 +1,4 @@
-package gomat
+package ccm
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-//https://gist.github.com/hirochachacha/abb76ff71573dea2ef42
+//borrowed from: https://gist.github.com/hirochachacha/abb76ff71573dea2ef42
 
 
 type mac struct {

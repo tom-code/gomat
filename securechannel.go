@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/tom-code/gomat/ccm"
 	"github.com/tom-code/gomat/tlvdec"
 )
 
@@ -76,7 +77,7 @@ func (sc *SecureChannel) Receive() DecodedGeneric {
 		if err != nil {
 			panic(err)
 		}
-		ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 		if err != nil {
 			panic(err)
 		}
@@ -149,7 +150,7 @@ func (sc *SecureChannel)Send(data []byte) {
 		if err != nil {
 			panic(err)
 		}
-		ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 		if err != nil {
 			panic(err)
 		}

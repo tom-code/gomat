@@ -14,6 +14,7 @@ import (
 
 	"github.com/tom-code/gomat/tlvenc"
 	"golang.org/x/crypto/hkdf"
+	"github.com/tom-code/gomat/ccm"
 )
 
 
@@ -161,7 +162,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 		panic(err)
 	}
 	nonce := []byte("NCASE_Sigma3N")
-	ccm, err := NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 	if err != nil {
 		panic(err)
 	}
