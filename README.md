@@ -30,4 +30,4 @@ This is attempt to light bulb using matter protocol.
     - controller node key and certificate
   - example: `./gomat commission --ip 192.168.5.178 --pin 123456 --controller-id 100 --device-id 500`
 - light on!
-  `./gomat cmd off --ip 192.168.5.178 --controller-id 100 --device-id 500`
+  `./gomat cmd on --ip 192.168.5.178 --controller-id 100 --device-id 500`
