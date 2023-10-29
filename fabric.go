@@ -27,7 +27,8 @@ func (fabric Fabric) compressedFabric() []byte {
 	hkdfz := hkdf.New(sha256.New, capublic_key[1:], fabric_big_endian.Bytes(), []byte("CompressedFabric"))
 	key := make([]byte, 8)
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
+		//panic(err)
+		return []byte{}
 	}
 	//log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
 	return key
@@ -36,7 +37,8 @@ func (fabric Fabric) make_ipk() []byte {
 	hkdfz := hkdf.New(sha256.New, fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
 	key := make([]byte, 16)
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
+		//panic(err)
+		return []byte{}
 	}
 	return key
 }

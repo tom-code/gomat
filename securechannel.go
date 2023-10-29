@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/tom-code/gomat/ccm"
 	"github.com/tom-code/gomat/tlvdec"
@@ -30,14 +31,15 @@ func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 	return out
 }
 
-func (ch *Channel)send(data []byte) {
-	ch.Udp.WriteTo(data, &ch.Remote_address)
+func (ch *Channel)send(data []byte) error {
+	_, err := ch.Udp.WriteTo(data, &ch.Remote_address)
+	return err
 }
 func (ch *Channel)receive() ([]byte, error) {
 	buf := make([]byte, 1024)
 	n, _, errx := ch.Udp.ReadFrom(buf)
 	if errx != nil {
-		panic(errx)
+		return []byte{}, errx
 	}
 	return buf[:n], nil
 }
@@ -62,8 +64,12 @@ type SecureChannel struct {
 	session int
 }
 
-func (sc *SecureChannel) Receive() DecodedGeneric {
-	data, _ := sc.Udp.receive()
+func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
+	sc.Udp.Udp.SetReadDeadline(time.Now().Add(time.Second*3))
+	data, err := sc.Udp.receive()
+	if err != nil {
+		return DecodedGeneric{}, err
+	}
 	decode_buffer := bytes.NewBuffer(data)
 	var out DecodedGeneric
 	out.msg.decodeBase(decode_buffer)
@@ -75,17 +81,17 @@ func (sc *SecureChannel) Receive() DecodedGeneric {
 		nonce := make_nonce3(out.msg.messageCounter, sc.remote_node)
 		c, err := aes.NewCipher(sc.decrypt_key)
 		if err != nil {
-			panic(err)
+			return DecodedGeneric{}, err
 		}
 		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 		if err != nil {
-			panic(err)
+			return DecodedGeneric{}, err
 		}
 		ciphertext := proto
 		decbuf := []byte{}
 		outx, err := ccm.Open(decbuf, nonce, ciphertext, add)
 		if err != nil {
-			panic(err)
+			return DecodedGeneric{}, err
 		}
 
 		decoder := bytes.NewBuffer(outx)
@@ -116,16 +122,16 @@ func (sc *SecureChannel) Receive() DecodedGeneric {
 
 	if out.proto.protocolId == 0 {
 		if out.proto.opcode == 0x40 {  // status report
-			return out
+			return out, nil
 		}
 	}
 	if len(out.payload) > 0 {
 		out.Tlv = tlvdec.Decode(out.payload)
 	}
-	return out
+	return out, nil
 }
 
-func (sc *SecureChannel)Send(data []byte) {
+func (sc *SecureChannel)Send(data []byte) error {
 
 	sc.Counter = sc.Counter + 1
 	var buffer bytes.Buffer
@@ -148,16 +154,17 @@ func (sc *SecureChannel)Send(data []byte) {
 
 		c, err := aes.NewCipher(sc.encrypt_key)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		CipherText := ccm.Seal(nil, nonce, data, add2)
 		buffer.Write(CipherText)
 	}
 
 
-	sc.Udp.send(buffer.Bytes())
+	err := sc.Udp.send(buffer.Bytes())
+	return err
 }

@@ -166,7 +166,7 @@ func (ctx *SpakeCtx)calc_ZVb() {
 	ctx.V.x, ctx.V.y = ctx.curve.ScalarMult(ctx.L.x, ctx.L.y, ctx.y_random.Bytes())
 }
 
-func (ctx *SpakeCtx)calc_hash(seed []byte) {
+func (ctx *SpakeCtx)calc_hash(seed []byte) error {
 	sh0 := sha256.New()
 	sh0.Write(seed)
 
@@ -187,7 +187,7 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	hkdfz := hkdf.New(sha256.New, ctx.Ka, nil, []byte("ConfirmationKeys"))
 	key := make([]byte, 32)
 	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		panic(err)
+		return err
 	}
 
 	mac := hmac.New(sha256.New, key[:16])
@@ -201,10 +201,11 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) {
 	hkdf2 := hkdf.New(sha256.New, ctx.Ke, nil, []byte("SessionKeys"))
 	Xcryptkey := make([]byte, 16*3)
 	if _, err := io.ReadFull(hkdf2, Xcryptkey); err != nil {
-		panic(err)
+		return err
 	}
 	ctx.decrypt_key = Xcryptkey[16:32]
 	ctx.encrypt_key = Xcryptkey[:16]
+	return nil
 }
 
 func newSpaceCtx() SpakeCtx {

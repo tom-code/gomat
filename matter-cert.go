@@ -21,12 +21,12 @@ type dsaSignature struct {
 func CAConvertDNValue(in any) uint64 {
 	v3, ok := in.(string)
 	if !ok {
-		panic("")
+		return 0
 	}
 
 	v4, err := strconv.ParseUint(v3, 16, 64)
 	if err != nil {
-		panic(err)
+		return 0
 	}
 	return v4
 }

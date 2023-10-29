@@ -67,7 +67,7 @@ func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device
 
 
 func createBasicFabric(id uint64) *gomat.Fabric {
-	cert_manager := gomat.NewCertManager(id)
+	cert_manager := gomat.NewFileCertManager(id)
 	cert_manager.Load()
 	fabric := gomat.NewFabric(id, cert_manager)
 	return fabric
@@ -82,7 +82,7 @@ func createBasicFabricFromCmd(cmd *cobra.Command) *gomat.Fabric {
 	return createBasicFabric(id)
 }
 
-func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) gomat.SecureChannel {
+func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) (gomat.SecureChannel, error) {
 	ip, _ := cmd.Flags().GetString("ip")
 	device_id,_ := cmd.Flags().GetUint64("device-id")
 	controller_id,_ := cmd.Flags().GetUint64("controller-id")
@@ -92,8 +92,9 @@ func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) gomat.Secure
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
-	return secure_channel
+	var err error
+	secure_channel, err = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	return secure_channel, err
 }
 
 func main() {
@@ -114,11 +115,17 @@ func main() {
 		Use: "off",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
-			channel := connectDeviceFromCmd(fabric, cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
 			to_send := gomat.InvokeCommand(1, 6, 0, []byte{})
 			channel.Send(to_send)
 
-			resp := channel.Receive()
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
 			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
 			if err != nil {
 				panic(err)
@@ -131,11 +138,17 @@ func main() {
 		Use: "on",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
-			channel := connectDeviceFromCmd(fabric, cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
 			to_send := gomat.InvokeCommand(1, 6, 1, []byte{})
 			channel.Send(to_send)
 
-			resp := channel.Receive()
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
 			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
 			if err != nil {
 				panic(err)
@@ -148,7 +161,10 @@ func main() {
 		Use: "read",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
-			channel := connectDeviceFromCmd(fabric, cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
 
 			endpoint, _ := strconv.ParseInt(args[0], 0, 16)
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
@@ -157,7 +173,10 @@ func main() {
 			to_send := gomat.InvokeRead(byte(endpoint), byte(cluster), byte(attr))
 			channel.Send(to_send)
 
-			resp := channel.Receive()
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
 			resp.Tlv.Dump(0)
 
 		},
@@ -186,7 +205,10 @@ func main() {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			gomat.Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
+			err = gomat.Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
+			if err != nil {
+				panic(err)
+			}
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
@@ -206,7 +228,11 @@ func main() {
 		  //cm := NewCertManager(0x99)
 		  fabric := createBasicFabricFromCmd(cmd)
 		  fabric.CertificateManager.Load()
-		  fabric.CertificateManager.CreateUser(uint64(id))
+		  err = fabric.CertificateManager.CreateUser(uint64(id))
+		  if err != nil {
+			panic(err)
+		  }
+
 		},
 		Args: cobra.MinimumNArgs(1),
 	}

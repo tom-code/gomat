@@ -54,12 +54,19 @@ func command_off(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	var err error
+	secure_channel, err = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
 
 	to_send := InvokeCommand(1, 6, 0, []byte{})
 	secure_channel.Send(to_send)
 
-	resp := secure_channel.Receive()
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		panic(err)
+	}
 	status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
 	if err != nil {
 		panic(err)
@@ -75,12 +82,19 @@ func command_on(fabric *Fabric, ip net.IP, controller_id, device_id uint64) {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	var err error
+	secure_channel, err = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
 
 	to_send := InvokeCommand(1, 6, 1, []byte{})
 	secure_channel.Send(to_send)
 
-	resp := secure_channel.Receive()
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		panic(err)
+	}
 	status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
 	if err != nil {
 		panic(err)
@@ -95,12 +109,19 @@ func command_list_fabrics(fabric *Fabric, ip net.IP, controller_id, device_id ui
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	var err error
+	secure_channel, err = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
 
 	to_send := InvokeRead(0, 0x3e, 1)
 	secure_channel.Send(to_send)
 
-	resp := secure_channel.Receive()
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		panic(err)
+	}
 	resp.Tlv.Dump(0)
 }
 
@@ -111,17 +132,24 @@ func command_generic_read(fabric *Fabric, ip net.IP, controller_id, device_id ui
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	var err error
+	secure_channel, err = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
 
 	to_send := InvokeRead(endpoint, cluster, attr)
 	secure_channel.Send(to_send)
 
-	resp := secure_channel.Receive()
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		panic(err)
+	}
 	resp.Tlv.Dump(0)
 }
 
 func createBasicFabric(id uint64) *Fabric {
-	cert_manager := NewCertManager(id)
+	cert_manager := NewFileCertManager(id)
 	cert_manager.Load()
 	fabric := NewFabric(id, cert_manager)
 	return fabric
@@ -147,7 +175,11 @@ func connectDeviceFromCmd(cmd *cobra.Command) SecureChannel {
 		Udp: &channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
-	secure_channel = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	var err error
+	secure_channel, err = SigmaExchange(fabric, controller_id, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
 	return secure_channel
 }
 
@@ -253,7 +285,10 @@ func main() {
 		  //cm := NewCertManager(0x99)
 		  fabric := createBasicFabricFromCmd(cmd)
 		  fabric.CertificateManager.Load()
-		  fabric.CertificateManager.CreateUser(uint64(id))
+		  err = fabric.CertificateManager.CreateUser(uint64(id))
+		  if err != nil {
+			panic(err)
+		  }
 		},
 		Args: cobra.MinimumNArgs(1),
 	}

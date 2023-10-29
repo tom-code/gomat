@@ -107,7 +107,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	return buffer.Bytes()
 }
 
-func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
+func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 
 	var tlv_s3tbs tlvenc.TLVBuffer
 	tlv_s3tbs.WriteAnonStruct()
@@ -116,7 +116,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	responder_public := sc.sigma2dec.Tlv.GetOctetStringRec([]int{3})
 	sigma2responder_session, err := sc.sigma2dec.Tlv.GetIntRec([]int{2})
 	if err != nil {
-		panic("can't get sigma2responder_session")
+		return []byte{}, err
 	}
 	tlv_s3tbs.WriteOctetString(4, responder_public)
 	tlv_s3tbs.WriteAnonStructEnd()
@@ -126,7 +126,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	tlv_s3tbs_hash := s2.Sum(nil)
 	sr, ss, err := ecdsa.Sign(rand.Reader, sc.controller_key, tlv_s3tbs_hash)
 	if err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
 
@@ -138,11 +138,11 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 
 	pub, err := ecdh.P256().NewPublicKey(responder_public)
 	if err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	shared_secret, err := sc.session_privkey.ECDH(pub)
 	if err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	s3k_th := sc.sigma1payload
 	s3k_th = append(s3k_th, sc.sigma2dec.payload...)
@@ -154,17 +154,17 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
 	s3k := make([]byte, 16)
 	if _, err := io.ReadFull(s3kengine, s3k); err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 
 	c, err := aes.NewCipher(s3k)
 	if err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	nonce := []byte("NCASE_Sigma3N")
 	ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
 	if err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	CipherText := ccm.Seal(nil, nonce, tlv_s3tbe.Bytes(), []byte{})
 
@@ -188,12 +188,12 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) []byte {
 	keypackengine := hkdf.New(sha256.New, shared_secret, salt, []byte("SessionKeys"))
 	keypack := make([]byte, 16*3)
 	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
-		panic(err)
+		return []byte{}, err
 	}
 	sc.session = int(sigma2responder_session)
 
 	sc.i2rkey = keypack[:16]
 	sc.r2ikey = keypack[16:32]
 
-	return to_send
+	return to_send, nil
 }

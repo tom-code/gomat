@@ -36,7 +36,7 @@ type CertManager struct {
 	ca_private_key *ecdsa.PrivateKey
 }
 
-func NewCertManager(fabric uint64) *CertManager {
+func NewFileCertManager(fabric uint64) *CertManager {
 	return &CertManager{
 		fabric: fabric,
 	}
@@ -64,12 +64,16 @@ func (cm *CertManager)GetPrivkey(id uint64) *ecdsa.PrivateKey {
 	return load_priv_key("pem/"+cert_id_to_name(id)+"-private.pem").(*ecdsa.PrivateKey)
 }
 
-func (cm *CertManager)CreateUser(node_id uint64) {
+func (cm *CertManager)CreateUser(node_id uint64) error {
 	id := fmt.Sprintf("%d", node_id)
-	privkey := generate_and_store_key_ecdsa("pem/"+id)
+	privkey, err := generate_and_store_key_ecdsa("pem/"+id)
+	if err != nil {
+		return err
+	}
 	cm.SignCertificate(&privkey.PublicKey, node_id)
+	return nil
 }
-func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) *x509.Certificate {
+func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error) {
 
 
 	public_key_auth := elliptic.Marshal(elliptic.P256(), cm.ca_private_key.PublicKey.X, cm.ca_private_key.PublicKey.Y)
@@ -142,15 +146,15 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 
 	cert_bytes, err := x509.CreateCertificate(rand.Reader, &template, cm.ca_certificate, public_key_subj, cm.ca_private_key)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	out_parsed, err := x509.ParseCertificate(cert_bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	store_cert("pem/"+cert_id_to_name(node_id), cert_bytes)
 	log.Printf("Signed certificate for node 0x%x\n", node_id)
-	return out_parsed
+	return out_parsed, nil
 }
 
 func (cm *CertManager)BootstrapCa() {
@@ -232,14 +236,14 @@ func (cm *CertManager)create_ca_cert() {
 
 
 
-func generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
+func generate_and_store_key_ecdsa(name string) (*ecdsa.PrivateKey, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	privEC, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	privBlock := pem.Block {
 		Type: "EC PRIVATE KEY",
@@ -247,12 +251,12 @@ func generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
 	}
 	err = os.WriteFile(name+"-private.pem", pem.EncodeToMemory(&privBlock), 0600)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
   
 	pubPKIX, err := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	pubBlock := pem.Block {
 		Type: "PUBLIC KEY",
@@ -260,9 +264,9 @@ func generate_and_store_key_ecdsa(name string) *ecdsa.PrivateKey {
 	}
 	err = os.WriteFile(name+"-public.pem", pem.EncodeToMemory(&pubBlock), 0600)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return priv
+	return priv, nil
 }
 
 func load_priv_key(file string) any {
