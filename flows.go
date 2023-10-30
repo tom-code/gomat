@@ -29,7 +29,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 
 	pbkdf_responseS, err := secure_channel.Receive()
 	if err != nil {
-		return SecureChannel{}, err
+		return SecureChannel{}, fmt.Errorf("pbkdf response not received: %s", err.Error())
 	}
 	if pbkdf_responseS.proto.opcode != SEC_CHAN_OPCODE_PBKDF_RESP {
 		return SecureChannel{}, fmt.Errorf("SEC_CHAN_OPCODE_PBKDF_RESP not received")
@@ -55,7 +55,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 
 	pake2s, err := secure_channel.Receive()
 	if err != nil {
-		return SecureChannel{}, err
+		return SecureChannel{}, fmt.Errorf("pake2 not received: %s", err.Error())
 	}
 	if pake2s.proto.opcode != SEC_CHAN_OPCODE_PAKE2 {
 		return SecureChannel{}, fmt.Errorf("SEC_CHAN_OPCODE_PAKE2 not received")
@@ -108,6 +108,10 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	sigma_context.sigma2dec, err = secure_channel.Receive()
 	if err != nil {
 		return SecureChannel{}, err
+	}
+	if (sigma_context.sigma2dec.proto.protocolId == 0) && (sigma_context.sigma2dec.proto.opcode == 0x40) {
+		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.statusReport.GeneralCode,
+				                            sigma_context.sigma2dec.statusReport.ProtocolCode)
 	}
 	if sigma_context.sigma2dec.proto.opcode != 0x31 {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received")

@@ -122,6 +122,10 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 
 	if out.proto.protocolId == 0 {
 		if out.proto.opcode == 0x40 {  // status report
+			buf := bytes.NewBuffer(out.payload)
+			binary.Read(buf, binary.LittleEndian, &out.statusReport.GeneralCode)
+			binary.Read(buf, binary.LittleEndian, &out.statusReport.ProtocolId)
+			binary.Read(buf, binary.LittleEndian, &out.statusReport.ProtocolCode)
 			return out, nil
 		}
 	}

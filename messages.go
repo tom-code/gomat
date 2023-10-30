@@ -298,12 +298,18 @@ func decodegen(data []byte) DecodedGeneric {
 	return out
 }
 
+type StatusReportElements struct {
+	GeneralCode   uint16
+	ProtocolId   uint32
+	ProtocolCode uint16
+}
 
 type DecodedGeneric struct {
 	msg Message
 	proto ProtocolMessage
 	Tlv tlvdec.TlvItem
 	payload []byte
+	statusReport StatusReportElements
 }
 
 
