@@ -45,7 +45,7 @@ func CAConvertDN(in pkix.Name, out *tlvenc.TLVBuffer) {
 	}
 }
 
-func MatterCert2(fabric *Fabric, in *x509.Certificate) []byte {
+func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 

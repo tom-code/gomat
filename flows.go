@@ -118,7 +118,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	}
 
 	sigma_context.controller_key = fabric.CertificateManager.GetPrivkey(controller_id)
-	sigma_context.controller_matter_certificate = MatterCert2(fabric, fabric.CertificateManager.GetCertificate(controller_id))
+	sigma_context.controller_matter_certificate = SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCertificate(controller_id))
 
 	to_send, err := sigma_context.sigma3(fabric)
 	if err != nil {
@@ -170,7 +170,7 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 
 	//AddTrustedRootCertificate
 	var tlv4 tlvenc.TLVBuffer
-	tlv4.WriteOctetString(0, MatterCert2(fabric, fabric.CertificateManager.GetCaCertificate()))
+	tlv4.WriteOctetString(0, SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCaCertificate()))
 	to_send = InvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.Send(to_send)
 
@@ -183,7 +183,7 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	if err != nil {
 		return err
 	}
-	noc_matter := MatterCert2(fabric, noc_x509)
+	noc_matter := SerializeCertificateIntoMatter(fabric, noc_x509)
 	//AddNOC
 	var tlv5 tlvenc.TLVBuffer
 	tlv5.WriteOctetString(0, noc_matter)

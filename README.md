@@ -63,7 +63,7 @@ func main() {
 	device_ip := "192.168.5.178"
 	pin := 123456
 
-	cm := gomat.NewCertManager(fabric_id)
+	cm := gomat.NewFileCertManager(fabric_id)
 	cm.BootstrapCa()
 	cm.Load()
 	cm.CreateUser(admin_user)
@@ -71,3 +71,6 @@ func main() {
 	gomat.Commision(fabric, net.ParseIP(device_ip), pin, admin_user, device_id)
 }
 ```
+
+#### certificate manager
+NewFabric function accepts certificate manager object as input parameter. Certificate manager must implement interface CertificateManager and user can supply own implementation. Supplied CertManager created by NewFileCertManager is very simple and stores all data in .pem files under pem directory.
