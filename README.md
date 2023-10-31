@@ -31,8 +31,8 @@ This is attempt to light bulb using matter protocol.
   - discover command can be used to discover matter devices and their ip address
 - find device commissioning passcode/pin
   - device may show it
-  - it can be extracted from QR code. use decode-qr to extract passcode from text representation of QR code
-  - it can be extracted from manual pairing code. use command decode-mc to extract passcode from manual pairing code
+  - it can be extracted from QR code. use decode-qr to extract passcode from text representation of QR code `./gomat decode-qr MT:-24J0AFN00SIQ663000`
+  - it can be extracted from manual pairing code. use command decode-mc to extract passcode from manual pairing code `./gomat decode-mc 35792000079`
 - perform commissioning of device. This authenticates using passcode, uploads CA certificate to device, signs and uploads device's own certificate and sets admin user id.
   - required for commisioning:
     - ip address of device
