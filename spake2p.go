@@ -3,7 +3,6 @@ package gomat
 import (
 	"bytes"
 	"crypto/elliptic"
-	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -43,10 +42,11 @@ func (p *Point) from_bytes(in []byte ) {
 	p.x, p.y = elliptic.Unmarshal(elliptic.P256(), in)
 }
 
+/*
 func (p Point) reset() {
 	p.x.SetInt64(0)
 	p.y.SetInt64(0)
-}
+}*/
 
 var M Point
 var N Point
@@ -167,18 +167,13 @@ func (ctx *SpakeCtx)calc_ZVb() {
 }
 
 func (ctx *SpakeCtx)calc_hash(seed []byte) error {
-	sh0 := sha256.New()
-	sh0.Write(seed)
 
-
-	sh0sum := sh0.Sum(nil)
+	sh0sum := sha256_enc(seed)
 	mbin := elliptic.Marshal(elliptic.P256(), M.x, M.y)
 	nbin := elliptic.Marshal(elliptic.P256(), N.x, N.y)
 	tt := createTT(sh0sum, "", "", mbin, nbin, ctx.X.as_bytes(), ctx.Y.as_bytes(), ctx.Z.as_bytes(), ctx.V.as_bytes(), ctx.w0)
 
-	sh1 := sha256.New()
-	sh1.Write(tt)
-	sh1sum := sh1.Sum(nil)
+	sh1sum := sha256_enc(tt)
 
 	ctx.Ka = sh1sum[:16]
 	ctx.Ke = sh1sum[16:32]
@@ -190,13 +185,8 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) error {
 		return err
 	}
 
-	mac := hmac.New(sha256.New, key[:16])
-	mac.Write(ctx.Y.as_bytes())
-	ctx.cA = mac.Sum(nil)
-
-	mac = hmac.New(sha256.New, key[16:])
-	mac.Write(ctx.X.as_bytes())
-	ctx.cB = mac.Sum(nil)
+	ctx.cA = hmac_sha256_enc(ctx.Y.as_bytes(), key[:16])
+	ctx.cB = hmac_sha256_enc(ctx.X.as_bytes(), key[16:])
 
 	hkdf2 := hkdf.New(sha256.New, ctx.Ke, nil, []byte("SessionKeys"))
 	Xcryptkey := make([]byte, 16*3)

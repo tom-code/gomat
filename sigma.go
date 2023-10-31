@@ -6,7 +6,6 @@ import (
 	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
@@ -64,9 +63,7 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 
 	//log.Printf("dest id %s\n", hex.EncodeToString(destination_message.Bytes()))
 
-	mac := hmac.New(sha256.New, key)
-	mac.Write(destination_message.Bytes())
-	destinationIdentifier := mac.Sum(nil)
+	destinationIdentifier := hmac_sha256_enc(destination_message.Bytes(), key)
 	//log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
 
 	tlv.WriteOctetString(3, destinationIdentifier)
@@ -121,9 +118,8 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	tlv_s3tbs.WriteOctetString(4, responder_public)
 	tlv_s3tbs.WriteAnonStructEnd()
 	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
-	s2 := sha256.New()
-	s2.Write(tlv_s3tbs.Bytes())
-	tlv_s3tbs_hash := s2.Sum(nil)
+
+	tlv_s3tbs_hash := sha256_enc(tlv_s3tbs.Bytes())
 	sr, ss, err := ecdsa.Sign(rand.Reader, sc.controller_key, tlv_s3tbs_hash)
 	if err != nil {
 		return []byte{}, err
@@ -146,9 +142,8 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	}
 	s3k_th := sc.sigma1payload
 	s3k_th = append(s3k_th, sc.sigma2dec.payload...)
-	s2 = sha256.New()
-	s2.Write(s3k_th)
-	transcript_hash := s2.Sum(nil)
+
+	transcript_hash := sha256_enc(s3k_th)
 	s3_salt := fabric.make_ipk()
 	s3_salt = append(s3_salt, transcript_hash...)
 	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
@@ -179,9 +174,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	// prepare session keys
 	ses_key_transcript := s3k_th
 	ses_key_transcript = append(ses_key_transcript, tlv_s3.Bytes()...)
-	s2 = sha256.New()
-	s2.Write(ses_key_transcript)
-	transcript_hash = s2.Sum(nil)
+	transcript_hash = sha256_enc(ses_key_transcript)
 	salt := fabric.make_ipk()
 	salt = append(salt, transcript_hash...)
 
