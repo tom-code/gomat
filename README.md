@@ -1,20 +1,20 @@
 # gomat
-This is attempt to light bulb using matter protocol.
+Simple matter protocol implementation
 
 ### status of code
-- prototyping phase
+- early phase; focused on controller
 - it can commission device and send commands to it
 - commisioning does not implement any non-required steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
 
 ### general info
 - it is best to understand matter to use this, but here is most important info:
-  - device ownership is driven using certificates
-  - easiest way how to talk to device is to have signed certificate of device admin user
+  - device ownership is managed using certificates
+  - easiest way how to talk to device is to have signed certificate of device admin user (alternative is setup ACLs and use non-admin user)
   - certificates are signed by CA
   - during commissioning procedure root CA certificate is pushed to device together with id of device admin user
   - root CA certificate is something you need to create once and store. loosing CA keys usually means that you will have to commistion devices again
   - to talk to device you have to commission it first
-    - to commision device you usually need its pin/passcode and device be in state open for commisioning
+    - to commission device you usually need its pin/passcode and device be in state open for commisioning
     - device gets into commisioning window open state often by "factory reset"
     - when device is commissioned - connected to some fabric, it can be commissionined into other fabrics using api, where existing admin user sets device to be open for additional commissioning. During that device can be connected to additional fabric(s) - additional root CA installed and additional admin user configured
 
