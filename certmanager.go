@@ -12,7 +12,7 @@ import (
 type CertificateManager interface {
 	// load previous state of certificate manager
 	// this shall succeed even for first time
-	Load()
+	Load() error
 
 	// bootstrap certificate authority - generate CA keys
 	BootstrapCa()
@@ -24,10 +24,10 @@ type CertificateManager interface {
 	CreateUser(node_id uint64) error
 
 	// retrieve certificate of specified node (previously created by CreateUser)
-	GetCertificate(id uint64) *x509.Certificate
+	GetCertificate(id uint64) (*x509.Certificate, error)
 
 	// retrieve key of specified node (previously created by CreateUser)
-	GetPrivkey(id uint64) *ecdsa.PrivateKey
+	GetPrivkey(id uint64) (*ecdsa.PrivateKey, error)
 
 	// create and sign certificate using local CA keys
 	SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error)

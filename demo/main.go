@@ -68,7 +68,10 @@ func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device
 
 func createBasicFabric(id uint64) *gomat.Fabric {
 	cert_manager := gomat.NewFileCertManager(id)
-	cert_manager.Load()
+	err := cert_manager.Load()
+	if err != nil {
+		panic(err)
+	}
 	fabric := gomat.NewFabric(id, cert_manager)
 	return fabric
 }
@@ -227,7 +230,10 @@ func main() {
 		  }
 		  //cm := NewCertManager(0x99)
 		  fabric := createBasicFabricFromCmd(cmd)
-		  fabric.CertificateManager.Load()
+		  err = fabric.CertificateManager.Load()
+		  if err != nil {
+			panic(err)
+		  }
 		  err = fabric.CertificateManager.CreateUser(uint64(id))
 		  if err != nil {
 			panic(err)

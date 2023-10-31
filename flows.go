@@ -117,8 +117,15 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 		return SecureChannel{}, fmt.Errorf("sigma2 not received")
 	}
 
-	sigma_context.controller_key = fabric.CertificateManager.GetPrivkey(controller_id)
-	sigma_context.controller_matter_certificate = SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCertificate(controller_id))
+	sigma_context.controller_key, err = fabric.CertificateManager.GetPrivkey(controller_id)
+	if err != nil {
+		return SecureChannel{}, err
+	}
+	controller_cert, err := fabric.CertificateManager.GetCertificate(controller_id)
+	if err != nil {
+		return SecureChannel{}, err
+	}
+	sigma_context.controller_matter_certificate = SerializeCertificateIntoMatter(fabric, controller_cert)
 
 	to_send, err := sigma_context.sigma3(fabric)
 	if err != nil {

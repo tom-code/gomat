@@ -47,21 +47,30 @@ func (cm *CertManager)GetCaPublicKey() ecdsa.PublicKey {
 func (cm *CertManager)GetCaCertificate() *x509.Certificate {
 	return cm.ca_certificate
 }
-func (cm *CertManager)Load() {
+func (cm *CertManager)Load() error {
 	_, err := os.Stat("pem/ca-private.pem")
 	if err != nil {
 		log.Printf("can't open CA key. continue anyway %s\n", err.Error())
-		return
+		return nil
 	}
-	cm.ca_private_key = load_priv_key("pem/ca-private.pem").(*ecdsa.PrivateKey)
-	cm.ca_certificate = loadCert("pem/ca-cert.pem")
+	anykey, err := load_priv_key("pem/ca-private.pem")
+	if err != nil {
+		return err
+	}
+	cm.ca_private_key = anykey.(*ecdsa.PrivateKey)
+	cm.ca_certificate, err = loadCert("pem/ca-cert.pem")
+	return err
 }
 
-func (cm *CertManager)GetCertificate(id uint64) *x509.Certificate {
+func (cm *CertManager)GetCertificate(id uint64) (*x509.Certificate, error) {
 	return loadCert("pem/"+cert_id_to_name(id)+"-cert.pem")
 }
-func (cm *CertManager)GetPrivkey(id uint64) *ecdsa.PrivateKey {
-	return load_priv_key("pem/"+cert_id_to_name(id)+"-private.pem").(*ecdsa.PrivateKey)
+func (cm *CertManager)GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
+	pk, err := load_priv_key("pem/"+cert_id_to_name(id)+"-private.pem")
+	if err != nil {
+		return nil, err
+	}
+	return pk.(*ecdsa.PrivateKey), nil
 }
 
 func (cm *CertManager)CreateUser(node_id uint64) error {
@@ -169,10 +178,16 @@ func (cm *CertManager)BootstrapCa() {
 	cm.create_ca_cert()
 }
 
-func (cm *CertManager)create_ca_cert() {
-
-	pub := load_public_key("pem/ca-public.pem").(*ecdsa.PublicKey)
-	priv_ca := load_priv_key("pem/ca-private.pem")
+func (cm *CertManager)create_ca_cert() error {
+	pubany, err := load_public_key("pem/ca-public.pem")
+	if err != nil {
+		return err
+	}
+	pub := pubany.(*ecdsa.PublicKey)
+	priv_ca, err := load_priv_key("pem/ca-private.pem")
+	if err != nil {
+		return err
+	}
 
 
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
@@ -228,10 +243,11 @@ func (cm *CertManager)create_ca_cert() {
 
 	cert_bytes, err := x509.CreateCertificate(rand.Reader, &template, &template, pub, priv_ca)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	store_cert("pem/ca", cert_bytes)
 	log.Println("CA certificate was created")
+	return nil
 }
 
 
@@ -269,29 +285,29 @@ func generate_and_store_key_ecdsa(name string) (*ecdsa.PrivateKey, error) {
 	return priv, nil
 }
 
-func load_priv_key(file string) any {
+func load_priv_key(file string) (any, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	pem_block, _ := pem.Decode(data)
 	key, err := x509.ParseECPrivateKey(pem_block.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return key
+	return key, nil
 }
-func load_public_key(file string) any {
+func load_public_key(file string) (any, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	pem_block, _ := pem.Decode(data)
 	key, err := x509.ParsePKIXPublicKey(pem_block.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return key
+	return key, nil
 }
 
 func store_cert(name string, cert_bytes []byte) {
@@ -305,15 +321,15 @@ func store_cert(name string, cert_bytes []byte) {
 	}
 }
 
-func loadCert(file string) *x509.Certificate {
+func loadCert(file string) (*x509.Certificate, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	pem_block, _ := pem.Decode(data)
 	cert, err := x509.ParseCertificate(pem_block.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return cert
+	return cert, nil
 }
