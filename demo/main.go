@@ -269,6 +269,7 @@ func main() {
 				device.Dump()
 				fmt.Println("")
 			}
+			gomat.DiscoverAll()
 		},
 	}
 	var decodeQrCmd = &cobra.Command{

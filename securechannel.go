@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/tom-code/gomat/ccm"
-	"github.com/tom-code/gomat/tlvdec"
+	"github.com/tom-code/gomat/mattertlv"
 )
 
 type Channel struct {
@@ -130,7 +130,7 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 		}
 	}
 	if len(out.payload) > 0 {
-		out.Tlv = tlvdec.Decode(out.payload)
+		out.Tlv = mattertlv.Decode(out.payload)
 	}
 	return out, nil
 }

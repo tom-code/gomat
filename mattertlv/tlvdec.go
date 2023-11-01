@@ -1,4 +1,4 @@
-package tlvdec
+package mattertlv
 
 import (
 	"bytes"

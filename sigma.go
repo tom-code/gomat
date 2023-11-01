@@ -11,7 +11,7 @@ import (
 	"encoding/binary"
 	"io"
 
-	"github.com/tom-code/gomat/tlvenc"
+	"github.com/tom-code/gomat/mattertlv"
 	"golang.org/x/crypto/hkdf"
 	"github.com/tom-code/gomat/ccm"
 )
@@ -32,15 +32,15 @@ type SigmaContext struct {
 }
 
 func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
-	var tlv tlvenc.TLVBuffer
-	tlv.WriteAnonStruct()
+	var tlvx mattertlv.TLVBuffer
+	tlvx.WriteAnonStruct()
 	
 	initiatorRandom := make([]byte, 32)
 	rand.Read(initiatorRandom)
-	tlv.WriteOctetString(1, initiatorRandom)
+	tlvx.WriteOctetString(1, initiatorRandom)
 
 	sessionId := 222
-	tlv.WriteUInt(2, tlvenc.TYPE_UINT_2, uint64(sessionId))
+	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(sessionId))
 
 	var destination_message bytes.Buffer
 	destination_message.Write(initiatorRandom)
@@ -66,13 +66,13 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	destinationIdentifier := hmac_sha256_enc(destination_message.Bytes(), key)
 	//log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
 
-	tlv.WriteOctetString(3, destinationIdentifier)
+	tlvx.WriteOctetString(3, destinationIdentifier)
 
 
-	tlv.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
-	tlv.WriteAnonStructEnd()
+	tlvx.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
+	tlvx.WriteAnonStructEnd()
 	//return tlv.data.Bytes()
-	sc.sigma1payload = tlv.Bytes()
+	sc.sigma1payload = tlvx.Bytes()
 }
 
 
@@ -106,7 +106,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 
 func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 
-	var tlv_s3tbs tlvenc.TLVBuffer
+	var tlv_s3tbs mattertlv.TLVBuffer
 	tlv_s3tbs.WriteAnonStruct()
 	tlv_s3tbs.WriteOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbs.WriteOctetString(3, sc.session_privkey.PublicKey().Bytes())
@@ -126,7 +126,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	}
 	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
 
-	var tlv_s3tbe tlvenc.TLVBuffer
+	var tlv_s3tbe mattertlv.TLVBuffer
 	tlv_s3tbe.WriteAnonStruct()
 	tlv_s3tbe.WriteOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbe.WriteOctetString(3, tlv_s3tbs_out)
@@ -163,7 +163,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	}
 	CipherText := ccm.Seal(nil, nonce, tlv_s3tbe.Bytes(), []byte{})
 
-	var tlv_s3 tlvenc.TLVBuffer
+	var tlv_s3 mattertlv.TLVBuffer
 	tlv_s3.WriteAnonStruct()
 	tlv_s3.WriteOctetString(1, CipherText)
 	tlv_s3.WriteAnonStructEnd()

@@ -10,8 +10,7 @@ import (
 	randm "math/rand"
 	"net"
 
-	"github.com/tom-code/gomat/tlvdec"
-	"github.com/tom-code/gomat/tlvenc"
+	"github.com/tom-code/gomat/mattertlv"
 )
 
 
@@ -157,9 +156,9 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	}
 
 	// send csr request
-	var tlv tlvenc.TLVBuffer
-	tlv.WriteOctetString(0, create_random_bytes(32))
-	to_send := InvokeCommand(0, 0x3e, 4, tlv.Bytes())
+	var tlvb mattertlv.TLVBuffer
+	tlvb.WriteOctetString(0, create_random_bytes(32))
+	to_send := InvokeCommand(0, 0x3e, 4, tlvb.Bytes())
 	secure_channel.Send(to_send)
 
 	csr_resp, err := secure_channel.Receive()
@@ -168,7 +167,7 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	}
 
 	nocsr := csr_resp.Tlv.GetOctetStringRec([]int{1,0,0,1,0})
-	tlv2 := tlvdec.Decode(nocsr)
+	tlv2 := mattertlv.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)
 	if err != nil {
@@ -176,7 +175,7 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	}
 
 	//AddTrustedRootCertificate
-	var tlv4 tlvenc.TLVBuffer
+	var tlv4 mattertlv.TLVBuffer
 	tlv4.WriteOctetString(0, SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCaCertificate()))
 	to_send = InvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.Send(to_send)
@@ -192,11 +191,11 @@ func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_
 	}
 	noc_matter := SerializeCertificateIntoMatter(fabric, noc_x509)
 	//AddNOC
-	var tlv5 tlvenc.TLVBuffer
+	var tlv5 mattertlv.TLVBuffer
 	tlv5.WriteOctetString(0, noc_matter)
 	tlv5.WriteOctetString(2, fabric.ipk) //ipk
-	tlv5.WriteUInt(3, tlvenc.TYPE_UINT_2, controller_id)   // admin subject !
-	tlv5.WriteUInt(4, tlvenc.TYPE_UINT_2, 101) // admin vendorid ??
+	tlv5.WriteUInt(3, mattertlv.TYPE_UINT_2, controller_id)   // admin subject !
+	tlv5.WriteUInt(4, mattertlv.TYPE_UINT_2, 101) // admin vendorid ??
 	to_send = InvokeCommand(0, 0x3e, 0x6, tlv5.Bytes())
 
 	secure_channel.Send(to_send)

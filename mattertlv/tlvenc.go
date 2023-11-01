@@ -1,4 +1,4 @@
-package tlvenc
+package mattertlv
 
 import (
 	"bytes"
