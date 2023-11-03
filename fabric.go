@@ -3,11 +3,7 @@ package gomat
 import (
 	"bytes"
 	"crypto/elliptic"
-	"crypto/sha256"
 	"encoding/binary"
-	"io"
-
-	"golang.org/x/crypto/hkdf"
 )
 
 
@@ -24,22 +20,11 @@ func (fabric Fabric) compressedFabric() []byte {
 	var fabric_big_endian bytes.Buffer
 	binary.Write(&fabric_big_endian, binary.BigEndian, fabric.id)
 
-	hkdfz := hkdf.New(sha256.New, capublic_key[1:], fabric_big_endian.Bytes(), []byte("CompressedFabric"))
-	key := make([]byte, 8)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		//panic(err)
-		return []byte{}
-	}
-	//log.Printf("compressed fabric: %s\n", hex.EncodeToString(key))
+	key := hkdf_sha256(capublic_key[1:], fabric_big_endian.Bytes(), []byte("CompressedFabric"), 8)
 	return key
 }
 func (fabric Fabric) make_ipk() []byte {
-	hkdfz := hkdf.New(sha256.New, fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"))
-	key := make([]byte, 16)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		//panic(err)
-		return []byte{}
-	}
+	key := hkdf_sha256(fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"), 16)
 	return key
 }
 

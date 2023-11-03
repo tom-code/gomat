@@ -7,12 +7,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/binary"
-	"io"
 
 	"github.com/tom-code/gomat/mattertlv"
-	"golang.org/x/crypto/hkdf"
 	"github.com/tom-code/gomat/ccm"
 )
 
@@ -61,17 +58,13 @@ func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 
 	key := fabric.make_ipk()
 
-	//log.Printf("dest id %s\n", hex.EncodeToString(destination_message.Bytes()))
-
 	destinationIdentifier := hmac_sha256_enc(destination_message.Bytes(), key)
-	//log.Printf("hmaec %s", hex.EncodeToString(destinationIdentifier))
 
 	tlvx.WriteOctetString(3, destinationIdentifier)
 
 
 	tlvx.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
 	tlvx.WriteAnonStructEnd()
-	//return tlv.data.Bytes()
 	sc.sigma1payload = tlvx.Bytes()
 }
 
@@ -146,11 +139,8 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	transcript_hash := sha256_enc(s3k_th)
 	s3_salt := fabric.make_ipk()
 	s3_salt = append(s3_salt, transcript_hash...)
-	s3kengine := hkdf.New(sha256.New, shared_secret, s3_salt, []byte("Sigma3"))
-	s3k := make([]byte, 16)
-	if _, err := io.ReadFull(s3kengine, s3k); err != nil {
-		return []byte{}, err
-	}
+
+	s3k := hkdf_sha256(shared_secret, s3_salt, []byte("Sigma3"), 16)
 
 	c, err := aes.NewCipher(s3k)
 	if err != nil {
@@ -178,11 +168,7 @@ func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	salt := fabric.make_ipk()
 	salt = append(salt, transcript_hash...)
 
-	keypackengine := hkdf.New(sha256.New, shared_secret, salt, []byte("SessionKeys"))
-	keypack := make([]byte, 16*3)
-	if _, err := io.ReadFull(keypackengine, keypack); err != nil {
-		return []byte{}, err
-	}
+	keypack := hkdf_sha256(shared_secret, salt, []byte("SessionKeys"), 16*3)
 	sc.session = int(sigma2responder_session)
 
 	sc.i2rkey = keypack[:16]

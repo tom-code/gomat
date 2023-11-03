@@ -115,7 +115,7 @@ func Discover(iface string) ([]DiscoveredDevice, error) {
 	return devices, nil
 }
 
-func Discover2(iface string) (map[string]DiscoveredDevice, error) {
+func Discover2(iface string, service string) (map[string]DiscoveredDevice, error) {
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	defer close(entriesCh)
 	devices := map[string]DiscoveredDevice{}
@@ -165,9 +165,9 @@ func Discover2(iface string) (map[string]DiscoveredDevice, error) {
 		return nil, err
 	}
 	params := mdns.QueryParam {
-		Service: "_matterc._udp.",
+		Service: service,
 		Entries: entriesCh,
-		//DisableIPv6: true,
+		DisableIPv6: true,
 		Interface: i,
 	}
 	err = mdns.Query(&params)
@@ -197,7 +197,8 @@ func DiscoverAll() error {
 			continue
 		}
 		log.Println("continue")
-		ds, _ := Discover2(iface.Name)
+		//ds, _ := Discover2(iface.Name, "_matterc._udp.")
+		ds, _ := Discover2(iface.Name, "_matter._tcp")
 		maps.Copy(devices, ds)
 	}
 	log.Println(devices)

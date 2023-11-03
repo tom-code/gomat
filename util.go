@@ -6,6 +6,9 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
+	"io"
+
+	"golang.org/x/crypto/hkdf"
 )
 
 
@@ -31,4 +34,13 @@ func sha256_enc(in []byte) []byte {
 	s := sha256.New()
 	s.Write(in)
 	return s.Sum(nil)
+}
+
+func hkdf_sha256(secret, salt, info []byte, size int) []byte {
+	engine := hkdf.New(sha256.New, secret, salt, info)
+	key := make([]byte, size)
+	if _, err := io.ReadFull(engine, key); err != nil {
+		return []byte{}
+	}
+	return key
 }

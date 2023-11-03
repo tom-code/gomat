@@ -7,10 +7,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"math/big"
 
-	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -29,11 +27,6 @@ func (p Point)dump() {
 	fmt.Printf("  x: %v\n", p.x)
 	fmt.Printf("  y: %v\n", p.y)
 }
-
-func (p Point) as_hex() string {
-	o1 := elliptic.Marshal(elliptic.P256(), p.x, p.y)
-	return hex.EncodeToString(o1)
-}
 func (p Point) as_bytes() []byte {
 	o1 := elliptic.Marshal(elliptic.P256(), p.x, p.y)
 	return o1
@@ -42,11 +35,6 @@ func (p *Point) from_bytes(in []byte ) {
 	p.x, p.y = elliptic.Unmarshal(elliptic.P256(), in)
 }
 
-/*
-func (p Point) reset() {
-	p.x.SetInt64(0)
-	p.y.SetInt64(0)
-}*/
 
 var M Point
 var N Point
@@ -178,21 +166,12 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) error {
 	ctx.Ka = sh1sum[:16]
 	ctx.Ke = sh1sum[16:32]
 
-	//(salt, ikm, info []byte
-	hkdfz := hkdf.New(sha256.New, ctx.Ka, nil, []byte("ConfirmationKeys"))
-	key := make([]byte, 32)
-	if _, err := io.ReadFull(hkdfz, key); err != nil {
-		return err
-	}
+	key := hkdf_sha256(ctx.Ka, nil, []byte("ConfirmationKeys"), 32)
 
 	ctx.cA = hmac_sha256_enc(ctx.Y.as_bytes(), key[:16])
 	ctx.cB = hmac_sha256_enc(ctx.X.as_bytes(), key[16:])
 
-	hkdf2 := hkdf.New(sha256.New, ctx.Ke, nil, []byte("SessionKeys"))
-	Xcryptkey := make([]byte, 16*3)
-	if _, err := io.ReadFull(hkdf2, Xcryptkey); err != nil {
-		return err
-	}
+	Xcryptkey := hkdf_sha256(ctx.Ke, nil, []byte("SessionKeys"), 16*3)
 	ctx.decrypt_key = Xcryptkey[16:32]
 	ctx.encrypt_key = Xcryptkey[:16]
 	return nil
