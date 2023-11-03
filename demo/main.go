@@ -208,7 +208,7 @@ func main() {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			err = gomat.Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
+			err = gomat.Commission(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
 			if err != nil {
 				panic(err)
 			}

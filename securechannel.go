@@ -117,7 +117,7 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 		}
 	}
 
-	ack := AckGen(out.proto, out.msg.messageCounter)
+	ack := ackGen(out.proto, out.msg.messageCounter)
 	sc.Send(ack)
 
 	if out.proto.protocolId == 0 {

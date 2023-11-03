@@ -14,7 +14,7 @@ import (
 )
 
 
-type SigmaContext struct {
+type sigmaContext struct {
 	session_privkey *ecdh.PrivateKey
 	session int
 	controller_key *ecdsa.PrivateKey
@@ -28,7 +28,7 @@ type SigmaContext struct {
 	exchange uint16
 }
 
-func (sc *SigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
+func (sc *sigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	
@@ -97,7 +97,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	return buffer.Bytes()
 }
 
-func (sc *SigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
+func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 
 	var tlv_s3tbs mattertlv.TLVBuffer
 	tlv_s3tbs.WriteAnonStruct()

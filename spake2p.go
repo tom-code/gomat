@@ -19,34 +19,34 @@ func pinToPasscode(pin uint32) []byte {
 	return buf.Bytes()
 }
 
-type Point struct {
+type point struct {
 	x *big.Int
 	y *big.Int
 }
-func (p Point)dump() {
+func (p point)dump() {
 	fmt.Printf("  x: %v\n", p.x)
 	fmt.Printf("  y: %v\n", p.y)
 }
-func (p Point) as_bytes() []byte {
+func (p point) as_bytes() []byte {
 	o1 := elliptic.Marshal(elliptic.P256(), p.x, p.y)
 	return o1
 }
-func (p *Point) from_bytes(in []byte ) {
+func (p *point) from_bytes(in []byte ) {
 	p.x, p.y = elliptic.Unmarshal(elliptic.P256(), in)
 }
 
 
-var M Point
-var N Point
+var spake_seed_M point
+var spake_seed_N point
 
 func init() {
 	mhex := "02886e2f97ace46e55ba9dd7242579f2993b64e16ef3dcab95afd497333d8fa12f"
 	mbin, _ := hex.DecodeString(mhex)
-	M.x, M.y = elliptic.UnmarshalCompressed(elliptic.P256(), mbin)
+	spake_seed_M.x, spake_seed_M.y = elliptic.UnmarshalCompressed(elliptic.P256(), mbin)
 
 	nhex := "03d8bbd6c639c62937b04d997f38c3770719c629d7014d49a24b4f98baa1292b49"
 	nbin, _ := hex.DecodeString(nhex)
-	N.x, N.y = elliptic.UnmarshalCompressed(elliptic.P256(), nbin)
+	spake_seed_N.x, spake_seed_N.y = elliptic.UnmarshalCompressed(elliptic.P256(), nbin)
 }
 
 
@@ -80,11 +80,11 @@ type SpakeCtx struct {
 	w1 []byte
 	x_random big.Int
 	y_random big.Int
-	X Point
-	Y Point
-	Z Point
-	V Point
-	L Point
+	X point
+	Y point
+	Z point
+	V point
+	L point
 	cA []byte
 	cB []byte
 	Ke []byte
@@ -120,19 +120,19 @@ func (ctx *SpakeCtx)gen_random_Y() {
 func (ctx *SpakeCtx)calc_X() {
 	// X=x*P+w0*M
 	tx, ty := ctx.curve.ScalarBaseMult(ctx.x_random.Bytes())
-	px, py := ctx.curve.ScalarMult(M.x, M.y, ctx.w0)
+	px, py := ctx.curve.ScalarMult(spake_seed_M.x, spake_seed_M.y, ctx.w0)
 	ctx.X.x, ctx.X.y = ctx.curve.Add(tx, ty, px, py)
 }
 func (ctx *SpakeCtx)calc_Y() {
 	//Y=y*P, pB=w*N+Y
-	ypx, ypy := ctx.curve.ScalarMult(N.x, N.y, ctx.w0)
+	ypx, ypy := ctx.curve.ScalarMult(spake_seed_N.x, spake_seed_N.y, ctx.w0)
 	ytx, yty := ctx.curve.ScalarBaseMult(ctx.y_random.Bytes())
 	ctx.Y.x, ctx.Y.y = ctx.curve.Add(ytx, yty, ypx, ypy)
 }
 
 func (ctx *SpakeCtx)calc_ZV() {
 	//A computes Z as h*x*(Y-w0*N), and V as h*w1*(Y-w0*N).
-	wnx, wny := ctx.curve.ScalarMult(N.x, N.y, ctx.w0)
+	wnx, wny := ctx.curve.ScalarMult(spake_seed_N.x, spake_seed_N.y, ctx.w0)
 	wny = wny.Neg(wny)
 	wny = wny.Mod(wny, ctx.curve.Params().P)
 	znx, zny := ctx.curve.Add(ctx.Y.x, ctx.Y.y, wnx, wny)
@@ -145,7 +145,7 @@ func (ctx *SpakeCtx)calc_ZV() {
 
 func (ctx *SpakeCtx)calc_ZVb() {
 	//B computes Z as y(X-w0*M) and V as yL
-	unx, uny := ctx.curve.ScalarMult(M.x, M.y, ctx.w0)
+	unx, uny := ctx.curve.ScalarMult(spake_seed_M.x, spake_seed_M.y, ctx.w0)
 	uny = uny.Neg(uny)
 	uny = uny.Mod(uny, ctx.curve.Params().P)
 	zznx, zzny := ctx.curve.Add(ctx.X.x, ctx.X.y, unx, uny)
@@ -157,8 +157,8 @@ func (ctx *SpakeCtx)calc_ZVb() {
 func (ctx *SpakeCtx)calc_hash(seed []byte) error {
 
 	sh0sum := sha256_enc(seed)
-	mbin := elliptic.Marshal(elliptic.P256(), M.x, M.y)
-	nbin := elliptic.Marshal(elliptic.P256(), N.x, N.y)
+	mbin := elliptic.Marshal(elliptic.P256(), spake_seed_M.x, spake_seed_M.y)
+	nbin := elliptic.Marshal(elliptic.P256(), spake_seed_N.x, spake_seed_N.y)
 	tt := createTT(sh0sum, "", "", mbin, nbin, ctx.X.as_bytes(), ctx.Y.as_bytes(), ctx.Z.as_bytes(), ctx.V.as_bytes(), ctx.w0)
 
 	sh1sum := sha256_enc(tt)

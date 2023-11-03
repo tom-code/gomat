@@ -203,7 +203,7 @@ func (m *Message) decodeBase(data *bytes.Buffer) error {
 
 
 
-func PBKDFParamRequest(exchange uint16) []byte {
+func pBKDFParamRequest(exchange uint16) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
@@ -227,7 +227,7 @@ func PBKDFParamRequest(exchange uint16) []byte {
 }
 
 
-func Pake1ParamRequest(exchange uint16, key []byte) []byte {
+func pake1ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{
@@ -246,7 +246,7 @@ func Pake1ParamRequest(exchange uint16, key []byte) []byte {
 	return buffer.Bytes()
 }
 
-func Pake3ParamRequest(exchange uint16, key []byte) []byte {
+func pake3ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
 	prot:= ProtocolMessage{
 		exchangeFlags: 5,
@@ -264,7 +264,7 @@ func Pake3ParamRequest(exchange uint16, key []byte) []byte {
 	return buffer.Bytes()
 }
 
-func AckGen(p ProtocolMessage, counter uint32) []byte {
+func ackGen(p ProtocolMessage, counter uint32) []byte {
 	var buffer bytes.Buffer
 
 	prot:= ProtocolMessage{

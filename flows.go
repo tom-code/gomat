@@ -23,7 +23,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
 
-	pbkdf_request := PBKDFParamRequest(exchange)
+	pbkdf_request := pBKDFParamRequest(exchange)
 	secure_channel.Send(pbkdf_request)
 
 	pbkdf_responseS, err := secure_channel.Receive()
@@ -49,7 +49,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 	sctx.gen_random_X()
 	sctx.calc_X()
 
-	pake1 := Pake1ParamRequest(exchange, sctx.X.as_bytes())
+	pake1 := pake1ParamRequest(exchange, sctx.X.as_bytes())
 	secure_channel.Send(pake1)
 
 	pake2s, err := secure_channel.Receive()
@@ -73,7 +73,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 		return SecureChannel{}, err
 	}
 
-	pake3 := Pake3ParamRequest(exchange, sctx.cA)
+	pake3 := pake3ParamRequest(exchange, sctx.cA)
 	secure_channel.Send(pake3)
 
 
@@ -94,7 +94,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) (SecureChannel, error) {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
-	sigma_context := SigmaContext {
+	sigma_context := sigmaContext {
 		session_privkey: controller_privkey,
 		exchange: uint16(randm.Intn(0xffff)),
 	}
@@ -142,7 +142,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	return secure_channel, nil
 }
 
-func Commision(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) error {
+func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) error {
 
 	channel := NewChannel(device_ip, 5540, 55555)
 	secure_channel := SecureChannel {

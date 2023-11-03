@@ -18,7 +18,7 @@ type dsaSignature struct {
 	R, S *big.Int
 }
 
-func CAConvertDNValue(in any) uint64 {
+func caConvertDNValue(in any) uint64 {
 	v3, ok := in.(string)
 	if !ok {
 		return 0
@@ -34,13 +34,13 @@ func CAConvertDNValue(in any) uint64 {
 func CAConvertDN(in pkix.Name, out *mattertlv.TLVBuffer) {
 	for _, extra := range in.Names {
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,1}) { //node-id
-			out.WriteUInt(17, mattertlv.TYPE_UINT_8, CAConvertDNValue(extra.Value))
+			out.WriteUInt(17, mattertlv.TYPE_UINT_8, caConvertDNValue(extra.Value))
 		}
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4}) { //matter-rcac-id
-			out.WriteUInt(20, mattertlv.TYPE_UINT_8, CAConvertDNValue(extra.Value))
+			out.WriteUInt(20, mattertlv.TYPE_UINT_8, caConvertDNValue(extra.Value))
 		}
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,5}) { //matter-fabric-id
-			out.WriteUInt(21, mattertlv.TYPE_UINT_8, CAConvertDNValue(extra.Value))
+			out.WriteUInt(21, mattertlv.TYPE_UINT_8, caConvertDNValue(extra.Value))
 		}
 	}
 }

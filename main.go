@@ -208,7 +208,7 @@ func main() {
 				panic(err)
 			}
 			//commision(fabric, discover_with_qr(qr).addrs[1], 123456)
-			Commision(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
+			Commission(fabric, net.ParseIP(ip), pinn, controller_id, device_id)
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
