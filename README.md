@@ -28,7 +28,7 @@ Simple matter protocol implementation
 - generate controller key and certificate using `./gomat ca-createuser 100`
   - 100 is example node-id of controller
 - find device IP
-  - discover command can be used to discover matter devices and their ip address
+  - discover command can be used to discover matter devices and their ip address `discover commissionable -d`
 - find device commissioning passcode/pin
   - device may show it
   - it can be extracted from QR code. use decode-qr to extract passcode from text representation of QR code `./gomat decode-qr MT:-24J0AFN00SIQ663000`
