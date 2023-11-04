@@ -1,4 +1,4 @@
-package gomat
+package discover
 
 import (
 	"fmt"
@@ -12,10 +12,15 @@ import (
 )
 
 
+type DiscoveredType int
+const DiscoveredTypeCommissioned = 1
+const DiscoveredTypeCommissionable = 2
+
 type DiscoveredDevice struct {
-	name string
-	host string
-	addrs []net.IP
+	Name string
+	Host string
+	Type DiscoveredType
+	Addrs []net.IP
 	PH string
 	CM string
 	VP string
@@ -26,16 +31,18 @@ type DiscoveredDevice struct {
 }
 
 func (d DiscoveredDevice)Dump() {
-	fmt.Printf("name: %s\n", d.name)
-	fmt.Printf("host: %s\n", d.host)
+	fmt.Printf("name: %s\n", d.Name)
+	fmt.Printf("host: %s\n", d.Host)
 	fmt.Printf("DN:   %s\n", d.DN)
-	fmt.Printf("addrs: %v\n", d.addrs)
-	fmt.Printf("PH: %s\n", d.PH)
-	fmt.Printf("CM: %s\n", d.CM)
-	fmt.Printf("VP: %s\n", d.VP)
-	fmt.Printf("  vendor : %d\n", d.VendorId)
-	fmt.Printf("  product: %d\n", d.ProductId)
-	fmt.Printf("D: %s\n", d.D)
+	fmt.Printf("addreses: %v\n", d.Addrs)
+	if d.Type != DiscoveredTypeCommissioned {
+		fmt.Printf("PH: %s\n", d.PH)
+		fmt.Printf("CM: %s\n", d.CM)
+		fmt.Printf("VP: %s\n", d.VP)
+		fmt.Printf("  vendor : %d\n", d.VendorId)
+		fmt.Printf("  product: %d\n", d.ProductId)
+		fmt.Printf("D: %s\n", d.D)
+	}
 }
 
 func parseVP(vp string) (int, int) {
@@ -69,9 +76,9 @@ func Discover(iface string) ([]DiscoveredDevice, error) {
 				addrs = append(addrs, entry.AddrV4)
 			}
 			dev := DiscoveredDevice {
-				name: entry.Name,
-				host: entry.Host,
-				addrs: addrs,
+				Name: entry.Name,
+				Host: entry.Host,
+				Addrs: addrs,
 			}
 			for _, s := range entry.InfoFields {
 				if strings.HasPrefix(s, "PH=") {
@@ -110,19 +117,16 @@ func Discover(iface string) ([]DiscoveredDevice, error) {
 	if err != nil {
 		panic(err)
 	}
-	//time.Sleep(3*time.Second)
-	//close(entriesCh)
 	return devices, nil
 }
 
-func Discover2(iface string, service string) (map[string]DiscoveredDevice, error) {
+func Discover2(iface string, service string, disableipv6 bool) (map[string]DiscoveredDevice, error) {
 	entriesCh := make(chan *mdns.ServiceEntry, 4)
 	defer close(entriesCh)
 	devices := map[string]DiscoveredDevice{}
 	go func() {
     	for entry := range entriesCh {
-        	fmt.Printf("Got new entry: %+v\n", entry)
-			if !strings.Contains(entry.Name, "_matterc") {
+			if !strings.Contains(entry.Name, service) {
 				continue
 			}
 			addrs := []net.IP{}
@@ -133,9 +137,9 @@ func Discover2(iface string, service string) (map[string]DiscoveredDevice, error
 				addrs = append(addrs, entry.AddrV4)
 			}
 			dev := DiscoveredDevice {
-				name: entry.Name,
-				host: entry.Host,
-				addrs: addrs,
+				Name: entry.Name,
+				Host: entry.Host,
+				Addrs: addrs,
 			}
 			for _, s := range entry.InfoFields {
 				if strings.HasPrefix(s, "PH=") {
@@ -167,40 +171,79 @@ func Discover2(iface string, service string) (map[string]DiscoveredDevice, error
 	params := mdns.QueryParam {
 		Service: service,
 		Entries: entriesCh,
-		DisableIPv6: true,
+		DisableIPv6: disableipv6,
 		Interface: i,
 	}
 	err = mdns.Query(&params)
 	if err != nil {
 		return nil, err
 	}
-	//time.Sleep(3*time.Second)
-	//close(entriesCh)
 	return devices, nil
 }
 
-func DiscoverAll() error {
+func ListInterfaces(name string) []net.Interface {
+	if len(name) != 0 {
+		i, err := net.InterfaceByName(name)
+		if err != nil {
+			return []net.Interface{}
+		}
+		return []net.Interface{*i}
+	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return err
+		return []net.Interface{}
 	}
+	return ifaces
+}
+
+func isEglible(iface net.Interface) bool {
+	if iface.Flags & net.FlagRunning == 0 {
+		return false
+	}
+	if iface.Flags & net.FlagLoopback != 0 {
+		return false
+	}
+	if iface.Flags & net.FlagMulticast == 0 {
+		return false
+	}
+	return true
+}
+
+func DiscoverAllComissioned(interfac string, disableipv6 bool) []DiscoveredDevice{
+	ifaces := ListInterfaces(interfac)
 	devices := map[string]DiscoveredDevice{}
 	for _, iface := range ifaces {
-		log.Println(iface)
-		if iface.Flags & net.FlagRunning == 0 {
+		if !isEglible(iface) {
 			continue
 		}
-		if iface.Flags & net.FlagLoopback != 0 {
-			continue
-		}
-		if iface.Flags & net.FlagMulticast == 0 {
-			continue
-		}
-		log.Println("continue")
-		//ds, _ := Discover2(iface.Name, "_matterc._udp.")
-		ds, _ := Discover2(iface.Name, "_matter._tcp")
+		log.Printf("trying %v\n",iface)
+		ds, _ := Discover2(iface.Name, "_matter._tcp", disableipv6)
 		maps.Copy(devices, ds)
 	}
-	log.Println(devices)
-	return nil
+	out := []DiscoveredDevice{}
+	for _, d := range devices {
+		d.Type = DiscoveredTypeCommissioned
+		out = append(out, d)
+	}
+	return out
+}
+
+
+func DiscoverAllComissionable(interfac string, disableipv6 bool) []DiscoveredDevice{
+	ifaces := ListInterfaces(interfac)
+	devices := map[string]DiscoveredDevice{}
+	for _, iface := range ifaces {
+		if !isEglible(iface) {
+			continue
+		}
+		log.Printf("trying %v\n",iface)
+		ds, _ := Discover2(iface.Name, "_matterc._udp.", disableipv6)
+		maps.Copy(devices, ds)
+	}
+	out := []DiscoveredDevice{}
+	for _, d := range devices {
+		d.Type = DiscoveredTypeCommissionable
+		out = append(out, d)
+	}
+	return out
 }

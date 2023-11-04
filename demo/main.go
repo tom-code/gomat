@@ -10,10 +10,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tom-code/gomat/onboarding_payload"
 	"github.com/tom-code/gomat"
+	"github.com/tom-code/gomat/discover"
 )
 
 
-func filter_devices(devices []gomat.DiscoveredDevice, qr onboarding_payload.QrContent) gomat.DiscoveredDevice {
+func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.QrContent) discover.DiscoveredDevice {
 	for _, device := range(devices) {
 		log.Printf("%s %d\n", device.D, qr.Discriminator)
 		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
@@ -30,11 +31,11 @@ func filter_devices(devices []gomat.DiscoveredDevice, qr onboarding_payload.QrCo
 	panic("not foind")
 }
 
-func discover_with_qr(qr string) gomat.DiscoveredDevice {
-	var devices []gomat.DiscoveredDevice
+func discover_with_qr(qr string) discover.DiscoveredDevice {
+	var devices []discover.DiscoveredDevice
 	var err error
 	for i:=0; i<5; i++ {
-		devices, err = gomat.Discover("en0")
+		devices, err = discover.Discover("en0")
 		if err != nil {
 			panic(err)
 		}
@@ -251,27 +252,63 @@ func main() {
 		  fabric.CertificateManager.BootstrapCa()
 		},
 	}
+	/*
 	var discoverCmd = &cobra.Command{
 		Use:   "discover",
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("device")
 			qrtext, _ := cmd.Flags().GetString("qr")
-			devices, err := gomat.Discover(device)
+			devices, err := discover.Discover(device)
 			if err != nil {
 				panic(err)
 			}
 			if len(qrtext) > 0 {
 				qr := onboarding_payload.DecodeQrText(qrtext)
 				device := filter_devices(devices, qr)
-				devices = []gomat.DiscoveredDevice{device}
+				devices = []discover.DiscoveredDevice{device}
 			}
 			for _, device := range devices {
 				device.Dump()
 				fmt.Println("")
 			}
-			gomat.DiscoverAll()
 		},
 	}
+	discoverCmd.Flags().StringP("device", "d", "", "network device")
+	discoverCmd.Flags().StringP("qr", "q", "", "qr code")*/
+	var discoverCmd = &cobra.Command{
+		Use:   "discover",
+	}
+	discoverCmd.PersistentFlags().StringP("interface", "i", "", "network interface")
+	discoverCmd.PersistentFlags().BoolP("disable-ipv6", "d", false, "disable ipv6")
+
+	var discoverCCmd = &cobra.Command{
+		Use:   "commissioned",
+		Run: func(cmd *cobra.Command, args []string) {
+			device, _ := cmd.Flags().GetString("interface")
+			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
+			//qrtext, _ := cmd.Flags().GetString("qr")
+			devices := discover.DiscoverAllComissioned(device, disable_ipv6)
+			for _, device := range devices {
+				device.Dump()
+				fmt.Println()
+			}
+		},
+	}
+	var discoverC2Cmd = &cobra.Command{
+		Use:   "commissionable",
+		Run: func(cmd *cobra.Command, args []string) {
+			device, _ := cmd.Flags().GetString("interface")
+			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
+			//qrtext, _ := cmd.Flags().GetString("qr")
+			devices := discover.DiscoverAllComissionable(device, disable_ipv6)
+			for _, device := range devices {
+				device.Dump()
+				fmt.Println()
+			}
+		},
+	}
+	discoverCmd.AddCommand(discoverCCmd)
+	discoverCmd.AddCommand(discoverC2Cmd)
 	var decodeQrCmd = &cobra.Command{
 		Use:   "decode-qr",
 		Short: "decode text representation of qr code",
@@ -293,8 +330,7 @@ func main() {
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
-	discoverCmd.Flags().StringP("device", "d", "", "network device")
-	discoverCmd.Flags().StringP("qr", "q", "", "qr code")
+
 	rootCmd.AddCommand(cacreateuserCmd)
 	rootCmd.AddCommand(cabootCmd)
 	rootCmd.AddCommand(commissionCmd)

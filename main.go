@@ -1,5 +1,5 @@
 package gomat
-
+/*
 import (
 	"fmt"
 	"log"
@@ -356,3 +356,4 @@ func main() {
 	rootCmd.AddCommand(list_fabricsCmd)
 	rootCmd.Execute()
 }
+*/
