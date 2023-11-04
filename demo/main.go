@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
+	"log"
 	randm "math/rand"
 	"net"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/tom-code/gomat/onboarding_payload"
 	"github.com/tom-code/gomat"
 	"github.com/tom-code/gomat/discover"
+	"github.com/tom-code/gomat/onboarding_payload"
 )
 
 
@@ -196,12 +199,29 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
+
+			cf := fabric.CompressedFabric()
+			csf := hex.EncodeToString(cf)
+			dids := fmt.Sprintf("%s-%016X", csf, device_id)
+			dids = strings.ToUpper(dids)
+			fmt.Printf("device identifier: %s\n", dids)
 		},
 	}
 	commissionCmd.Flags().StringP("ip", "i", "", "ip address")
 	commissionCmd.Flags().StringP("pin", "p", "", "pin")
 	commissionCmd.Flags().Uint64P("device-id", "", 2, "device id")
 	commissionCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
+
+	var printInfoCmd = &cobra.Command{
+		Use:   "fabric-info",
+		Run: func(cmd *cobra.Command, args []string) {
+			fabric := createBasicFabricFromCmd(cmd)
+			cf := fabric.CompressedFabric()
+			csf := hex.EncodeToString(cf)
+			csf = strings.ToUpper(csf)
+			fmt.Printf("compressed-fabric: %s", csf)
+		},
+	}
 
 
 	var cacreateuserCmd = &cobra.Command{
@@ -243,13 +263,29 @@ func main() {
 	discoverCmd.PersistentFlags().BoolP("disable-ipv6", "d", false, "disable ipv6")
 
 	var discoverCCmd = &cobra.Command{
-		Use:   "commissioned",
+		Use:   "commissioned [device-id]",
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("interface")
 			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
-			//qrtext, _ := cmd.Flags().GetString("qr")
+			device_filter := ""
+			if len(args) == 1 {
+				fabric := createBasicFabricFromCmd(cmd)
+				dids := args[0]
+				device_id, err := strconv.ParseInt(dids, 0, 64)
+				if err != nil {
+					log.Panicf("incorrect device specification %s", dids)
+				}
+				cf := fabric.CompressedFabric()
+				csf := hex.EncodeToString(cf)
+				dids = fmt.Sprintf("%s-%016X", csf, device_id)
+				device_filter = strings.ToUpper(dids)
+				device_filter = device_filter + "._matter._tcp.local."
+			}
 			devices := discover.DiscoverAllComissioned(device, disable_ipv6)
 			for _, device := range devices {
+				if (len(device_filter)) > 0 && device.Name != device_filter {
+					continue
+				}
 				device.Dump()
 				fmt.Println()
 			}
@@ -303,5 +339,6 @@ func main() {
 	rootCmd.AddCommand(discoverCmd)
 	rootCmd.AddCommand(decodeQrCmd)
 	rootCmd.AddCommand(decodeManualCmd)
+	rootCmd.AddCommand(printInfoCmd)
 	rootCmd.Execute()
 }

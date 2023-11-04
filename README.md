@@ -28,7 +28,7 @@ Simple matter protocol implementation
 - generate controller key and certificate using `./gomat ca-createuser 100`
   - 100 is example node-id of controller
 - find device IP
-  - discover command can be used to discover matter devices and their ip address `discover commissionable -d`
+  - discover command can be used to discover matter devices and their ip address `./gomat discover commissionable -d`
 - find device commissioning passcode/pin
   - device may show it
   - it can be extracted from QR code. use decode-qr to extract passcode from text representation of QR code `./gomat decode-qr MT:-24J0AFN00SIQ663000`
@@ -68,7 +68,7 @@ func main() {
 	cm.Load()
 	cm.CreateUser(admin_user)
 	fabric := gomat.NewFabric(fabric_id, cm)
-	gomat.Commision(fabric, net.ParseIP(device_ip), pin, admin_user, device_id)
+	gomat.Commission(fabric, net.ParseIP(device_ip), pin, admin_user, device_id)
 }
 ```
 

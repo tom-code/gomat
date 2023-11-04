@@ -13,7 +13,7 @@ type Fabric struct {
 	ipk []byte
 }
 
-func (fabric Fabric) compressedFabric() []byte {
+func (fabric Fabric) CompressedFabric() []byte {
 	capub := fabric.CertificateManager.GetCaPublicKey()
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
 
@@ -24,7 +24,7 @@ func (fabric Fabric) compressedFabric() []byte {
 	return key
 }
 func (fabric Fabric) make_ipk() []byte {
-	key := hkdf_sha256(fabric.ipk, fabric.compressedFabric(), []byte("GroupKey v1.0"), 16)
+	key := hkdf_sha256(fabric.ipk, fabric.CompressedFabric(), []byte("GroupKey v1.0"), 16)
 	return key
 }
 
