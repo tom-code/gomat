@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	randm "math/rand"
 	"net"
 	"strconv"
@@ -14,9 +13,9 @@ import (
 )
 
 
-func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.QrContent) discover.DiscoveredDevice {
+func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.QrContent) []discover.DiscoveredDevice {
+	out := []discover.DiscoveredDevice{}
 	for _, device := range(devices) {
-		log.Printf("%s %d\n", device.D, qr.Discriminator)
 		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
 			continue
 		}
@@ -26,27 +25,11 @@ func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.Q
 		if device.ProductId != int(qr.Product) {
 			continue
 		}
-		return device
+		out = append(out, device)
 	}
-	panic("not foind")
+	return out
 }
 
-func discover_with_qr(qr string) discover.DiscoveredDevice {
-	var devices []discover.DiscoveredDevice
-	var err error
-	for i:=0; i<5; i++ {
-		devices, err = discover.Discover("en0")
-		if err != nil {
-			panic(err)
-		}
-		if len(devices) > 0 {
-			break
-		}
-
-	}
-	device := filter_devices(devices, onboarding_payload.DecodeQrText(qr))
-	return device
-}
 
 
 /*
@@ -252,29 +235,7 @@ func main() {
 		  fabric.CertificateManager.BootstrapCa()
 		},
 	}
-	/*
-	var discoverCmd = &cobra.Command{
-		Use:   "discover",
-		Run: func(cmd *cobra.Command, args []string) {
-			device, _ := cmd.Flags().GetString("device")
-			qrtext, _ := cmd.Flags().GetString("qr")
-			devices, err := discover.Discover(device)
-			if err != nil {
-				panic(err)
-			}
-			if len(qrtext) > 0 {
-				qr := onboarding_payload.DecodeQrText(qrtext)
-				device := filter_devices(devices, qr)
-				devices = []discover.DiscoveredDevice{device}
-			}
-			for _, device := range devices {
-				device.Dump()
-				fmt.Println("")
-			}
-		},
-	}
-	discoverCmd.Flags().StringP("device", "d", "", "network device")
-	discoverCmd.Flags().StringP("qr", "q", "", "qr code")*/
+
 	var discoverCmd = &cobra.Command{
 		Use:   "discover",
 	}
@@ -299,14 +260,19 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("interface")
 			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
-			//qrtext, _ := cmd.Flags().GetString("qr")
+			qrtext, _ := cmd.Flags().GetString("qr")
 			devices := discover.DiscoverAllComissionable(device, disable_ipv6)
+			if len(qrtext) > 0 {
+				qr := onboarding_payload.DecodeQrText(qrtext)
+				devices = filter_devices(devices, qr)
+			}
 			for _, device := range devices {
 				device.Dump()
 				fmt.Println()
 			}
 		},
 	}
+	discoverC2Cmd.Flags().StringP("qr", "q", "", "qr code")
 	discoverCmd.AddCommand(discoverCCmd)
 	discoverCmd.AddCommand(discoverC2Cmd)
 	var decodeQrCmd = &cobra.Command{
