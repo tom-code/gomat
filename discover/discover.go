@@ -228,6 +228,28 @@ func DiscoverAllComissioned(interfac string, disableipv6 bool) []DiscoveredDevic
 	return out
 }
 
+func DiscoverComissioned(interfac string, disableipv6 bool, id string) []DiscoveredDevice{
+	ifaces := ListInterfaces(interfac)
+	devices := map[string]DiscoveredDevice{}
+	for _, iface := range ifaces {
+		if !isEglible(iface) {
+			continue
+		}
+		log.Printf("trying %v\n",iface)
+		ds, _ := Discover2(iface.Name, "._matter._tcp", disableipv6)
+		maps.Copy(devices, ds)
+	}
+	out := []DiscoveredDevice{}
+	for _, d := range devices {
+		if d.Name != id {
+			continue
+		}
+		d.Type = DiscoveredTypeCommissioned
+		out = append(out, d)
+	}
+	return out
+}
+
 
 func DiscoverAllComissionable(interfac string, disableipv6 bool) []DiscoveredDevice{
 	ifaces := ListInterfaces(interfac)

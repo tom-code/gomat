@@ -44,6 +44,7 @@ Simple matter protocol implementation
 
 
 ### how to use api
+#### commission device using api
 create ca with root certificate, create admin user, then commision device:
 ```
 package main
@@ -71,7 +72,7 @@ func main() {
 }
 ```
 
-send ON command to already commissioned device:
+#### send ON command to commissioned devive using api
 ```
 package main
 
@@ -115,6 +116,44 @@ func main() {
   resp.Tlv.Dump(0)
 }
 ```
+
+#### discover IP address of previously commissioned device using api
+Device exposes its info using mdns under identifier [compressed-fabric-id]-[device-id].
+For this reason to discover commissioned device fabric info is required.
+```
+package main
+
+import (
+  "encoding/hex"
+  "fmt"
+  "strings"
+
+  "github.com/tom-code/gomat"
+  "github.com/tom-code/gomat/discover"
+)
+
+
+
+func main() {
+  var fabric_id uint64 = 0x100
+  var device_id uint64 = 10
+
+
+  cm := gomat.NewFileCertManager(fabric_id)
+  cm.Load()
+  fabric := gomat.NewFabric(fabric_id, cm)
+
+  identifier := fmt.Sprintf("%s-%016X", hex.EncodeToString(fabric.CompressedFabric()), device_id)
+  identifier = strings.ToUpper(identifier)
+  identifier = identifier + "._matter._tcp.local."
+  fmt.Printf("%s\n", identifier)
+  devices := discover.DiscoverComissioned("", true, identifier)
+  for _, d := range devices {
+    fmt.Printf("host:%s ip:%v\n", d.Host, d.Addrs)
+  }
+}
+```
+
 
 
 #### certificate manager

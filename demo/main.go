@@ -291,6 +291,35 @@ func main() {
 			}
 		},
 	}
+	var discoverC3Cmd = &cobra.Command{
+		Use:   "commissioned2 [device-id]",
+		Run: func(cmd *cobra.Command, args []string) {
+			device, _ := cmd.Flags().GetString("interface")
+			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
+			device_filter := ""
+			if len(args) == 1 {
+				fabric := createBasicFabricFromCmd(cmd)
+				dids := args[0]
+				device_id, err := strconv.ParseInt(dids, 0, 64)
+				if err != nil {
+					log.Panicf("incorrect device specification %s", dids)
+				}
+				cf := fabric.CompressedFabric()
+				csf := hex.EncodeToString(cf)
+				dids = fmt.Sprintf("%s-%016X", csf, device_id)
+				device_filter = strings.ToUpper(dids)
+				device_filter = device_filter + "._matter._tcp.local."
+			}
+			devices := discover.DiscoverComissioned(device, disable_ipv6, device_filter)
+			for _, device := range devices {
+				if (len(device_filter)) > 0 && device.Name != device_filter {
+					continue
+				}
+				device.Dump()
+				fmt.Println()
+			}
+		},
+	}
 	var discoverC2Cmd = &cobra.Command{
 		Use:   "commissionable",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -311,6 +340,7 @@ func main() {
 	discoverC2Cmd.Flags().StringP("qr", "q", "", "qr code")
 	discoverCmd.AddCommand(discoverCCmd)
 	discoverCmd.AddCommand(discoverC2Cmd)
+	discoverCmd.AddCommand(discoverC3Cmd)
 	var decodeQrCmd = &cobra.Command{
 		Use:   "decode-qr",
 		Short: "decode text representation of qr code",
