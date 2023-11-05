@@ -144,13 +144,15 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 
 func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) error {
 
-	channel := NewUdpChannel(device_ip, 5540, 55555)
+	channel, err := StartUdpChannel(device_ip, 5540, 55555)
+	if err != nil {
+		return err
+	}
 	secure_channel := SecureChannel {
 		Udp: channel,
 	}
-	defer channel.Udp.Close()
+	defer secure_channel.Close()
 
-	var err error
 	secure_channel, err = Spake2pExchange(pin, channel)
 	if err != nil {
 		return err

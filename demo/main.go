@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	randm "math/rand"
 	"net"
 	"strconv"
 	"strings"
@@ -77,12 +76,10 @@ func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) (gomat.Secur
 	device_id,_ := cmd.Flags().GetUint64("device-id")
 	controller_id,_ := cmd.Flags().GetUint64("controller-id")
 
-	channel := gomat.NewUdpChannel(net.ParseIP(ip), 5540, 55555)
-	secure_channel := gomat.SecureChannel {
-		Udp: channel,
-		Counter: uint32(randm.Intn(0xffffffff)),
+	secure_channel, err := gomat.StartSecureChannel(net.ParseIP(ip), 5540, 55555)
+	if err != nil {
+		panic(err)
 	}
-	var err error
 	secure_channel, err = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 	return secure_channel, err
 }
@@ -171,7 +168,7 @@ func main() {
 			   (resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA) {
 					resp.Tlv.Dump(0)
 			   }
-
+			channel.Close()
 		},
 		Args: cobra.MinimumNArgs(3),
 	})

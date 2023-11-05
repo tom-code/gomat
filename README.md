@@ -49,27 +49,73 @@ create ca with root certificate, create admin user, then commision device:
 package main
 
 import (
-	"net"
+  "net"
 
-	"github.com/tom-code/gomat"
+  "github.com/tom-code/gomat"
 )
 
 
 func main() {
-	var fabric_id uint64 = 0x100
-	var admin_user uint64 = 5
-	var device_id uint64 = 10
-	device_ip := "192.168.5.178"
-	pin := 123456
+  var fabric_id uint64 = 0x100
+  var admin_user uint64 = 5
+  var device_id uint64 = 10
+  device_ip := "192.168.5.178"
+  pin := 123456
 
-	cm := gomat.NewFileCertManager(fabric_id)
-	cm.BootstrapCa()
-	cm.Load()
-	cm.CreateUser(admin_user)
-	fabric := gomat.NewFabric(fabric_id, cm)
-	gomat.Commission(fabric, net.ParseIP(device_ip), pin, admin_user, device_id)
+  cm := gomat.NewFileCertManager(fabric_id)
+  cm.BootstrapCa()
+  cm.Load()
+  cm.CreateUser(admin_user)
+  fabric := gomat.NewFabric(fabric_id, cm)
+  gomat.Commission(fabric, net.ParseIP(device_ip), pin, admin_user, device_id)
 }
 ```
+
+send ON command to already commissioned device:
+```
+package main
+
+import (
+  "net"
+
+  "github.com/tom-code/gomat"
+)
+
+
+func main() {
+  var fabric_id uint64 = 0x100
+  var admin_user uint64 = 5
+  var device_id uint64 = 10
+  device_ip := "192.168.5.178"
+
+  cm := gomat.NewFileCertManager(fabric_id)
+  cm.Load()
+  fabric := gomat.NewFabric(fabric_id, cm)
+
+  secure_channel, err := gomat.StartSecureChannel(net.ParseIP(device_ip), 5540, 55555)
+  if err != nil {
+    panic(err)
+  }
+  defer secure_channel.Close()
+  secure_channel, err = gomat.SigmaExchange(fabric, admin_user, device_id, secure_channel)
+  if err != nil {
+    panic(err)
+  }
+
+  on_command := gomat.EncodeInvokeCommand(1,        // endpoint
+                                          6,        // api cluster (on/off)
+                                          1,        // on command
+                                          []byte{}, // no extra data
+                                          )
+  secure_channel.Send(on_command)
+  resp, err := secure_channel.Receive()
+  if err != nil {
+    panic(err)
+  }
+  resp.Tlv.Dump(0)
+}
+```
+
 
 #### certificate manager
 NewFabric function accepts certificate manager object as input parameter. Certificate manager must implement interface CertificateManager and user can supply own implementation. Supplied CertManager created by NewFileCertManager is very simple and stores all data in .pem files under pem directory.

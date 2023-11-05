@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"net"
 	"time"
 
@@ -17,7 +18,7 @@ type UdpChannel struct {
 	Remote_address net.UDPAddr
 }
 
-func NewUdpChannel(remote_ip net.IP, remote_port, local_port int) *UdpChannel {
+func StartUdpChannel(remote_ip net.IP, remote_port, local_port int) (*UdpChannel, error) {
 	var out *UdpChannel = new(UdpChannel)
 	out.Remote_address = net.UDPAddr{
 		IP : remote_ip,
@@ -26,9 +27,9 @@ func NewUdpChannel(remote_ip net.IP, remote_port, local_port int) *UdpChannel {
 	var err error
 	out.Udp, err = net.ListenPacket("udp", fmt.Sprintf(":%d", local_port))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return out
+	return out, nil
 }
 
 func (ch *UdpChannel)send(data []byte) error {
@@ -62,6 +63,17 @@ type SecureChannel struct {
 	local_node []byte
 	Counter uint32
 	session int
+}
+
+func StartSecureChannel(remote_ip net.IP, remote_port, local_port int) (SecureChannel, error) {
+	udp, err := StartUdpChannel(remote_ip, remote_port, local_port)
+	if err != nil {
+		return SecureChannel{}, err
+	}
+	return SecureChannel{
+		Udp:     udp,
+		Counter: uint32(rand.Intn(0xffffffff)),
+	}, nil
 }
 
 func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
@@ -171,4 +183,14 @@ func (sc *SecureChannel)Send(data []byte) error {
 
 	err := sc.Udp.send(buffer.Bytes())
 	return err
+}
+
+func (sc *SecureChannel)Close() {
+	sr := EncodeStatusReport(StatusReportElements{
+		GeneralCode: 0,
+		ProtocolId: 0,
+		ProtocolCode: 3, //close session
+	})
+	sc.Send(sr)
+	sc.Udp.Udp.Close()
 }

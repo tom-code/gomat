@@ -246,7 +246,24 @@ type DecodedGeneric struct {
 	StatusReport StatusReportElements
 }
 
+func EncodeStatusReport(code StatusReportElements) []byte {
 
+
+
+	var buffer bytes.Buffer
+	buffer.WriteByte(5) // flags
+	buffer.WriteByte(byte(SEC_CHAN_OPCODE_STATUS_REP)) // opcode
+	var exchange_id uint16
+	exchange_id = uint16(randm.Intn(0xffff))
+	binary.Write(&buffer, binary.LittleEndian, exchange_id)
+	var protocol_id uint16 = uint16(PROTOCOL_ID_SECURE_CHANNEL)
+	binary.Write(&buffer, binary.LittleEndian, protocol_id)
+	binary.Write(&buffer, binary.LittleEndian, code.GeneralCode)
+	binary.Write(&buffer, binary.LittleEndian, code.ProtocolId)
+	binary.Write(&buffer, binary.LittleEndian, code.ProtocolCode)
+
+	return buffer.Bytes()
+}
 
 func EncodeInvokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
 
