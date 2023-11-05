@@ -109,7 +109,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.InvokeCommand(1, 6, 0, []byte{})
+			to_send := gomat.EncodeInvokeCommand(1, 6, 0, []byte{})
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -132,7 +132,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.InvokeCommand(1, 6, 1, []byte{})
+			to_send := gomat.EncodeInvokeCommand(1, 6, 1, []byte{})
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -160,14 +160,17 @@ func main() {
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
 			attr, _ := strconv.ParseInt(args[2], 0, 16)
 
-			to_send := gomat.InvokeRead(byte(endpoint), byte(cluster), byte(attr))
+			to_send := gomat.EncodeInvokeRead(byte(endpoint), byte(cluster), byte(attr))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
 			if err != nil {
 				panic(err)
 			}
-			resp.Tlv.Dump(0)
+			if (resp.ProtocolHeader.ProtocolId == gomat.PROTOCOL_ID_INTERACTION) &&
+			   (resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA) {
+					resp.Tlv.Dump(0)
+			   }
 
 		},
 		Args: cobra.MinimumNArgs(3),

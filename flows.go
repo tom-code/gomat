@@ -15,7 +15,7 @@ import (
 
 
 
-func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
+func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	exchange := uint16(randm.Intn(0xffff))
 	secure_channel := SecureChannel {
 		Udp: udp,
@@ -30,7 +30,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 	if err != nil {
 		return SecureChannel{}, fmt.Errorf("pbkdf response not received: %s", err.Error())
 	}
-	if pbkdf_responseS.proto.opcode != SEC_CHAN_OPCODE_PBKDF_RESP {
+	if pbkdf_responseS.ProtocolHeader.Opcode != SEC_CHAN_OPCODE_PBKDF_RESP {
 		return SecureChannel{}, fmt.Errorf("SEC_CHAN_OPCODE_PBKDF_RESP not received")
 	}
 	pbkdf_response_salt := pbkdf_responseS.Tlv.GetOctetStringRec([]int{4,2})
@@ -56,7 +56,7 @@ func Spake2pExchange(pin int, udp *Channel) (SecureChannel, error) {
 	if err != nil {
 		return SecureChannel{}, fmt.Errorf("pake2 not received: %s", err.Error())
 	}
-	if pake2s.proto.opcode != SEC_CHAN_OPCODE_PAKE2 {
+	if pake2s.ProtocolHeader.Opcode != SEC_CHAN_OPCODE_PAKE2 {
 		return SecureChannel{}, fmt.Errorf("SEC_CHAN_OPCODE_PAKE2 not received")
 	}
 	//pake2s.tlv.Dump(1)
@@ -108,11 +108,11 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	if err != nil {
 		return SecureChannel{}, err
 	}
-	if (sigma_context.sigma2dec.proto.protocolId == 0) && (sigma_context.sigma2dec.proto.opcode == 0x40) {
-		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.statusReport.GeneralCode,
-				                            sigma_context.sigma2dec.statusReport.ProtocolCode)
+	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == 0) && (sigma_context.sigma2dec.ProtocolHeader.Opcode == 0x40) {
+		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.StatusReport.GeneralCode,
+				                            sigma_context.sigma2dec.StatusReport.ProtocolCode)
 	}
-	if sigma_context.sigma2dec.proto.opcode != 0x31 {
+	if sigma_context.sigma2dec.ProtocolHeader.Opcode != 0x31 {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received")
 	}
 
@@ -158,7 +158,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	// send csr request
 	var tlvb mattertlv.TLVBuffer
 	tlvb.WriteOctetString(0, create_random_bytes(32))
-	to_send := InvokeCommand(0, 0x3e, 4, tlvb.Bytes())
+	to_send := EncodeInvokeCommand(0, 0x3e, 4, tlvb.Bytes())
 	secure_channel.Send(to_send)
 
 	csr_resp, err := secure_channel.Receive()
@@ -177,7 +177,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	//AddTrustedRootCertificate
 	var tlv4 mattertlv.TLVBuffer
 	tlv4.WriteOctetString(0, SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCaCertificate()))
-	to_send = InvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
+	to_send = EncodeInvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.Send(to_send)
 
 
@@ -196,7 +196,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	tlv5.WriteOctetString(2, fabric.ipk) //ipk
 	tlv5.WriteUInt(3, mattertlv.TYPE_UINT_2, controller_id)   // admin subject !
 	tlv5.WriteUInt(4, mattertlv.TYPE_UINT_2, 101) // admin vendorid ??
-	to_send = InvokeCommand(0, 0x3e, 0x6, tlv5.Bytes())
+	to_send = EncodeInvokeCommand(0, 0x3e, 0x6, tlv5.Bytes())
 
 	secure_channel.Send(to_send)
 
@@ -213,7 +213,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 
 
 	//commissioning complete
-	to_send = InvokeCommand(0, 0x30, 4, []byte{})
+	to_send = EncodeInvokeCommand(0, 0x30, 4, []byte{})
 	secure_channel.Send(to_send)
 
 

@@ -12,13 +12,13 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-type Channel struct {
+type UdpChannel struct {
 	Udp net.PacketConn
 	Remote_address net.UDPAddr
 }
 
-func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
-	var out Channel
+func NewChannel(remote_ip net.IP, remote_port, local_port int) UdpChannel {
+	var out UdpChannel
 	out.Remote_address = net.UDPAddr{
 		IP : remote_ip,
 		Port: remote_port,
@@ -31,11 +31,11 @@ func NewChannel(remote_ip net.IP, remote_port, local_port int) Channel {
 	return out
 }
 
-func (ch *Channel)send(data []byte) error {
+func (ch *UdpChannel)send(data []byte) error {
 	_, err := ch.Udp.WriteTo(data, &ch.Remote_address)
 	return err
 }
-func (ch *Channel)receive() ([]byte, error) {
+func (ch *UdpChannel)receive() ([]byte, error) {
 	buf := make([]byte, 1024)
 	n, _, errx := ch.Udp.ReadFrom(buf)
 	if errx != nil {
@@ -55,7 +55,7 @@ func make_nonce3(counter uint32, node []byte) []byte{
 
 
 type SecureChannel struct {
-	Udp *Channel
+	Udp *UdpChannel
 	encrypt_key []byte
 	decrypt_key []byte
 	remote_node []byte
@@ -72,13 +72,13 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 	}
 	decode_buffer := bytes.NewBuffer(data)
 	var out DecodedGeneric
-	out.msg.decodeBase(decode_buffer)
+	out.MessageHeader.decode(decode_buffer)
 	add := data[:len(data)-decode_buffer.Len()]
 	proto := decode_buffer.Bytes()
 
 
 	if len(sc.decrypt_key) > 0 {
-		nonce := make_nonce3(out.msg.messageCounter, sc.remote_node)
+		nonce := make_nonce3(out.MessageHeader.messageCounter, sc.remote_node)
 		c, err := aes.NewCipher(sc.decrypt_key)
 		if err != nil {
 			return DecodedGeneric{}, err
@@ -96,14 +96,14 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 
 		decoder := bytes.NewBuffer(outx)
 
-		out.proto.decode(decoder)
+		out.ProtocolHeader.decode(decoder)
 		if len(decoder.Bytes()) > 0 {
 			tlvdata := make([]byte, decoder.Len())
 			n, _ := decoder.Read(tlvdata)
 			out.payload = tlvdata[:n]
 		}
 	} else {
-		out.proto.decode(decode_buffer)
+		out.ProtocolHeader.decode(decode_buffer)
 		if len(decode_buffer.Bytes()) > 0 {
 			tlvdata := make([]byte, decode_buffer.Len())
 			n, _ := decode_buffer.Read(tlvdata)
@@ -111,21 +111,21 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 		}
 	}
 
-	if out.proto.protocolId == 0 {
-		if out.proto.opcode == 0x10 {  // standalone ack
+	if out.ProtocolHeader.ProtocolId == 0 {
+		if out.ProtocolHeader.Opcode == 0x10 {  // standalone ack
 			return sc.Receive()
 		}
 	}
 
-	ack := ackGen(out.proto, out.msg.messageCounter)
+	ack := ackGen(out.ProtocolHeader, out.MessageHeader.messageCounter)
 	sc.Send(ack)
 
-	if out.proto.protocolId == 0 {
-		if out.proto.opcode == 0x40 {  // status report
+	if out.ProtocolHeader.ProtocolId == 0 {
+		if out.ProtocolHeader.Opcode == SEC_CHAN_OPCODE_STATUS_REP {  // status report
 			buf := bytes.NewBuffer(out.payload)
-			binary.Read(buf, binary.LittleEndian, &out.statusReport.GeneralCode)
-			binary.Read(buf, binary.LittleEndian, &out.statusReport.ProtocolId)
-			binary.Read(buf, binary.LittleEndian, &out.statusReport.ProtocolCode)
+			binary.Read(buf, binary.LittleEndian, &out.StatusReport.GeneralCode)
+			binary.Read(buf, binary.LittleEndian, &out.StatusReport.ProtocolId)
+			binary.Read(buf, binary.LittleEndian, &out.StatusReport.ProtocolCode)
 			return out, nil
 		}
 	}
@@ -139,13 +139,13 @@ func (sc *SecureChannel)Send(data []byte) error {
 
 	sc.Counter = sc.Counter + 1
 	var buffer bytes.Buffer
-	msg := Message {
+	msg := MessageHeader {
 		sessionId: uint16(sc.session),
 		securityFlags: 0,
 		messageCounter: sc.Counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 	}
-	msg.encodeBase(&buffer)
+	msg.encode(&buffer)
 	if len(sc.encrypt_key) == 0 {
 		buffer.Write(data)
 	} else {

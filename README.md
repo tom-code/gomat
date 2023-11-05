@@ -1,10 +1,9 @@
 # gomat
 Simple matter protocol implementation
 
-### status of code
-- early phase; focused on controller
-- it can commission device and send commands to it
-- commisioning does not implement any non-required steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
+### status of project
+- it can commission devices and send commands to them
+- commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
 
 ### general info
 - it is best to understand matter to use this, but here is most important info:

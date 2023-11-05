@@ -71,11 +71,11 @@ func (sc *sigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 
 func genSigma1Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
-	prot:= ProtocolMessage{
+	prot:= ProtocolMessageHeader{
 			exchangeFlags: 5,
-			opcode: 0x30, //sigma1
+			Opcode: 0x30, //sigma1
 			exchangeId: exchange,
-			protocolId: 0x00,
+			ProtocolId: 0x00,
 	}
 	prot.encode(&buffer)
 
@@ -85,11 +85,11 @@ func genSigma1Req2(payload []byte, exchange uint16) []byte {
 
 func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
-	prot:= ProtocolMessage{
+	prot:= ProtocolMessageHeader{
 		exchangeFlags: 5,
-		opcode: 0x32, //sigma1
+		Opcode: 0x32, //sigma1
 		exchangeId: exchange,
-		protocolId: 0x00,	}
+		ProtocolId: 0x00,	}
 
 	prot.encode(&buffer)
 
