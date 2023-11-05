@@ -112,7 +112,7 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 	}
 
 	if out.ProtocolHeader.ProtocolId == 0 {
-		if out.ProtocolHeader.Opcode == 0x10 {  // standalone ack
+		if out.ProtocolHeader.Opcode == SEC_CHAN_OPCODE_ACK {  // standalone ack
 			return sc.Receive()
 		}
 	}

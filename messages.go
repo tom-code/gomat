@@ -11,40 +11,24 @@ import (
 )
 
 
-const PROTOCOL_ID_SECURE_CHANNEL = 0
-const PROTOCOL_ID_INTERACTION    = 1
+type ProtocolId uint16
+const PROTOCOL_ID_SECURE_CHANNEL ProtocolId = 0
+const PROTOCOL_ID_INTERACTION    ProtocolId = 1
 
-const SEC_CHAN_OPCODE_ACK        = 0x10
-const SEC_CHAN_OPCODE_PBKDF_REQ  = 0x20
-const SEC_CHAN_OPCODE_PBKDF_RESP = 0x21
-const SEC_CHAN_OPCODE_PAKE1      = 0x22
-const SEC_CHAN_OPCODE_PAKE2      = 0x23
-const SEC_CHAN_OPCODE_PAKE3      = 0x24
-const SEC_CHAN_OPCODE_STATUS_REP = 0x40
+type Opcode byte
+const SEC_CHAN_OPCODE_ACK        Opcode = 0x10
+const SEC_CHAN_OPCODE_PBKDF_REQ  Opcode = 0x20
+const SEC_CHAN_OPCODE_PBKDF_RESP Opcode = 0x21
+const SEC_CHAN_OPCODE_PAKE1      Opcode = 0x22
+const SEC_CHAN_OPCODE_PAKE2      Opcode = 0x23
+const SEC_CHAN_OPCODE_PAKE3      Opcode = 0x24
+const SEC_CHAN_OPCODE_STATUS_REP Opcode = 0x40
 
-const INTERACTION_OPCODE_STATUS_RSP   = 0x1
-const INTERACTION_OPCODE_READ_REQ     = 0x2
-const INTERACTION_OPCODE_REPORT_DATA  = 0x5
-const INTERACTION_OPCODE_INVOKE_REQ = 0x8
-const INTERACTION_OPCODE_INVOKE_RSP = 0x9
-
-type ProtocolMessageHeader struct {
-	exchangeFlags byte
-	Opcode byte
-	exchangeId uint16
-	ProtocolId uint16
-	ackCounter uint32
-}
-
-func (m *ProtocolMessageHeader)decode(data *bytes.Buffer) {
-	m.exchangeFlags, _ = data.ReadByte()
-	m.Opcode, _ = data.ReadByte()
-	binary.Read(data, binary.LittleEndian, &m.exchangeId)
-	binary.Read(data, binary.LittleEndian, &m.ProtocolId)
-	if (m.exchangeFlags & 0x2) != 0 {
-		binary.Read(data, binary.LittleEndian, &m.ackCounter)
-	}
-}
+const INTERACTION_OPCODE_STATUS_RSP   Opcode = 0x1
+const INTERACTION_OPCODE_READ_REQ     Opcode = 0x2
+const INTERACTION_OPCODE_REPORT_DATA  Opcode = 0x5
+const INTERACTION_OPCODE_INVOKE_REQ   Opcode = 0x8
+const INTERACTION_OPCODE_INVOKE_RSP   Opcode = 0x9
 
 type MessageHeader struct {
 	flags byte
@@ -54,6 +38,26 @@ type MessageHeader struct {
 	sourceNodeId []byte
 	destinationNodeId []byte
 }
+
+type ProtocolMessageHeader struct {
+	exchangeFlags byte
+	Opcode Opcode
+	exchangeId uint16
+	ProtocolId ProtocolId
+	ackCounter uint32
+}
+
+func (m *ProtocolMessageHeader)decode(data *bytes.Buffer) {
+	m.exchangeFlags, _ = data.ReadByte()
+	opcode, _ := data.ReadByte()
+	m.Opcode = Opcode(opcode)
+	binary.Read(data, binary.LittleEndian, &m.exchangeId)
+	binary.Read(data, binary.LittleEndian, &m.ProtocolId)
+	if (m.exchangeFlags & 0x2) != 0 {
+		binary.Read(data, binary.LittleEndian, &m.ackCounter)
+	}
+}
+
 
 func (m *MessageHeader)Dump()  {
 	fmt.Printf("  flags      : %d\n", m.flags)
@@ -74,7 +78,7 @@ func (m *ProtocolMessageHeader)Dump()  {
 }
 func (m *ProtocolMessageHeader)encode(data *bytes.Buffer) {
 	data.WriteByte(m.exchangeFlags)
-	data.WriteByte(m.Opcode)
+	data.WriteByte(byte(m.Opcode))
 	binary.Write(data, binary.LittleEndian, uint16(m.exchangeId))
 	binary.Write(data, binary.LittleEndian, uint16(m.ProtocolId))
 }
@@ -159,7 +163,7 @@ func pBKDFParamRequest(exchange uint16) []byte {
 		exchangeFlags: 5,
 		Opcode: SEC_CHAN_OPCODE_PBKDF_REQ,
 		exchangeId: exchange,
-		ProtocolId: 0x00,
+		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.encode(&buffer)	
 	var tlvx mattertlv.TLVBuffer
@@ -183,7 +187,7 @@ func pake1ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeFlags: 5,
 		Opcode: SEC_CHAN_OPCODE_PAKE1,
 		exchangeId: exchange,
-		ProtocolId: 0x00,
+		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.encode(&buffer)	
 
@@ -201,7 +205,7 @@ func pake3ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeFlags: 5,
 		Opcode: SEC_CHAN_OPCODE_PAKE3,
 		exchangeId: exchange,
-		ProtocolId: 0x00,
+		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.encode(&buffer)
 
@@ -220,7 +224,7 @@ func ackGen(p ProtocolMessageHeader, counter uint32) []byte {
 		exchangeFlags: 3,
 		Opcode: SEC_CHAN_OPCODE_ACK,
 		exchangeId: p.exchangeId,
-		ProtocolId: 0x00,
+		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.encode(&buffer)
 	binary.Write(&buffer, binary.LittleEndian, counter)
@@ -269,11 +273,11 @@ func EncodeInvokeCommand(endpoint, cluster, command byte, payload []byte) []byte
 
 	var buffer bytes.Buffer
 	buffer.WriteByte(5) // flags
-	buffer.WriteByte(INTERACTION_OPCODE_INVOKE_REQ) // opcode
+	buffer.WriteByte(byte(INTERACTION_OPCODE_INVOKE_REQ)) // opcode
 	var exchange_id uint16
 	exchange_id = uint16(randm.Intn(0xffff))
 	binary.Write(&buffer, binary.LittleEndian, exchange_id)
-	var protocol_id uint16 = PROTOCOL_ID_INTERACTION
+	var protocol_id uint16 = uint16(PROTOCOL_ID_INTERACTION)
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
 	buffer.Write(tlvx.Bytes())
 
@@ -301,10 +305,10 @@ func EncodeInvokeRead(endpoint, cluster, attr byte) []byte {
 
 	var buffer bytes.Buffer
 	buffer.WriteByte(5) // flags
-	buffer.WriteByte(INTERACTION_OPCODE_READ_REQ) // opcode
+	buffer.WriteByte(byte(INTERACTION_OPCODE_READ_REQ)) // opcode
 	var exchange_id uint16
 	binary.Write(&buffer, binary.LittleEndian, exchange_id)
-	var protocol_id uint16 = PROTOCOL_ID_INTERACTION
+	var protocol_id uint16 = uint16(PROTOCOL_ID_INTERACTION)
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
 	buffer.Write(tlvx.Bytes())
 
