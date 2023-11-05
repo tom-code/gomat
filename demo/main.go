@@ -77,9 +77,9 @@ func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) (gomat.Secur
 	device_id,_ := cmd.Flags().GetUint64("device-id")
 	controller_id,_ := cmd.Flags().GetUint64("controller-id")
 
-	channel := gomat.NewChannel(net.ParseIP(ip), 5540, 55555)
+	channel := gomat.NewUdpChannel(net.ParseIP(ip), 5540, 55555)
 	secure_channel := gomat.SecureChannel {
-		Udp: &channel,
+		Udp: channel,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
 	var err error

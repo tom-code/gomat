@@ -17,8 +17,8 @@ type UdpChannel struct {
 	Remote_address net.UDPAddr
 }
 
-func NewChannel(remote_ip net.IP, remote_port, local_port int) UdpChannel {
-	var out UdpChannel
+func NewUdpChannel(remote_ip net.IP, remote_port, local_port int) *UdpChannel {
+	var out *UdpChannel
 	out.Remote_address = net.UDPAddr{
 		IP : remote_ip,
 		Port: remote_port,
@@ -36,7 +36,7 @@ func (ch *UdpChannel)send(data []byte) error {
 	return err
 }
 func (ch *UdpChannel)receive() ([]byte, error) {
-	buf := make([]byte, 1024)
+	buf := make([]byte, 1024*10)
 	n, _, errx := ch.Udp.ReadFrom(buf)
 	if errx != nil {
 		return []byte{}, errx
