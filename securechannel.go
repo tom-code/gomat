@@ -18,7 +18,7 @@ type UdpChannel struct {
 }
 
 func NewUdpChannel(remote_ip net.IP, remote_port, local_port int) *UdpChannel {
-	var out *UdpChannel
+	var out *UdpChannel = new(UdpChannel)
 	out.Remote_address = net.UDPAddr{
 		IP : remote_ip,
 		Port: remote_port,
