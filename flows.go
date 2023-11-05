@@ -148,6 +148,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	secure_channel := SecureChannel {
 		Udp: &channel,
 	}
+	defer channel.Udp.Close()
 
 	var err error
 	secure_channel, err = Spake2pExchange(pin, &channel)
