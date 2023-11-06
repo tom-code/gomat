@@ -65,6 +65,9 @@ type SecureChannel struct {
 	session int
 }
 
+// StartSecureChannel initializes secure channel for plain unencrypted communication.
+// It initializes UDP interface and blocks local udp port.
+// Secure channel becomes encrypted after encryption keys are supplied.
 func StartSecureChannel(remote_ip net.IP, remote_port, local_port int) (SecureChannel, error) {
 	udp, err := StartUdpChannel(remote_ip, remote_port, local_port)
 	if err != nil {
@@ -147,6 +150,9 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 	return out, nil
 }
 
+// Send sends Protocol Message via secure channel. It creates Matter Message by adding Message Header.
+// Protocol Message is aes-ccm encrypted when channel does have encryption keys.
+// When encryption keys are empty plain Message is sent.
 func (sc *SecureChannel)Send(data []byte) error {
 
 	sc.Counter = sc.Counter + 1
@@ -184,6 +190,7 @@ func (sc *SecureChannel)Send(data []byte) error {
 	return err
 }
 
+// Close secure channel. Send close session message to remote end and relase UDP port.
 func (sc *SecureChannel)Close() {
 	sr := EncodeStatusReport(StatusReportElements{
 		GeneralCode: 0,
