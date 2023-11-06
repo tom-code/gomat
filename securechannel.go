@@ -95,7 +95,7 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 		if err != nil {
 			return DecodedGeneric{}, err
 		}
-		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+		ccm, err := ccm.NewCCM(c, 16, len(nonce))
 		if err != nil {
 			return DecodedGeneric{}, err
 		}
@@ -161,7 +161,6 @@ func (sc *SecureChannel)Send(data []byte) error {
 	if len(sc.encrypt_key) == 0 {
 		buffer.Write(data)
 	} else {
-
 		header_slice := buffer.Bytes()
 		add2 := make([]byte, len(header_slice))
 		copy(add2, header_slice)
@@ -172,7 +171,7 @@ func (sc *SecureChannel)Send(data []byte) error {
 		if err != nil {
 			return err
 		}
-		ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+		ccm, err := ccm.NewCCM(c, 16, len(nonce))
 		if err != nil {
 			return err
 		}

@@ -9,8 +9,8 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 
-	"github.com/tom-code/gomat/mattertlv"
 	"github.com/tom-code/gomat/ccm"
+	"github.com/tom-code/gomat/mattertlv"
 )
 
 
@@ -98,7 +98,6 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 }
 
 func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
-
 	var tlv_s3tbs mattertlv.TLVBuffer
 	tlv_s3tbs.WriteAnonStruct()
 	tlv_s3tbs.WriteOctetString(1, sc.controller_matter_certificate)
@@ -147,7 +146,7 @@ func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 		return []byte{}, err
 	}
 	nonce := []byte("NCASE_Sigma3N")
-	ccm, err := ccm.NewCCMWithNonceAndTagSizes(c, len(nonce), 16)
+	ccm, err := ccm.NewCCM(c, 16, len(nonce))
 	if err != nil {
 		return []byte{}, err
 	}
