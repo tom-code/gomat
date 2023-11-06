@@ -8,7 +8,7 @@ Simple matter protocol implementation
 #### tested devices
 - tested against virtual devices which are part of reference implementation https://github.com/project-chip/connectedhomeip
 - tested with yeelight cube
-  - can control all leds at same time (on/off)
+  - can control all leds at same time on/off/color, ...
   - I was not able to determine how to control individual leds. There seems to be proprietary interface on endpoint 2 and I was unable to find any documentation of it.
 
 ### general info
@@ -184,6 +184,59 @@ func main() {
 	fmt.Printf("passcode: %d\n", code_decoded.Passcode)
 }
 
+```
+
+#### Set color of light to specific hue color
+```
+package main
+
+import (
+	"fmt"
+	"net"
+
+	"github.com/tom-code/gomat"
+	"github.com/tom-code/gomat/mattertlv"
+)
+
+
+func main() {
+	var fabric_id uint64 = 0x100
+	var admin_user uint64 = 5
+	var device_id uint64 = 10
+	device_ip := "192.168.5.178"
+
+	cm := gomat.NewFileCertManager(fabric_id)
+	cm.Load()
+	fabric := gomat.NewFabric(fabric_id, cm)
+
+
+	secure_channel, err := gomat.StartSecureChannel(net.ParseIP(device_ip), 5540, 55555)
+	if err != nil {
+		panic(err)
+	}
+	defer secure_channel.Close()
+	secure_channel, err = gomat.SigmaExchange(fabric, admin_user, device_id, secure_channel)
+	if err != nil {
+		panic(err)
+	}
+
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100)) // hue
+	tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(200)) // saturation
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(20)) // time
+	to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
+	secure_channel.Send(to_send)
+
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("result status: %d\n", status)
+}
 ```
 
 

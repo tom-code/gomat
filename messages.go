@@ -262,7 +262,7 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeInvokeCommand(endpoint, cluster, command byte, payload []byte) []byte {
+func EncodeInvokeCommand(endpoint byte , cluster uint16, command byte, payload []byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -272,7 +272,7 @@ func EncodeInvokeCommand(endpoint, cluster, command byte, payload []byte) []byte
 			tlvx.WriteAnonStruct()
 				tlvx.WriteList(0)
 					tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
-					tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(cluster))
+					tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
 					tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
 				tlvx.WriteAnonStructEnd()
 				tlvx.WriteStruct(1)

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tom-code/gomat"
 	"github.com/tom-code/gomat/discover"
+	"github.com/tom-code/gomat/mattertlv"
 	"github.com/tom-code/gomat/onboarding_payload"
 )
 
@@ -143,6 +144,38 @@ func main() {
 			fmt.Printf("result status: %d\n", status)
 		},
 	})
+
+	commandCmd.AddCommand( &cobra.Command{
+		Use: "color [hue] [saturation] [time]",
+		Run: func(cmd *cobra.Command, args []string) {
+			hue, err := strconv.Atoi(args[0])
+			saturation, err := strconv.Atoi(args[1])
+			time, err := strconv.Atoi(args[2])
+			fabric := createBasicFabricFromCmd(cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
+			var tlv mattertlv.TLVBuffer
+			tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(hue)) // hue
+			tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(saturation)) // saturation
+			tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(time)) // time
+			to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
+			channel.Send(to_send)
+
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
+			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("result status: %d\n", status)
+		},
+		Args: cobra.MinimumNArgs(3),
+	})
+
 
 	commandCmd.AddCommand( &cobra.Command{
 		Use: "read",
