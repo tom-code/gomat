@@ -11,7 +11,7 @@ Simple matter protocol implementation
   - easiest way how to talk to device is to have signed certificate of device admin user (alternative is setup ACLs and use non-admin user)
   - certificates are signed by CA
   - during commissioning procedure root CA certificate is pushed to device together with id of device admin user
-  - root CA certificate is something you need to create once and store. loosing CA keys usually means that you will have to commistion devices again
+  - root CA certificate is something you need to create once and store. loosing CA keys usually means that you will have to commission devices again
   - to talk to device you have to commission it first
     - to commission device you usually need its pin/passcode and device be in state open for commisioning
     - device gets into commisioning window open state often by "factory reset"
@@ -45,7 +45,7 @@ Simple matter protocol implementation
 
 ### how to use api
 #### commission device using api
-create ca with root certificate, create admin user, then commision device:
+create ca with root certificate, create admin user, then commission device:
 ```
 package main
 
@@ -72,7 +72,7 @@ func main() {
 }
 ```
 
-#### send ON command to commissioned devive using api
+#### send ON command to commissioned device using api
 ```
 package main
 
