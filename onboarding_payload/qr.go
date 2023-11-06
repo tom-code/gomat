@@ -17,19 +17,19 @@ func a2n(a byte) uint32 {
 }
 
 
-type BitBuffer struct {
+type bitBuffer struct {
 	bytes []byte
 	current_byte int
 	current_bit int
 	total_bytes int
 }
 
-func (bb *BitBuffer)add_byte(n byte) {
+func (bb *bitBuffer)add_byte(n byte) {
 	bb.total_bytes += 1
 	bb.bytes = append(bb.bytes, n)
 }
 
-func (bb *BitBuffer)dump() {
+func (bb *bitBuffer)dump() {
 	for _, b := range bb.bytes {
 		for i:=0; i<8; i++ {
 			if b&1 == 1 {
@@ -43,7 +43,7 @@ func (bb *BitBuffer)dump() {
 	fmt.Printf("\n")
 }
 
-func (bb *BitBuffer)get() byte {
+func (bb *bitBuffer)get() byte {
 	b := bb.bytes[bb.current_byte]
 	out := (b>>bb.current_bit)&1
 	bb.current_bit +=1
@@ -54,7 +54,7 @@ func (bb *BitBuffer)get() byte {
 	return out
 }
 
-func (bb *BitBuffer)get_number(bits int) uint64 {
+func (bb *bitBuffer)get_number(bits int) uint64 {
 	var out uint64
 	var mult uint64
 	mult = 1
@@ -66,18 +66,18 @@ func (bb *BitBuffer)get_number(bits int) uint64 {
 	return out
 }
 
-func (bb *BitBuffer)get_bit(n int) byte {
+func (bb *bitBuffer)get_bit(n int) byte {
 	b_byte := n/8
 	b_bit := n%8
 	return (bb.bytes[b_byte]>>b_bit)&1
 }
 
-func (bb *BitBuffer)reset_ptr() {
+func (bb *bitBuffer)reset_ptr() {
 	bb.current_bit = 0
 	bb.current_byte = 0
 }
 
-func b38_decode(in string) BitBuffer {
+func b38_decode(in string) bitBuffer {
 	in_array := []string{}
 	for len(in) >= 5 {
 		in_array = append(in_array, in[:5])
@@ -87,7 +87,7 @@ func b38_decode(in string) BitBuffer {
 		in_array = append(in_array, in)
 	}
 
-	var bb BitBuffer
+	var bb bitBuffer
 	for _, a := range in_array {
 		var b24 uint32
 		mult := 1
