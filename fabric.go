@@ -13,6 +13,12 @@ type Fabric struct {
 	ipk []byte
 }
 
+func (fabric Fabric) Id() uint64 {
+	return fabric.id
+}
+
+// CompressedFabric returns Compressed Fabric Identifier which is used to identify fabric
+// in matter protocol.
 func (fabric Fabric) CompressedFabric() []byte {
 	capub := fabric.CertificateManager.GetCaPublicKey()
 	capublic_key := elliptic.Marshal(elliptic.P256(), capub.X, capub.Y)
@@ -29,6 +35,7 @@ func (fabric Fabric) make_ipk() []byte {
 }
 
 
+// NewFabric constructs new Fabric object.
 func NewFabric(id uint64, certman CertificateManager) *Fabric {
 	out:= &Fabric{
 		id: id,

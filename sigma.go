@@ -77,7 +77,7 @@ func genSigma1Req2(payload []byte, exchange uint16) []byte {
 			exchangeId: exchange,
 			ProtocolId: 0x00,
 	}
-	prot.encode(&buffer)
+	prot.Encode(&buffer)
 
 	buffer.Write(payload)
 	return buffer.Bytes()
@@ -91,7 +91,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 		exchangeId: exchange,
 		ProtocolId: 0x00,	}
 
-	prot.encode(&buffer)
+	prot.Encode(&buffer)
 
 	buffer.Write(payload)
 	return buffer.Bytes()

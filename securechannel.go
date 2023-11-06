@@ -84,7 +84,7 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 	}
 	decode_buffer := bytes.NewBuffer(data)
 	var out DecodedGeneric
-	out.MessageHeader.decode(decode_buffer)
+	out.MessageHeader.Decode(decode_buffer)
 	add := data[:len(data)-decode_buffer.Len()]
 	proto := decode_buffer.Bytes()
 
@@ -108,14 +108,14 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 
 		decoder := bytes.NewBuffer(outx)
 
-		out.ProtocolHeader.decode(decoder)
+		out.ProtocolHeader.Decode(decoder)
 		if len(decoder.Bytes()) > 0 {
 			tlvdata := make([]byte, decoder.Len())
 			n, _ := decoder.Read(tlvdata)
 			out.payload = tlvdata[:n]
 		}
 	} else {
-		out.ProtocolHeader.decode(decode_buffer)
+		out.ProtocolHeader.Decode(decode_buffer)
 		if len(decode_buffer.Bytes()) > 0 {
 			tlvdata := make([]byte, decode_buffer.Len())
 			n, _ := decode_buffer.Read(tlvdata)
@@ -157,7 +157,7 @@ func (sc *SecureChannel)Send(data []byte) error {
 		messageCounter: sc.Counter,
 		sourceNodeId: []byte{1,2,3,4,5,6,7,8},
 	}
-	msg.encode(&buffer)
+	msg.Encode(&buffer)
 	if len(sc.encrypt_key) == 0 {
 		buffer.Write(data)
 	} else {

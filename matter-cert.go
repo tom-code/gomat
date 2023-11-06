@@ -31,7 +31,7 @@ func caConvertDNValue(in any) uint64 {
 	return v4
 }
 
-func CAConvertDN(in pkix.Name, out *mattertlv.TLVBuffer) {
+func caConvertDN(in pkix.Name, out *mattertlv.TLVBuffer) {
 	for _, extra := range in.Names {
 		if extra.Type.Equal(asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,1}) { //node-id
 			out.WriteUInt(17, mattertlv.TYPE_UINT_8, caConvertDNValue(extra.Value))
@@ -63,14 +63,14 @@ func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte
 	tlv3.WriteUInt(2, mattertlv.TYPE_UINT_1, 1) // signature algorithm
 
 	tlv3.WriteList(3) // issuer
-		CAConvertDN(in.Issuer, &tlv3)
+		caConvertDN(in.Issuer, &tlv3)
 	tlv3.WriteAnonStructEnd()
 
 
 	tlv3.WriteUInt(4, mattertlv.TYPE_UINT_4, uint64(in.NotBefore.Unix()-946684800))
 	tlv3.WriteUInt(5, mattertlv.TYPE_UINT_4, uint64(in.NotAfter.Unix())-946684800)
 	tlv3.WriteList(6)  // subject
-		CAConvertDN(in.Subject, &tlv3)
+		caConvertDN(in.Subject, &tlv3)
 	tlv3.WriteAnonStructEnd()
 	tlv3.WriteUInt(7, mattertlv.TYPE_UINT_1, 1)
 	tlv3.WriteUInt(8, mattertlv.TYPE_UINT_1, 1)

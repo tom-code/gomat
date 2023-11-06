@@ -47,7 +47,7 @@ type ProtocolMessageHeader struct {
 	ackCounter uint32
 }
 
-func (m *ProtocolMessageHeader)decode(data *bytes.Buffer) {
+func (m *ProtocolMessageHeader)Decode(data *bytes.Buffer) {
 	m.exchangeFlags, _ = data.ReadByte()
 	opcode, _ := data.ReadByte()
 	m.Opcode = Opcode(opcode)
@@ -76,7 +76,7 @@ func (m *ProtocolMessageHeader)Dump()  {
 	fmt.Printf("    protocolId    : %d\n", m.ProtocolId)
 	fmt.Printf("    ackCounter    : %d\n", m.ackCounter)
 }
-func (m *ProtocolMessageHeader)encode(data *bytes.Buffer) {
+func (m *ProtocolMessageHeader)Encode(data *bytes.Buffer) {
 	data.WriteByte(m.exchangeFlags)
 	data.WriteByte(byte(m.Opcode))
 	binary.Write(data, binary.LittleEndian, uint16(m.exchangeId))
@@ -103,7 +103,7 @@ func (m *MessageHeader)calcMessageFlags() byte {
 	return out
 }
 
-func (m *MessageHeader) encode(data *bytes.Buffer) {
+func (m *MessageHeader) Encode(data *bytes.Buffer) {
 	data.WriteByte(m.calcMessageFlags())
 	binary.Write(data, binary.LittleEndian, uint16(m.sessionId))
 	data.WriteByte(m.securityFlags)
@@ -117,7 +117,7 @@ func (m *MessageHeader) encode(data *bytes.Buffer) {
 }
 
 
-func (m *MessageHeader) decode(data *bytes.Buffer) error {
+func (m *MessageHeader) Decode(data *bytes.Buffer) error {
 	var err error
 	m.flags, err = data.ReadByte()
 	if err != nil {
@@ -165,7 +165,7 @@ func pBKDFParamRequest(exchange uint16) []byte {
 		exchangeId: exchange,
 		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.encode(&buffer)	
+	prot.Encode(&buffer)	
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	initiator_random := make([]byte, 32)
@@ -189,7 +189,7 @@ func pake1ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeId: exchange,
 		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.encode(&buffer)	
+	prot.Encode(&buffer)	
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -207,7 +207,7 @@ func pake3ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeId: exchange,
 		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.encode(&buffer)
+	prot.Encode(&buffer)
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -226,7 +226,7 @@ func ackGen(p ProtocolMessageHeader, counter uint32) []byte {
 		exchangeId: p.exchangeId,
 		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.encode(&buffer)
+	prot.Encode(&buffer)
 	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }
@@ -247,9 +247,6 @@ type DecodedGeneric struct {
 }
 
 func EncodeStatusReport(code StatusReportElements) []byte {
-
-
-
 	var buffer bytes.Buffer
 	buffer.WriteByte(5) // flags
 	buffer.WriteByte(byte(SEC_CHAN_OPCODE_STATUS_REP)) // opcode
