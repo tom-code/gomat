@@ -5,6 +5,12 @@ Simple matter protocol implementation
 - it can commission devices and send commands to them
 - commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
 
+#### tested devices
+- tested against virtual devices which are part of reference implementation https://github.com/project-chip/connectedhomeip
+- tested with yeelight cube
+  - can control all leds at same time (on/off)
+  - I was not able to determine how to control individual leds. There seems to be proprietary interface on endpoint 2 and I was unable to find any documentation of it.
+
 ### general info
 - it is best to understand matter to use this, but here is most important info:
   - device ownership is managed using certificates
