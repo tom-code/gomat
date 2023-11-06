@@ -154,6 +154,31 @@ func main() {
 }
 ```
 
+#### extract pairing passcode from QR code and manual pairing code
+Following example shows how to extract passcode from textual representation of QR code or from manual pairing code.
+Manual pairing code can have dash characters at any position(they are discarded)
+```
+package main
+
+import (
+	"fmt"
+
+	"github.com/tom-code/gomat/onboarding_payload"
+)
+
+
+func main() {
+	setup_qr_code := "MT:-24J0AFN00SIQ663000"
+	qr_decoded := onboarding_payload.DecodeQrText(setup_qr_code)
+	fmt.Printf("passcode: %d\n", qr_decoded.Passcode)
+
+
+	manual_pair_code := "357-920-000-79"
+	code_decoded := onboarding_payload.DecodeManualPairingCode(manual_pair_code)
+	fmt.Printf("passcode: %d\n", code_decoded.Passcode)
+}
+
+```
 
 
 #### certificate manager
