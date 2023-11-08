@@ -1,7 +1,7 @@
 # gomat
 Simple matter protocol implementation
 
-![example workflow](https://github.com/github/docs/actions/workflows/go.yml/badge.svg)
+![go build](https://github.com/tom-code/gomat/actions/workflows/go.yml/badge.svg)
 
 ### status of project
 - it can commission devices and send commands to them
