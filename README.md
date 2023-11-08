@@ -1,6 +1,8 @@
 # gomat
 Simple matter protocol implementation
 
+![example workflow](https://github.com/github/docs/actions/workflows/go.yml/badge.svg)
+
 ### status of project
 - it can commission devices and send commands to them
 - commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
