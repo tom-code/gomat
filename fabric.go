@@ -6,11 +6,10 @@ import (
 	"encoding/binary"
 )
 
-
 type Fabric struct {
-	id uint64
+	id                 uint64
 	CertificateManager CertificateManager
-	ipk []byte
+	ipk                []byte
 }
 
 func (fabric Fabric) Id() uint64 {
@@ -34,13 +33,12 @@ func (fabric Fabric) make_ipk() []byte {
 	return key
 }
 
-
 // NewFabric constructs new Fabric object.
 func NewFabric(id uint64, certman CertificateManager) *Fabric {
-	out:= &Fabric{
-		id: id,
+	out := &Fabric{
+		id:                 id,
 		CertificateManager: certman,
-		ipk: []byte{0,1,2,3,4,5,6,7,8,9,0xa,0xb,0xc,0xd,0xe,0xf},
+		ipk:                []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
 	}
 	return out
 }

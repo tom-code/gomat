@@ -3,7 +3,6 @@ package gomat
 import (
 	"crypto/ecdsa"
 	"crypto/x509"
-
 )
 
 // matter certificate manager interface

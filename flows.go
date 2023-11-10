@@ -13,12 +13,10 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-
-
 func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	exchange := uint16(randm.Intn(0xffff))
-	secure_channel := SecureChannel {
-		Udp: udp,
+	secure_channel := SecureChannel{
+		Udp:     udp,
 		session: 0,
 		Counter: uint32(randm.Intn(0xffffffff)),
 	}
@@ -33,8 +31,8 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	if pbkdf_responseS.ProtocolHeader.Opcode != SEC_CHAN_OPCODE_PBKDF_RESP {
 		return SecureChannel{}, fmt.Errorf("SEC_CHAN_OPCODE_PBKDF_RESP not received")
 	}
-	pbkdf_response_salt := pbkdf_responseS.Tlv.GetOctetStringRec([]int{4,2})
-	pbkdf_response_iterations, err := pbkdf_responseS.Tlv.GetIntRec([]int{4,1})
+	pbkdf_response_salt := pbkdf_responseS.Tlv.GetOctetStringRec([]int{4, 2})
+	pbkdf_response_iterations, err := pbkdf_responseS.Tlv.GetIntRec([]int{4, 1})
 	if err != nil {
 		return SecureChannel{}, fmt.Errorf("can't get pbkdf_response_iterations")
 	}
@@ -42,7 +40,6 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	if err != nil {
 		return SecureChannel{}, fmt.Errorf("can't get pbkdf_response_session")
 	}
-
 
 	sctx := newSpaceCtx()
 	sctx.gen_w(pin, pbkdf_response_salt, int(pbkdf_response_iterations))
@@ -62,7 +59,6 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	//pake2s.tlv.Dump(1)
 	pake2_pb := pake2s.Tlv.GetOctetStringRec([]int{1})
 
-
 	sctx.Y.from_bytes(pake2_pb)
 	sctx.calc_ZV()
 	ttseed := []byte("CHIP PAKE V1 Commissioning")
@@ -76,16 +72,16 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	pake3 := pake3ParamRequest(exchange, sctx.cA)
 	secure_channel.Send(pake3)
 
+	/*status_report :=*/
+	secure_channel.Receive()
 
-	/*status_report :=*/ secure_channel.Receive()
-
-	secure_channel = SecureChannel {
-		Udp: udp,
+	secure_channel = SecureChannel{
+		Udp:         udp,
 		decrypt_key: sctx.decrypt_key,
 		encrypt_key: sctx.encrypt_key,
-		remote_node: []byte{0,0,0,0,0,0,0,0},
-		local_node: []byte{0,0,0,0,0,0,0,0},
-		session: int(pbkdf_response_session),
+		remote_node: []byte{0, 0, 0, 0, 0, 0, 0, 0},
+		local_node:  []byte{0, 0, 0, 0, 0, 0, 0, 0},
+		session:     int(pbkdf_response_session),
 	}
 
 	return secure_channel, nil
@@ -94,14 +90,13 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secure_channel SecureChannel) (SecureChannel, error) {
 
 	controller_privkey, _ := ecdh.P256().GenerateKey(rand.Reader)
-	sigma_context := sigmaContext {
+	sigma_context := sigmaContext{
 		session_privkey: controller_privkey,
-		exchange: uint16(randm.Intn(0xffff)),
+		exchange:        uint16(randm.Intn(0xffff)),
 	}
 	sigma_context.genSigma1(fabric, device_id)
 	sigma1 := genSigma1Req2(sigma_context.sigma1payload, sigma_context.exchange)
 	secure_channel.Send(sigma1)
-
 
 	var err error
 	sigma_context.sigma2dec, err = secure_channel.Receive()
@@ -110,7 +105,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	}
 	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == 0) && (sigma_context.sigma2dec.ProtocolHeader.Opcode == 0x40) {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.StatusReport.GeneralCode,
-				                            sigma_context.sigma2dec.StatusReport.ProtocolCode)
+			sigma_context.sigma2dec.StatusReport.ProtocolCode)
 	}
 	if sigma_context.sigma2dec.ProtocolHeader.Opcode != 0x31 {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received")
@@ -132,7 +127,8 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	}
 	secure_channel.Send(to_send)
 
-	/*respx :=*/ secure_channel.Receive()
+	/*respx :=*/
+	secure_channel.Receive()
 
 	secure_channel.decrypt_key = sigma_context.r2ikey
 	secure_channel.encrypt_key = sigma_context.i2rkey
@@ -148,7 +144,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	if err != nil {
 		return err
 	}
-	secure_channel := SecureChannel {
+	secure_channel := SecureChannel{
 		Udp: channel,
 	}
 	defer secure_channel.Close()
@@ -169,7 +165,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 		return err
 	}
 
-	nocsr := csr_resp.Tlv.GetOctetStringRec([]int{1,0,0,1,0})
+	nocsr := csr_resp.Tlv.GetOctetStringRec([]int{1, 0, 0, 1, 0})
 	tlv2 := mattertlv.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)
@@ -183,9 +179,8 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	to_send = EncodeInvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.Send(to_send)
 
-
-	/*ds :=*/ secure_channel.Receive()
-
+	/*ds :=*/
+	secure_channel.Receive()
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
 	noc_x509, err := fabric.CertificateManager.SignCertificate(csrp.PublicKey.(*ecdsa.PublicKey), device_id)
@@ -196,14 +191,15 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	//AddNOC
 	var tlv5 mattertlv.TLVBuffer
 	tlv5.WriteOctetString(0, noc_matter)
-	tlv5.WriteOctetString(2, fabric.ipk) //ipk
-	tlv5.WriteUInt(3, mattertlv.TYPE_UINT_2, controller_id)   // admin subject !
-	tlv5.WriteUInt(4, mattertlv.TYPE_UINT_2, 101) // admin vendorid ??
+	tlv5.WriteOctetString(2, fabric.ipk)                    //ipk
+	tlv5.WriteUInt(3, mattertlv.TYPE_UINT_2, controller_id) // admin subject !
+	tlv5.WriteUInt(4, mattertlv.TYPE_UINT_2, 101)           // admin vendorid ??
 	to_send = EncodeInvokeCommand(0, 0x3e, 0x6, tlv5.Bytes())
 
 	secure_channel.Send(to_send)
 
-	/*ds =*/ secure_channel.Receive()
+	/*ds =*/
+	secure_channel.Receive()
 
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}
@@ -214,11 +210,9 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 		return err
 	}
 
-
 	//commissioning complete
 	to_send = EncodeInvokeCommand(0, 0x30, 4, []byte{})
 	secure_channel.Send(to_send)
-
 
 	respx, err := secure_channel.Receive()
 	if err != nil {

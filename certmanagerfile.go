@@ -25,13 +25,12 @@ import (
 	"time"
 )
 
-
 func cert_id_to_name(id uint64) string {
 	return fmt.Sprintf("%d", id)
 }
 
 type CertManager struct {
-	fabric uint64
+	fabric         uint64
 	ca_certificate *x509.Certificate
 	ca_private_key *ecdsa.PrivateKey
 }
@@ -41,13 +40,13 @@ func NewFileCertManager(fabric uint64) *CertManager {
 		fabric: fabric,
 	}
 }
-func (cm *CertManager)GetCaPublicKey() ecdsa.PublicKey {
+func (cm *CertManager) GetCaPublicKey() ecdsa.PublicKey {
 	return cm.ca_private_key.PublicKey
 }
-func (cm *CertManager)GetCaCertificate() *x509.Certificate {
+func (cm *CertManager) GetCaCertificate() *x509.Certificate {
 	return cm.ca_certificate
 }
-func (cm *CertManager)Load() error {
+func (cm *CertManager) Load() error {
 	_, err := os.Stat("pem/ca-private.pem")
 	if err != nil {
 		log.Printf("can't open CA key. continue anyway %s\n", err.Error())
@@ -62,28 +61,27 @@ func (cm *CertManager)Load() error {
 	return err
 }
 
-func (cm *CertManager)GetCertificate(id uint64) (*x509.Certificate, error) {
-	return loadCert("pem/"+cert_id_to_name(id)+"-cert.pem")
+func (cm *CertManager) GetCertificate(id uint64) (*x509.Certificate, error) {
+	return loadCert("pem/" + cert_id_to_name(id) + "-cert.pem")
 }
-func (cm *CertManager)GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
-	pk, err := load_priv_key("pem/"+cert_id_to_name(id)+"-private.pem")
+func (cm *CertManager) GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
+	pk, err := load_priv_key("pem/" + cert_id_to_name(id) + "-private.pem")
 	if err != nil {
 		return nil, err
 	}
 	return pk.(*ecdsa.PrivateKey), nil
 }
 
-func (cm *CertManager)CreateUser(node_id uint64) error {
+func (cm *CertManager) CreateUser(node_id uint64) error {
 	id := fmt.Sprintf("%d", node_id)
-	privkey, err := generate_and_store_key_ecdsa("pem/"+id)
+	privkey, err := generate_and_store_key_ecdsa("pem/" + id)
 	if err != nil {
 		return err
 	}
 	cm.SignCertificate(&privkey.PublicKey, node_id)
 	return nil
 }
-func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error) {
-
+func (cm *CertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error) {
 
 	public_key_auth := elliptic.Marshal(elliptic.P256(), cm.ca_private_key.PublicKey.X, cm.ca_private_key.PublicKey.Y)
 	sh := sha1.New()
@@ -96,8 +94,7 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 	shp.Write(public_key_subj2)
 	sha_subj := shp.Sum(nil)
 
-	subj := pkix.Name{
-	}
+	subj := pkix.Name{}
 
 	node_id_string := fmt.Sprintf("%016X", node_id)
 	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
@@ -106,11 +103,11 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,1},
+			Type:  asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 37244, 1, 1},
 			Value: asn1.RawValue{FullBytes: valname},
 		},
 		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,5},
+			Type:  asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 37244, 1, 5},
 			Value: asn1.RawValue{FullBytes: valname_fabric},
 		},
 	}
@@ -127,29 +124,29 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 	extkeyusa, _ := hex.DecodeString("301406082B0601050507030206082B06010505070301")
 	template.ExtraExtensions = []pkix.Extension{
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,19}, // basic constraints
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 19}, // basic constraints
 			Critical: true,
-			Value: []byte{0x30, 0x03, 0x01, 0x01, 0xff},
+			Value:    []byte{0x30, 0x03, 0x01, 0x01, 0xff},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,15},  // keyUsage
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 15}, // keyUsage
 			Critical: true,
-			Value: []byte{3,2,7,0x80},
+			Value:    []byte{3, 2, 7, 0x80},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,37},  // ExtkeyUsage
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 37}, // ExtkeyUsage
 			Critical: true,
-			Value: extkeyusa,
+			Value:    extkeyusa,
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,14},  //subjectKeyId
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 14}, //subjectKeyId
 			Critical: false,
-			Value: append([]byte{0x04,0x14}, sha_subj...),
+			Value:    append([]byte{0x04, 0x14}, sha_subj...),
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,35},  // authorityKeyId
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 35}, // authorityKeyId
 			Critical: false,
-			Value: append([]byte{0x30, 0x16, 0x80, 0x14}, sha_auth...),
+			Value:    append([]byte{0x30, 0x16, 0x80, 0x14}, sha_auth...),
 		},
 	}
 
@@ -166,7 +163,7 @@ func (cm *CertManager)SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint
 	return out_parsed, nil
 }
 
-func (cm *CertManager)BootstrapCa() {
+func (cm *CertManager) BootstrapCa() {
 
 	_, err := os.Stat("pem/ca-private.pem")
 	if err == nil {
@@ -178,7 +175,7 @@ func (cm *CertManager)BootstrapCa() {
 	cm.create_ca_cert()
 }
 
-func (cm *CertManager)create_ca_cert() error {
+func (cm *CertManager) create_ca_cert() error {
 	pubany, err := load_public_key("pem/ca-public.pem")
 	if err != nil {
 		return err
@@ -189,20 +186,18 @@ func (cm *CertManager)create_ca_cert() error {
 		return err
 	}
 
-
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)
 	sh := sha1.New()
 	sh.Write(public_key)
 	sha := sh.Sum(nil)
-	
-	subj := pkix.Name{
-	}
+
+	subj := pkix.Name{}
 
 	valname, err := asn1.MarshalWithParams("0000000000000001", "utf8")
 
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
-			Type: asn1.ObjectIdentifier{1,3,6,1,4,1,37244,1,4},
+			Type:  asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 37244, 1, 4},
 			Value: asn1.RawValue{FullBytes: valname},
 		},
 	}
@@ -220,24 +215,24 @@ func (cm *CertManager)create_ca_cert() error {
 	// for this reason they must appear in this list
 	template.ExtraExtensions = []pkix.Extension{
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,19}, // basic constraints
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 19}, // basic constraints
 			Critical: true,
-			Value: []byte{0x30, 0x03, 0x01, 0x01, 0xff},
+			Value:    []byte{0x30, 0x03, 0x01, 0x01, 0xff},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,15},  // keyUsage
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 15}, // keyUsage
 			Critical: true,
-			Value: []byte{3,2,1,6},
+			Value:    []byte{3, 2, 1, 6},
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,14},  //subjectKeyId
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 14}, //subjectKeyId
 			Critical: false,
-			Value: append([]byte{0x04,0x14}, sha...),
+			Value:    append([]byte{0x04, 0x14}, sha...),
 		},
 		{
-			Id: asn1.ObjectIdentifier{2,5,29,35},  // authorityKeyId
+			Id:       asn1.ObjectIdentifier{2, 5, 29, 35}, // authorityKeyId
 			Critical: false,
-			Value: append([]byte{0x30, 0x16, 0x80, 0x14}, sha...),
+			Value:    append([]byte{0x30, 0x16, 0x80, 0x14}, sha...),
 		},
 	}
 
@@ -250,8 +245,6 @@ func (cm *CertManager)create_ca_cert() error {
 	return nil
 }
 
-
-
 func generate_and_store_key_ecdsa(name string) (*ecdsa.PrivateKey, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -261,21 +254,21 @@ func generate_and_store_key_ecdsa(name string) (*ecdsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	privBlock := pem.Block {
-		Type: "EC PRIVATE KEY",
+	privBlock := pem.Block{
+		Type:  "EC PRIVATE KEY",
 		Bytes: privEC,
 	}
 	err = os.WriteFile(name+"-private.pem", pem.EncodeToMemory(&privBlock), 0600)
 	if err != nil {
 		return nil, err
 	}
-  
+
 	pubPKIX, err := x509.MarshalPKIXPublicKey(&priv.PublicKey)
 	if err != nil {
 		return nil, err
 	}
-	pubBlock := pem.Block {
-		Type: "PUBLIC KEY",
+	pubBlock := pem.Block{
+		Type:  "PUBLIC KEY",
 		Bytes: pubPKIX,
 	}
 	err = os.WriteFile(name+"-public.pem", pem.EncodeToMemory(&pubBlock), 0600)
@@ -311,8 +304,8 @@ func load_public_key(file string) (any, error) {
 }
 
 func store_cert(name string, cert_bytes []byte) {
-	certBlock := pem.Block {
-		Type: "CERTIFICATE",
+	certBlock := pem.Block{
+		Type:  "CERTIFICATE",
 		Bytes: cert_bytes,
 	}
 	err := os.WriteFile(name+"-cert.pem", pem.EncodeToMemory(&certBlock), 0600)
