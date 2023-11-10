@@ -42,18 +42,18 @@ func (i TlvItem) GetString() string {
 func (i TlvItem) Dump(pad int) {
 	pads := strings.Repeat("-", pad)
 	fmt.Printf(pads)
-	fmt.Printf("tag  %d <%s>", i.Tag, i.types)
+	fmt.Printf("tag:%4d type:%10s internal_type:", i.Tag, i.types)
 	switch i.Type {
 	case TypeNull:
 		fmt.Printf("null\n")
 	case TypeInt:
-		fmt.Printf("int %d\n", i.valueInt)
+		fmt.Printf("int val:%d\n", i.valueInt)
 	case TypeBool:
-		fmt.Printf("bool %v\n", i.valueBool)
+		fmt.Printf("bool val:%v\n", i.valueBool)
 	case TypeUTF8String:
-		fmt.Printf("string %s\n", i.valueString)
+		fmt.Printf("string val:%s\n", i.valueString)
 	case TypeOctetString:
-		fmt.Printf("bytes %s\n", hex.EncodeToString(i.valueOctetString))
+		fmt.Printf("bytes val:%s\n", hex.EncodeToString(i.valueOctetString))
 	case TypeList:
 		fmt.Printf("struct:\n")
 		for _, ii := range i.valueList {
@@ -129,54 +129,64 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 		tagctrl := fb >> 5
 		switch tp {
 		case 0:
+			current.types = "int[1]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			current.valueInt = uint64(readByte(buf))
 		case 1:
+			current.types = "int[2]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint16
 			binary.Read(buf, binary.LittleEndian, tmp)
 			current.valueInt = uint64(tmp)
 		case 2:
+			current.types = "int[4]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint32
 			binary.Read(buf, binary.LittleEndian, tmp)
 			current.valueInt = uint64(tmp)
 		case 3:
+			current.types = "int[8]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint64
 			binary.Read(buf, binary.LittleEndian, tmp)
 			current.valueInt = uint64(tmp)
 		case 4:
+			current.types = "uint[1]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			current.valueInt = uint64(readByte(buf))
 		case 5:
+			current.types = "uint[2]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint16
 			binary.Read(buf, binary.LittleEndian, &tmp)
 			current.valueInt = uint64(tmp)
 		case 6:
+			current.types = "uint[4]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint32
 			binary.Read(buf, binary.LittleEndian, &tmp)
 			current.valueInt = uint64(tmp)
 		case 7:
+			current.types = "uint[8]"
 			current.Type = TypeInt
 			readTag(tagctrl, &current, buf)
 			var tmp uint64
 			binary.Read(buf, binary.LittleEndian, &tmp)
 			current.valueInt = uint64(tmp)
 		case 8:
+			current.types = "bool-false"
 			current.Type = TypeBool
 			readTag(tagctrl, &current, buf)
 			current.valueBool = false
 		case 9:
+			current.types = "bool-true"
 			current.Type = TypeBool
 			readTag(tagctrl, &current, buf)
 			current.valueBool = true
@@ -185,6 +195,7 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 		case 0xb:
 			panic("")
 		case 0xc:
+			current.types = "utf8string[1]"
 			current.Type = TypeUTF8String
 			readTag(tagctrl, &current, buf)
 			size := readByte(buf)
@@ -192,12 +203,14 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 			buf.Read(current.valueOctetString)
 			current.valueString = string(current.valueOctetString)
 		case 0x10:
+			current.types = "octetstring[1]"
 			current.Type = TypeOctetString
 			readTag(tagctrl, &current, buf)
 			size := readByte(buf)
 			current.valueOctetString = make([]byte, size)
 			buf.Read(current.valueOctetString)
 		case 0x11:
+			current.types = "octetstring[2]"
 			current.Type = TypeOctetString
 			readTag(tagctrl, &current, buf)
 			var size uint16

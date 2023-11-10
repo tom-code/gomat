@@ -73,7 +73,7 @@ func (m *MessageHeader) Dump() {
 }
 
 func (m *ProtocolMessageHeader) Dump() {
-	fmt.Printf("  prot       :\n")
+	fmt.Printf("  protocol message:\n")
 	fmt.Printf("    exchangeFlags : %d\n", m.exchangeFlags)
 	fmt.Printf("    opcode        : 0x%x\n", m.Opcode)
 	fmt.Printf("    exchangeId    : %d\n", m.ExchangeId)

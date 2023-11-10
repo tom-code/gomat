@@ -16,10 +16,9 @@ import (
 	"github.com/tom-code/gomat/onboarding_payload"
 )
 
-
 func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.QrContent) []discover.DiscoveredDevice {
 	out := []discover.DiscoveredDevice{}
-	for _, device := range(devices) {
+	for _, device := range devices {
 		if device.D != fmt.Sprintf("%d", qr.Discriminator) {
 			continue
 		}
@@ -33,8 +32,6 @@ func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.Q
 	}
 	return out
 }
-
-
 
 /*
 func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64) {
@@ -52,7 +49,6 @@ func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device
 	resp := secure_channel.Receive()
 	resp.Tlv.Dump(0)
 }*/
-
 
 func createBasicFabric(id uint64) *gomat.Fabric {
 	cert_manager := gomat.NewFileCertManager(id)
@@ -75,8 +71,8 @@ func createBasicFabricFromCmd(cmd *cobra.Command) *gomat.Fabric {
 
 func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) (gomat.SecureChannel, error) {
 	ip, _ := cmd.Flags().GetString("ip")
-	device_id,_ := cmd.Flags().GetUint64("device-id")
-	controller_id,_ := cmd.Flags().GetUint64("controller-id")
+	device_id, _ := cmd.Flags().GetUint64("device-id")
+	controller_id, _ := cmd.Flags().GetUint64("controller-id")
 
 	secure_channel, err := gomat.StartSecureChannel(net.ParseIP(ip), 5540, 55555)
 	if err != nil {
@@ -100,7 +96,7 @@ func main() {
 	commandCmd.PersistentFlags().Uint64P("controller-id", "", 9, "controller id")
 	commandCmd.PersistentFlags().StringP("ip", "i", "", "ip address")
 
-	commandCmd.AddCommand( &cobra.Command{
+	commandCmd.AddCommand(&cobra.Command{
 		Use: "off",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
@@ -115,7 +111,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
+			status, err := resp.Tlv.GetIntRec([]int{1, 0, 1, 1, 0})
 			if err != nil {
 				panic(err)
 			}
@@ -123,7 +119,7 @@ func main() {
 		},
 	})
 
-	commandCmd.AddCommand( &cobra.Command{
+	commandCmd.AddCommand(&cobra.Command{
 		Use: "on",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
@@ -138,7 +134,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
+			status, err := resp.Tlv.GetIntRec([]int{1, 0, 1, 1, 0})
 			if err != nil {
 				panic(err)
 			}
@@ -146,7 +142,7 @@ func main() {
 		},
 	})
 
-	commandCmd.AddCommand( &cobra.Command{
+	commandCmd.AddCommand(&cobra.Command{
 		Use: "color [hue] [saturation] [time]",
 		Run: func(cmd *cobra.Command, args []string) {
 			hue, err := strconv.Atoi(args[0])
@@ -167,9 +163,9 @@ func main() {
 				panic(err)
 			}
 			var tlv mattertlv.TLVBuffer
-			tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(hue)) // hue
+			tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(hue))        // hue
 			tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(saturation)) // saturation
-			tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(time)) // time
+			tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(time))       // time
 			to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
 			channel.Send(to_send)
 
@@ -177,7 +173,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			status, err := resp.Tlv.GetIntRec([]int{1,0,1,1,0})
+			status, err := resp.Tlv.GetIntRec([]int{1, 0, 1, 1, 0})
 			if err != nil {
 				panic(err)
 			}
@@ -186,8 +182,7 @@ func main() {
 		Args: cobra.MinimumNArgs(3),
 	})
 
-
-	commandCmd.AddCommand( &cobra.Command{
+	commandCmd.AddCommand(&cobra.Command{
 		Use: "read",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
@@ -208,16 +203,17 @@ func main() {
 				panic(err)
 			}
 			if (resp.ProtocolHeader.ProtocolId == gomat.PROTOCOL_ID_INTERACTION) &&
-			   (resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA) {
-					resp.Tlv.Dump(0)
-			   }
+				(resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA) {
+				resp.Tlv.Dump(0)
+			}
 			channel.Close()
 		},
 		Args: cobra.MinimumNArgs(3),
 	})
 
-	commandCmd.AddCommand( &cobra.Command{
-		Use: "tests",
+	commandCmd.AddCommand(&cobra.Command{
+		Use:     "subscribe [endpoint] [cluster] [event]",
+		Example: "subscribe 1 0x101 1",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
 			channel, err := connectDeviceFromCmd(fabric, cmd)
@@ -225,7 +221,10 @@ func main() {
 				panic(err)
 			}
 
-			to_send := gomat.EncodeInvokeSubscribe(1, 0x101, 1)
+			endpoint, _ := strconv.ParseInt(args[0], 0, 16)
+			cluster, _ := strconv.ParseInt(args[1], 0, 16)
+			event, _ := strconv.ParseInt(args[2], 0, 16)
+			to_send := gomat.EncodeInvokeSubscribe(byte(endpoint), uint16(cluster), byte(event))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -255,15 +254,15 @@ func main() {
 				sr = gomat.EncodeStatusResponse(r.ProtocolHeader.ExchangeId, 0)
 				channel.Send(sr)
 			}
-			time.Sleep(1000*time.Second)
+			time.Sleep(1000 * time.Second)
 		},
+		Args: cobra.MinimumNArgs(3),
 	})
-
 
 	rootCmd.AddCommand(commandCmd)
 
 	var commissionCmd = &cobra.Command{
-		Use:   "commission",
+		Use: "commission",
 		Run: func(cmd *cobra.Command, args []string) {
 			ip, _ := cmd.Flags().GetString("ip")
 			if len(ip) == 0 {
@@ -274,8 +273,8 @@ func main() {
 				panic("passcode is required")
 			}
 			fabric := createBasicFabricFromCmd(cmd)
-			device_id,_ := cmd.Flags().GetUint64("device-id")
-			controller_id,_ := cmd.Flags().GetUint64("controller-id")
+			device_id, _ := cmd.Flags().GetUint64("device-id")
+			controller_id, _ := cmd.Flags().GetUint64("controller-id")
 			pinn, err := strconv.Atoi(pin)
 			if err != nil {
 				panic(err)
@@ -299,7 +298,7 @@ func main() {
 	commissionCmd.Flags().Uint64P("controller-id", "", 9, "controller id")
 
 	var printInfoCmd = &cobra.Command{
-		Use:   "fabric-info",
+		Use: "fabric-info",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
 			cf := fabric.CompressedFabric()
@@ -309,47 +308,46 @@ func main() {
 		},
 	}
 
-
 	var cacreateuserCmd = &cobra.Command{
-		Use:   "ca-createuser [id]",
+		Use: "ca-createuser [id]",
 		Run: func(cmd *cobra.Command, args []string) {
-		  ids := args[0]
-		  id, err := strconv.ParseUint(ids, 0, 64)
-		  if err != nil {
-			panic(err)
-		  }
-		  //cm := NewCertManager(0x99)
-		  fabric := createBasicFabricFromCmd(cmd)
-		  err = fabric.CertificateManager.Load()
-		  if err != nil {
-			panic(err)
-		  }
-		  err = fabric.CertificateManager.CreateUser(uint64(id))
-		  if err != nil {
-			panic(err)
-		  }
+			ids := args[0]
+			id, err := strconv.ParseUint(ids, 0, 64)
+			if err != nil {
+				panic(err)
+			}
+			//cm := NewCertManager(0x99)
+			fabric := createBasicFabricFromCmd(cmd)
+			err = fabric.CertificateManager.Load()
+			if err != nil {
+				panic(err)
+			}
+			err = fabric.CertificateManager.CreateUser(uint64(id))
+			if err != nil {
+				panic(err)
+			}
 
 		},
 		Args: cobra.MinimumNArgs(1),
 	}
 	cacreateuserCmd.Flags().StringP("id", "i", "", "user id")
 	var cabootCmd = &cobra.Command{
-		Use:   "ca-bootstrap",
+		Use: "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
-		  //cm := NewCertManager(0x99)
-		  fabric := createBasicFabricFromCmd(cmd)
-		  fabric.CertificateManager.BootstrapCa()
+			//cm := NewCertManager(0x99)
+			fabric := createBasicFabricFromCmd(cmd)
+			fabric.CertificateManager.BootstrapCa()
 		},
 	}
 
 	var discoverCmd = &cobra.Command{
-		Use:   "discover",
+		Use: "discover",
 	}
 	discoverCmd.PersistentFlags().StringP("interface", "i", "", "network interface")
 	discoverCmd.PersistentFlags().BoolP("disable-ipv6", "d", false, "disable ipv6")
 
 	var discoverCCmd = &cobra.Command{
-		Use:   "commissioned [device-id]",
+		Use: "commissioned [device-id]",
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("interface")
 			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
@@ -378,7 +376,7 @@ func main() {
 		},
 	}
 	var discoverC3Cmd = &cobra.Command{
-		Use:   "commissioned2 [device-id]",
+		Use: "commissioned2 [device-id]",
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("interface")
 			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
@@ -407,7 +405,7 @@ func main() {
 		},
 	}
 	var discoverC2Cmd = &cobra.Command{
-		Use:   "commissionable",
+		Use: "commissionable",
 		Run: func(cmd *cobra.Command, args []string) {
 			device, _ := cmd.Flags().GetString("interface")
 			disable_ipv6, _ := cmd.Flags().GetBool("disable-ipv6")
