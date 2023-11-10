@@ -224,14 +224,14 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	if err != nil {
 		return err
 	}
-	commisioning_result, err := respx.Tlv.GetIntRec([]int{1, 0, 0, 1, 0})
+	commissioning_result, err := respx.Tlv.GetIntRec([]int{1, 0, 0, 1, 0})
 	if err != nil {
 		return err
 	}
-	if commisioning_result == 0 {
+	if commissioning_result == 0 {
 		log.Printf("commissioning OK\n")
 	} else {
-		log.Printf("commissioning error: %d\n", commisioning_result)
+		log.Printf("commissioning error: %d\n", commissioning_result)
 	}
 	return nil
 }
