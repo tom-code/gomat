@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tom-code/gomat"
@@ -190,7 +191,7 @@ func main() {
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
 			attr, _ := strconv.ParseInt(args[2], 0, 16)
 
-			to_send := gomat.EncodeInvokeRead(byte(endpoint), byte(cluster), byte(attr))
+			to_send := gomat.EncodeInvokeRead(byte(endpoint), uint16(cluster), byte(attr))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -204,6 +205,49 @@ func main() {
 			channel.Close()
 		},
 		Args: cobra.MinimumNArgs(3),
+	})
+
+	commandCmd.AddCommand( &cobra.Command{
+		Use: "tests",
+		Run: func(cmd *cobra.Command, args []string) {
+			fabric := createBasicFabricFromCmd(cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
+
+			to_send := gomat.EncodeInvokeSubscribe(1, 0x101, 1)
+			channel.Send(to_send)
+
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
+			resp.ProtocolHeader.Dump()
+
+			sr := gomat.EncodeStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
+			channel.Send(sr)
+			for {
+				r, err := channel.Receive()
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				r.ProtocolHeader.Dump()
+				r.Tlv.Dump(1)
+				if r.ProtocolHeader.Opcode == 4 {
+					log.Println("subscribe response")
+					continue
+				}
+				if r.ProtocolHeader.Opcode == 1 {
+					log.Println("status response")
+					continue
+				}
+				sr = gomat.EncodeStatusResponse(r.ProtocolHeader.ExchangeId, 0)
+				channel.Send(sr)
+			}
+			time.Sleep(1000*time.Second)
+		},
 	})
 
 

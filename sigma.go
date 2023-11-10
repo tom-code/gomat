@@ -74,7 +74,7 @@ func genSigma1Req2(payload []byte, exchange uint16) []byte {
 	prot:= ProtocolMessageHeader{
 			exchangeFlags: 5,
 			Opcode: 0x30, //sigma1
-			exchangeId: exchange,
+			ExchangeId: exchange,
 			ProtocolId: 0x00,
 	}
 	prot.Encode(&buffer)
@@ -88,7 +88,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	prot:= ProtocolMessageHeader{
 		exchangeFlags: 5,
 		Opcode: 0x32, //sigma1
-		exchangeId: exchange,
+		ExchangeId: exchange,
 		ProtocolId: 0x00,	}
 
 	prot.Encode(&buffer)

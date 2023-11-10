@@ -7,6 +7,11 @@ Simple matter protocol implementation
 - it can commission devices and send commands to them
 - commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
 
+### TODO
+- event subscriptions
+- better handling of names cluster/commands/attribute - support human readable names rather than raw numbers
+  - https://github.com/project-chip/connectedhomeip/tree/master/data_model/clusters
+
 #### tested devices
 - tested against virtual devices which are part of reference implementation https://github.com/project-chip/connectedhomeip
 - tested with yeelight cube
@@ -49,6 +54,8 @@ Simple matter protocol implementation
   - example: `./gomat commission --ip 192.168.5.178 --pin 123456 --controller-id 100 --device-id 500`
 - light on!
   `./gomat cmd on --ip 192.168.5.178 --controller-id 100 --device-id 500`
+- set color hue=150 saturation=200 transition_time=10
+  `./gomat cmd color --ip 192.168.5.220 --controller-id 100 --device-id 500 150 200 10`
 
 
 ### how to use api
@@ -225,7 +232,7 @@ func main() {
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100)) // hue
 	tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(200)) // saturation
-	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(20)) // time
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(20))  // time
 	to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
 	secure_channel.Send(to_send)
 
