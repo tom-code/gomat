@@ -98,8 +98,14 @@ func (cm *CertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uin
 
 	node_id_string := fmt.Sprintf("%016X", node_id)
 	valname, err := asn1.MarshalWithParams(node_id_string, "utf8")
+	if err != nil {
+		return nil, err
+	}
 	fabric_string := fmt.Sprintf("%016X", cm.fabric)
 	valname_fabric, err := asn1.MarshalWithParams(fabric_string, "utf8")
+	if err != nil {
+		return nil, err
+	}
 
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
@@ -194,7 +200,9 @@ func (cm *CertManager) create_ca_cert() error {
 	subj := pkix.Name{}
 
 	valname, err := asn1.MarshalWithParams("0000000000000001", "utf8")
-
+	if err != nil {
+		return err
+	}
 	subj.ExtraNames = []pkix.AttributeTypeAndValue{
 		{
 			Type:  asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 37244, 1, 4},

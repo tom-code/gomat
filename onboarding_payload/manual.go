@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 func DecodeManualPairingCode(in string) QrContent {
 	in = strings.Replace(in, "-", "", -1)
 	fmt.Printf("normalized code: %s\n", in)
@@ -17,10 +16,10 @@ func DecodeManualPairingCode(in string) QrContent {
 	first, _ := strconv.Atoi(first_group)
 	second, _ := strconv.Atoi(second_group)
 	third, _ := strconv.Atoi(third_group)
-	p := second & 0x3fff + third<<14
-	d := (first&3 <<10) + (second>>6)&0x300
+	p := second&0x3fff + third<<14
+	d := (first & 3 << 10) + (second>>6)&0x300
 	return QrContent{
-		Passcode: uint32(p),
+		Passcode:       uint32(p),
 		Discriminator4: uint16(d),
 	}
 }

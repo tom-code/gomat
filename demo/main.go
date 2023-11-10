@@ -150,8 +150,17 @@ func main() {
 		Use: "color [hue] [saturation] [time]",
 		Run: func(cmd *cobra.Command, args []string) {
 			hue, err := strconv.Atoi(args[0])
+			if err != nil {
+				panic(err)
+			}
 			saturation, err := strconv.Atoi(args[1])
+			if err != nil {
+				panic(err)
+			}
 			time, err := strconv.Atoi(args[2])
+			if err != nil {
+				panic(err)
+			}
 			fabric := createBasicFabricFromCmd(cmd)
 			channel, err := connectDeviceFromCmd(fabric, cmd)
 			if err != nil {

@@ -14,7 +14,6 @@ type TLVBuffer struct {
 	data bytes.Buffer
 }
 
-
 func (b *TLVBuffer) WriteRaw(raw []byte) {
 	b.data.Write(raw)
 }
@@ -22,7 +21,6 @@ func (b *TLVBuffer) WriteRaw(raw []byte) {
 func (b *TLVBuffer) Bytes() []byte {
 	return b.data.Bytes()
 }
-
 
 func (b *TLVBuffer) writeControl(ctrl byte) {
 	binary.Write(&b.data, binary.BigEndian, ctrl)
@@ -39,10 +37,14 @@ func (b *TLVBuffer) WriteUInt(tag byte, typ int, val uint64) {
 	b.data.WriteByte(ctrl)
 	b.data.WriteByte(tag)
 	switch typ {
-	case TYPE_UINT_1: b.data.WriteByte(byte(val))
-	case TYPE_UINT_2: binary.Write(&b.data, binary.LittleEndian, uint16(val))
-	case TYPE_UINT_4: binary.Write(&b.data, binary.LittleEndian, uint32(val))
-	case TYPE_UINT_8: binary.Write(&b.data, binary.LittleEndian, uint64(val))
+	case TYPE_UINT_1:
+		b.data.WriteByte(byte(val))
+	case TYPE_UINT_2:
+		binary.Write(&b.data, binary.LittleEndian, uint16(val))
+	case TYPE_UINT_4:
+		binary.Write(&b.data, binary.LittleEndian, uint32(val))
+	case TYPE_UINT_8:
+		binary.Write(&b.data, binary.LittleEndian, uint64(val))
 	}
 }
 

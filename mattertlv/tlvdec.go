@@ -9,56 +9,63 @@ import (
 )
 
 const TypeInt = 1
-const TypeBool  = 2
-const TypeUTF8String  = 3
+const TypeBool = 2
+const TypeUTF8String = 3
 const TypeOctetString = 4
 const TypeList = 5
 const TypeNull = 6
 
 type TlvItem struct {
-	Tag int
-	Type int
+	Tag   int
+	Type  int
 	types string
 
-	valueBool   bool
-	valueInt    uint64
-	valueString string
+	valueBool        bool
+	valueInt         uint64
+	valueString      string
 	valueOctetString []byte
-	valueList []TlvItem
+	valueList        []TlvItem
 }
-func (i TlvItem)GetInt() int {
+
+func (i TlvItem) GetInt() int {
 	return int(i.valueInt)
 }
-func (i TlvItem)GetUint64() uint64 {
+func (i TlvItem) GetUint64() uint64 {
 	return uint64(i.valueInt)
 }
-func (i TlvItem)GetOctetString() []byte {
+func (i TlvItem) GetOctetString() []byte {
 	return i.valueOctetString
 }
-func (i TlvItem)GetString() string {
+func (i TlvItem) GetString() string {
 	return i.valueString
 }
-func (i TlvItem)Dump(pad int) {
+func (i TlvItem) Dump(pad int) {
 	pads := strings.Repeat("-", pad)
 	fmt.Printf(pads)
 	fmt.Printf("tag  %d <%s>", i.Tag, i.types)
 	switch i.Type {
-	case TypeNull: fmt.Printf("null\n")
-	case TypeInt: fmt.Printf("int %d\n", i.valueInt)
-	case TypeBool: fmt.Printf("bool %v\n", i.valueBool)
-	case TypeUTF8String: fmt.Printf("string %s\n", i.valueString)
-	case TypeOctetString: fmt.Printf("bytes %s\n", hex.EncodeToString(i.valueOctetString))
+	case TypeNull:
+		fmt.Printf("null\n")
+	case TypeInt:
+		fmt.Printf("int %d\n", i.valueInt)
+	case TypeBool:
+		fmt.Printf("bool %v\n", i.valueBool)
+	case TypeUTF8String:
+		fmt.Printf("string %s\n", i.valueString)
+	case TypeOctetString:
+		fmt.Printf("bytes %s\n", hex.EncodeToString(i.valueOctetString))
 	case TypeList:
 		fmt.Printf("struct:\n")
 		for _, ii := range i.valueList {
-			ii.Dump(pad+2)
+			ii.Dump(pad + 2)
 		}
 		//fmt.Println()
-	default: fmt.Printf("unknown %d\n", i.Type)
+	default:
+		fmt.Printf("unknown %d\n", i.Type)
 	}
 }
 
-func (i TlvItem)GetItemRec(tag []int) *TlvItem {
+func (i TlvItem) GetItemRec(tag []int) *TlvItem {
 	if len(tag) == 0 {
 		return &i
 	}
@@ -72,7 +79,7 @@ func (i TlvItem)GetItemRec(tag []int) *TlvItem {
 	return nil
 }
 
-func (i TlvItem)GetOctetStringRec(tag []int) []byte {
+func (i TlvItem) GetOctetStringRec(tag []int) []byte {
 	if len(tag) == 0 {
 		return i.valueOctetString
 	}
@@ -86,7 +93,7 @@ func (i TlvItem)GetOctetStringRec(tag []int) []byte {
 	return []byte{}
 }
 
-func (i TlvItem)GetIntRec(tag []int) (uint64, error) {
+func (i TlvItem) GetIntRec(tag []int) (uint64, error) {
 	if len(tag) == 0 {
 		return i.valueInt, nil
 	}
@@ -99,9 +106,6 @@ func (i TlvItem)GetIntRec(tag []int) (uint64, error) {
 	}
 	return 0, fmt.Errorf("no found")
 }
-
-
-
 
 func readByte(buf *bytes.Buffer) int {
 	tmp, err := buf.ReadByte()
@@ -122,7 +126,7 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 		current := TlvItem{}
 		fb, _ := buf.ReadByte()
 		tp := fb & 0x1f
-		tagctrl := fb>>5
+		tagctrl := fb >> 5
 		switch tp {
 		case 0:
 			current.Type = TypeInt
@@ -176,8 +180,10 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 			current.Type = TypeBool
 			readTag(tagctrl, &current, buf)
 			current.valueBool = true
-		case 0xa:panic("")
-		case 0xb:panic("")
+		case 0xa:
+			panic("")
+		case 0xb:
+			panic("")
 		case 0xc:
 			current.Type = TypeUTF8String
 			readTag(tagctrl, &current, buf)
@@ -234,5 +240,3 @@ func Decode(in []byte) TlvItem {
 	decode(buf, root)
 	return root.valueList[0]
 }
-
-
