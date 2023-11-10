@@ -2,6 +2,7 @@
 Simple matter protocol implementation
 
 ![go build](https://github.com/tom-code/gomat/actions/workflows/go.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tom-code/gomat)](https://goreportcard.com/report/github.com/tom-code/gomat)
 
 ### status of project
 - it can commission devices and send commands to them
