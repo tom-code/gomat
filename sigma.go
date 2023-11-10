@@ -13,25 +13,24 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-
 type sigmaContext struct {
-	session_privkey *ecdh.PrivateKey
-	session int
-	controller_key *ecdsa.PrivateKey
+	session_privkey               *ecdh.PrivateKey
+	session                       int
+	controller_key                *ecdsa.PrivateKey
 	controller_matter_certificate []byte
 
 	i2rkey []byte
 	r2ikey []byte
 
-	sigma2dec DecodedGeneric
+	sigma2dec     DecodedGeneric
 	sigma1payload []byte
-	exchange uint16
+	exchange      uint16
 }
 
-func (sc *sigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
+func (sc *sigmaContext) genSigma1(fabric *Fabric, device_id uint64) {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-	
+
 	initiatorRandom := make([]byte, 32)
 	rand.Read(initiatorRandom)
 	tlvx.WriteOctetString(1, initiatorRandom)
@@ -62,20 +61,18 @@ func (sc *sigmaContext)genSigma1(fabric *Fabric, device_id uint64) {
 
 	tlvx.WriteOctetString(3, destinationIdentifier)
 
-
 	tlvx.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
 	tlvx.WriteAnonStructEnd()
 	sc.sigma1payload = tlvx.Bytes()
 }
 
-
 func genSigma1Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
-			exchangeFlags: 5,
-			Opcode: 0x30, //sigma1
-			ExchangeId: exchange,
-			ProtocolId: 0x00,
+	prot := ProtocolMessageHeader{
+		exchangeFlags: 5,
+		Opcode:        0x30, //sigma1
+		ExchangeId:    exchange,
+		ProtocolId:    0x00,
 	}
 	prot.Encode(&buffer)
 
@@ -85,11 +82,11 @@ func genSigma1Req2(payload []byte, exchange uint16) []byte {
 
 func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: 0x32, //sigma1
-		ExchangeId: exchange,
-		ProtocolId: 0x00,	}
+		Opcode:        0x32, //sigma1
+		ExchangeId:    exchange,
+		ProtocolId:    0x00}
 
 	prot.Encode(&buffer)
 
@@ -97,7 +94,7 @@ func genSigma3Req2(payload []byte, exchange uint16) []byte {
 	return buffer.Bytes()
 }
 
-func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
+func (sc *sigmaContext) sigma3(fabric *Fabric) ([]byte, error) {
 	var tlv_s3tbs mattertlv.TLVBuffer
 	tlv_s3tbs.WriteAnonStruct()
 	tlv_s3tbs.WriteOctetString(1, sc.controller_matter_certificate)
@@ -116,7 +113,7 @@ func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	tlv_s3tbs_out :=  append(sr.Bytes(), ss.Bytes()...)
+	tlv_s3tbs_out := append(sr.Bytes(), ss.Bytes()...)
 
 	var tlv_s3tbe mattertlv.TLVBuffer
 	tlv_s3tbe.WriteAnonStruct()
@@ -156,7 +153,6 @@ func (sc *sigmaContext)sigma3(fabric *Fabric) ([]byte, error) {
 	tlv_s3.WriteAnonStruct()
 	tlv_s3.WriteOctetString(1, CipherText)
 	tlv_s3.WriteAnonStructEnd()
-
 
 	to_send := genSigma3Req2(tlv_s3.Bytes(), sc.exchange)
 

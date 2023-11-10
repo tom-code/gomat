@@ -12,7 +12,6 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-
 func pinToPasscode(pin uint32) []byte {
 	var buf bytes.Buffer
 	binary.Write(&buf, binary.LittleEndian, pin)
@@ -23,7 +22,8 @@ type point struct {
 	x *big.Int
 	y *big.Int
 }
-func (p point)dump() {
+
+func (p point) dump() {
 	fmt.Printf("  x: %v\n", p.x)
 	fmt.Printf("  y: %v\n", p.y)
 }
@@ -31,10 +31,9 @@ func (p point) as_bytes() []byte {
 	o1 := elliptic.Marshal(elliptic.P256(), p.x, p.y)
 	return o1
 }
-func (p *point) from_bytes(in []byte ) {
+func (p *point) from_bytes(in []byte) {
 	p.x, p.y = elliptic.Unmarshal(elliptic.P256(), in)
 }
-
 
 var spake_seed_M point
 var spake_seed_N point
@@ -48,7 +47,6 @@ func init() {
 	nbin, _ := hex.DecodeString(nhex)
 	spake_seed_N.x, spake_seed_N.y = elliptic.UnmarshalCompressed(elliptic.P256(), nbin)
 }
-
 
 func serializeBytes(buf *bytes.Buffer, p []byte) {
 	ln := uint64(len(p))
@@ -72,29 +70,26 @@ func createTT(context []byte, a, b string, m, n, x, y, z, v []byte, w0 []byte) [
 	return buf.Bytes()
 }
 
-
-
 type SpakeCtx struct {
-	curve elliptic.Curve
-	w0 []byte
-	w1 []byte
-	x_random big.Int
-	y_random big.Int
-	X point
-	Y point
-	Z point
-	V point
-	L point
-	cA []byte
-	cB []byte
-	Ke []byte
-	Ka []byte
+	curve       elliptic.Curve
+	w0          []byte
+	w1          []byte
+	x_random    big.Int
+	y_random    big.Int
+	X           point
+	Y           point
+	Z           point
+	V           point
+	L           point
+	cA          []byte
+	cB          []byte
+	Ke          []byte
+	Ka          []byte
 	encrypt_key []byte
 	decrypt_key []byte
 }
 
-
-func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
+func (ctx *SpakeCtx) gen_w(passcode int, salt []byte, iterations int) {
 	pwd := pinToPasscode(uint32(passcode))
 	ws := pbkdf2.Key(pwd, salt, iterations, 80, sha256.New)
 	w0 := ws[:40]
@@ -111,26 +106,26 @@ func (ctx *SpakeCtx)gen_w(passcode int, salt []byte, iterations int) {
 
 }
 
-func (ctx *SpakeCtx)gen_random_X() {
+func (ctx *SpakeCtx) gen_random_X() {
 	ctx.x_random.SetBytes(create_random_bytes(32))
 }
-func (ctx *SpakeCtx)gen_random_Y() {
+func (ctx *SpakeCtx) gen_random_Y() {
 	ctx.y_random.SetBytes(create_random_bytes(32))
 }
-func (ctx *SpakeCtx)calc_X() {
+func (ctx *SpakeCtx) calc_X() {
 	// X=x*P+w0*M
 	tx, ty := ctx.curve.ScalarBaseMult(ctx.x_random.Bytes())
 	px, py := ctx.curve.ScalarMult(spake_seed_M.x, spake_seed_M.y, ctx.w0)
 	ctx.X.x, ctx.X.y = ctx.curve.Add(tx, ty, px, py)
 }
-func (ctx *SpakeCtx)calc_Y() {
+func (ctx *SpakeCtx) calc_Y() {
 	//Y=y*P, pB=w*N+Y
 	ypx, ypy := ctx.curve.ScalarMult(spake_seed_N.x, spake_seed_N.y, ctx.w0)
 	ytx, yty := ctx.curve.ScalarBaseMult(ctx.y_random.Bytes())
 	ctx.Y.x, ctx.Y.y = ctx.curve.Add(ytx, yty, ypx, ypy)
 }
 
-func (ctx *SpakeCtx)calc_ZV() {
+func (ctx *SpakeCtx) calc_ZV() {
 	//A computes Z as h*x*(Y-w0*N), and V as h*w1*(Y-w0*N).
 	wnx, wny := ctx.curve.ScalarMult(spake_seed_N.x, spake_seed_N.y, ctx.w0)
 	wny = wny.Neg(wny)
@@ -138,12 +133,11 @@ func (ctx *SpakeCtx)calc_ZV() {
 	znx, zny := ctx.curve.Add(ctx.Y.x, ctx.Y.y, wnx, wny)
 	ctx.Z.x, ctx.Z.y = ctx.curve.ScalarMult(znx, zny, ctx.x_random.Bytes())
 
-
 	ctx.V.x, ctx.V.y = ctx.curve.ScalarMult(znx, zny, ctx.w1)
 
 }
 
-func (ctx *SpakeCtx)calc_ZVb() {
+func (ctx *SpakeCtx) calc_ZVb() {
 	//B computes Z as y(X-w0*M) and V as yL
 	unx, uny := ctx.curve.ScalarMult(spake_seed_M.x, spake_seed_M.y, ctx.w0)
 	uny = uny.Neg(uny)
@@ -154,7 +148,7 @@ func (ctx *SpakeCtx)calc_ZVb() {
 	ctx.V.x, ctx.V.y = ctx.curve.ScalarMult(ctx.L.x, ctx.L.y, ctx.y_random.Bytes())
 }
 
-func (ctx *SpakeCtx)calc_hash(seed []byte) error {
+func (ctx *SpakeCtx) calc_hash(seed []byte) error {
 
 	sh0sum := sha256_enc(seed)
 	mbin := elliptic.Marshal(elliptic.P256(), spake_seed_M.x, spake_seed_M.y)
@@ -178,7 +172,7 @@ func (ctx *SpakeCtx)calc_hash(seed []byte) error {
 }
 
 func newSpaceCtx() SpakeCtx {
-	return SpakeCtx {
+	return SpakeCtx{
 		curve: elliptic.P256(),
 	}
 }

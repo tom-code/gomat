@@ -10,48 +10,49 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-
 type ProtocolId uint16
+
 const PROTOCOL_ID_SECURE_CHANNEL ProtocolId = 0
-const PROTOCOL_ID_INTERACTION    ProtocolId = 1
+const PROTOCOL_ID_INTERACTION ProtocolId = 1
 
 type Opcode byte
-const SEC_CHAN_OPCODE_ACK        Opcode = 0x10
-const SEC_CHAN_OPCODE_PBKDF_REQ  Opcode = 0x20
+
+const SEC_CHAN_OPCODE_ACK Opcode = 0x10
+const SEC_CHAN_OPCODE_PBKDF_REQ Opcode = 0x20
 const SEC_CHAN_OPCODE_PBKDF_RESP Opcode = 0x21
-const SEC_CHAN_OPCODE_PAKE1      Opcode = 0x22
-const SEC_CHAN_OPCODE_PAKE2      Opcode = 0x23
-const SEC_CHAN_OPCODE_PAKE3      Opcode = 0x24
+const SEC_CHAN_OPCODE_PAKE1 Opcode = 0x22
+const SEC_CHAN_OPCODE_PAKE2 Opcode = 0x23
+const SEC_CHAN_OPCODE_PAKE3 Opcode = 0x24
 const SEC_CHAN_OPCODE_STATUS_REP Opcode = 0x40
 
-const INTERACTION_OPCODE_STATUS_RSP   Opcode = 0x1
-const INTERACTION_OPCODE_READ_REQ     Opcode = 0x2
-const INTERACTION_OPCODE_SUBSC_REQ    Opcode = 0x3
-const INTERACTION_OPCODE_REPORT_DATA  Opcode = 0x5
-const INTERACTION_OPCODE_INVOKE_REQ   Opcode = 0x8
-const INTERACTION_OPCODE_INVOKE_RSP   Opcode = 0x9
+const INTERACTION_OPCODE_STATUS_RSP Opcode = 0x1
+const INTERACTION_OPCODE_READ_REQ Opcode = 0x2
+const INTERACTION_OPCODE_SUBSC_REQ Opcode = 0x3
+const INTERACTION_OPCODE_REPORT_DATA Opcode = 0x5
+const INTERACTION_OPCODE_INVOKE_REQ Opcode = 0x8
+const INTERACTION_OPCODE_INVOKE_RSP Opcode = 0x9
 
-const EXCHANGE_FLAGS_INITIATOR   = 1
+const EXCHANGE_FLAGS_INITIATOR = 1
 const EXCHANGE_FLAGS_ACKNOWLEDGE = 2
 
 type MessageHeader struct {
-	flags byte
-	sessionId uint16
-	securityFlags byte
-	messageCounter uint32
-	sourceNodeId []byte
+	flags             byte
+	sessionId         uint16
+	securityFlags     byte
+	messageCounter    uint32
+	sourceNodeId      []byte
 	destinationNodeId []byte
 }
 
 type ProtocolMessageHeader struct {
 	exchangeFlags byte
-	Opcode Opcode
-	ExchangeId uint16
-	ProtocolId ProtocolId
-	ackCounter uint32
+	Opcode        Opcode
+	ExchangeId    uint16
+	ProtocolId    ProtocolId
+	ackCounter    uint32
 }
 
-func (m *ProtocolMessageHeader)Decode(data *bytes.Buffer) {
+func (m *ProtocolMessageHeader) Decode(data *bytes.Buffer) {
 	m.exchangeFlags, _ = data.ReadByte()
 	opcode, _ := data.ReadByte()
 	m.Opcode = Opcode(opcode)
@@ -62,8 +63,7 @@ func (m *ProtocolMessageHeader)Decode(data *bytes.Buffer) {
 	}
 }
 
-
-func (m *MessageHeader)Dump()  {
+func (m *MessageHeader) Dump() {
 	fmt.Printf("  flags      : %d\n", m.flags)
 	fmt.Printf("  sessionId  : %d\n", m.sessionId)
 	fmt.Printf("  secFlags   : %d\n", m.securityFlags)
@@ -72,7 +72,7 @@ func (m *MessageHeader)Dump()  {
 	fmt.Printf("  dstNode    : %v\n", m.destinationNodeId)
 }
 
-func (m *ProtocolMessageHeader)Dump()  {
+func (m *ProtocolMessageHeader) Dump() {
 	fmt.Printf("  prot       :\n")
 	fmt.Printf("    exchangeFlags : %d\n", m.exchangeFlags)
 	fmt.Printf("    opcode        : 0x%x\n", m.Opcode)
@@ -80,15 +80,14 @@ func (m *ProtocolMessageHeader)Dump()  {
 	fmt.Printf("    protocolId    : %d\n", m.ProtocolId)
 	fmt.Printf("    ackCounter    : %d\n", m.ackCounter)
 }
-func (m *ProtocolMessageHeader)Encode(data *bytes.Buffer) {
+func (m *ProtocolMessageHeader) Encode(data *bytes.Buffer) {
 	data.WriteByte(m.exchangeFlags)
 	data.WriteByte(byte(m.Opcode))
 	binary.Write(data, binary.LittleEndian, uint16(m.ExchangeId))
 	binary.Write(data, binary.LittleEndian, uint16(m.ProtocolId))
 }
 
-
-func (m *MessageHeader)calcMessageFlags() byte {
+func (m *MessageHeader) calcMessageFlags() byte {
 	var out byte
 	out = 0 // version hardcoded = 0
 
@@ -120,7 +119,6 @@ func (m *MessageHeader) Encode(data *bytes.Buffer) {
 	}
 }
 
-
 func (m *MessageHeader) Decode(data *bytes.Buffer) error {
 	var err error
 	m.flags, err = data.ReadByte()
@@ -140,7 +138,7 @@ func (m *MessageHeader) Decode(data *bytes.Buffer) error {
 			return err
 		}
 	}
-	if ((m.flags & 3 )!= 0) {
+	if (m.flags & 3) != 0 {
 		dsiz := 0
 		if (m.flags & 3) == 1 {
 			dsiz = 8
@@ -158,42 +156,39 @@ func (m *MessageHeader) Decode(data *bytes.Buffer) error {
 	return nil
 }
 
-
-
 func pBKDFParamRequest(exchange uint16) []byte {
 	var buffer bytes.Buffer
 
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: SEC_CHAN_OPCODE_PBKDF_REQ,
-		ExchangeId: exchange,
-		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
+		Opcode:        SEC_CHAN_OPCODE_PBKDF_REQ,
+		ExchangeId:    exchange,
+		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.Encode(&buffer)	
+	prot.Encode(&buffer)
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	initiator_random := make([]byte, 32)
 	rand.Read(initiator_random)
-	tlvx.WriteOctetString(0x1, initiator_random)  // initiator random
-	tlvx.WriteUInt(0x2, mattertlv.TYPE_UINT_2, 0x0001)      //initator session-id
-	tlvx.WriteUInt(0x3, mattertlv.TYPE_UINT_1, 0x00)        // passcode id
-	tlvx.WriteBool(0x4, false)                    // has pbkdf
+	tlvx.WriteOctetString(0x1, initiator_random)       // initiator random
+	tlvx.WriteUInt(0x2, mattertlv.TYPE_UINT_2, 0x0001) //initator session-id
+	tlvx.WriteUInt(0x3, mattertlv.TYPE_UINT_1, 0x00)   // passcode id
+	tlvx.WriteBool(0x4, false)                         // has pbkdf
 	tlvx.WriteAnonStructEnd()
 	buffer.Write(tlvx.Bytes())
 	return buffer.Bytes()
 }
 
-
 func pake1ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
 
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: SEC_CHAN_OPCODE_PAKE1,
-		ExchangeId: exchange,
-		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
+		Opcode:        SEC_CHAN_OPCODE_PAKE1,
+		ExchangeId:    exchange,
+		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
 	}
-	prot.Encode(&buffer)	
+	prot.Encode(&buffer)
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -205,11 +200,11 @@ func pake1ParamRequest(exchange uint16, key []byte) []byte {
 
 func pake3ParamRequest(exchange uint16, key []byte) []byte {
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: SEC_CHAN_OPCODE_PAKE3,
-		ExchangeId: exchange,
-		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
+		Opcode:        SEC_CHAN_OPCODE_PAKE3,
+		ExchangeId:    exchange,
+		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.Encode(&buffer)
 
@@ -228,41 +223,40 @@ func ackGen(p ProtocolMessageHeader, counter uint32) []byte {
 	if (p.exchangeFlags & EXCHANGE_FLAGS_INITIATOR) == 0 {
 		eflags |= EXCHANGE_FLAGS_INITIATOR
 	}
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: eflags,
-		Opcode: SEC_CHAN_OPCODE_ACK,
-		ExchangeId: p.ExchangeId,
-		ProtocolId: PROTOCOL_ID_SECURE_CHANNEL,
+		Opcode:        SEC_CHAN_OPCODE_ACK,
+		ExchangeId:    p.ExchangeId,
+		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
 	}
 	prot.Encode(&buffer)
 	binary.Write(&buffer, binary.LittleEndian, counter)
 	return buffer.Bytes()
 }
 
-
 type StatusReportElements struct {
-	GeneralCode   uint16
+	GeneralCode  uint16
 	ProtocolId   uint32
 	ProtocolCode uint16
 }
 
-func (sr StatusReportElements)Dump() {
+func (sr StatusReportElements) Dump() {
 	fmt.Printf("  general code: %d\n", sr.GeneralCode)
 	fmt.Printf("  protocol id: %d\n", sr.ProtocolId)
 	fmt.Printf("  protocol code: %d\n", sr.ProtocolCode)
 }
 
 type DecodedGeneric struct {
-	MessageHeader MessageHeader
+	MessageHeader  MessageHeader
 	ProtocolHeader ProtocolMessageHeader
-	Tlv mattertlv.TlvItem
-	payload []byte
-	StatusReport StatusReportElements
+	Tlv            mattertlv.TlvItem
+	payload        []byte
+	StatusReport   StatusReportElements
 }
 
 func EncodeStatusReport(code StatusReportElements) []byte {
 	var buffer bytes.Buffer
-	buffer.WriteByte(5) // flags
+	buffer.WriteByte(5)                                // flags
 	buffer.WriteByte(byte(SEC_CHAN_OPCODE_STATUS_REP)) // opcode
 	var exchange_id uint16
 	exchange_id = uint16(randm.Intn(0xffff))
@@ -276,35 +270,34 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeInvokeCommand(endpoint byte , cluster uint16, command byte, payload []byte) []byte {
+func EncodeInvokeCommand(endpoint byte, cluster uint16, command byte, payload []byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-		tlvx.WriteBool(0, false)
-		tlvx.WriteBool(1, false)
-		tlvx.WriteArray(2)
-			tlvx.WriteAnonStruct()
-				tlvx.WriteList(0)
-					tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
-					tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
-					tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
-				tlvx.WriteAnonStructEnd()
-				tlvx.WriteStruct(1)
-					//tlv.writeOctetString(0, payload)
-					tlvx.WriteRaw(payload)
-				tlvx.WriteAnonStructEnd()
-			tlvx.WriteAnonStructEnd()
-		tlvx.WriteAnonStructEnd()
-		tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlvx.WriteBool(0, false)
+	tlvx.WriteBool(1, false)
+	tlvx.WriteArray(2)
+	tlvx.WriteAnonStruct()
+	tlvx.WriteList(0)
+	tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
+	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
+	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteStruct(1)
+	//tlv.writeOctetString(0, payload)
+	tlvx.WriteRaw(payload)
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
 	tlvx.WriteAnonStructEnd()
 
-
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: INTERACTION_OPCODE_INVOKE_REQ,
-		ExchangeId: uint16(randm.Intn(0xffff)),
-		ProtocolId: PROTOCOL_ID_INTERACTION,
+		Opcode:        INTERACTION_OPCODE_INVOKE_REQ,
+		ExchangeId:    uint16(randm.Intn(0xffff)),
+		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
 	buffer.Write(tlvx.Bytes())
@@ -316,25 +309,24 @@ func EncodeInvokeRead(endpoint byte, cluster uint16, attr byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-		tlvx.WriteArray(0)
-			tlvx.WriteAnonList()
-					tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(endpoint))
-					tlvx.WriteUInt(3, mattertlv.TYPE_UINT_2, uint64(cluster))
-					tlvx.WriteUInt(4, mattertlv.TYPE_UINT_1, uint64(attr))
-			tlvx.WriteAnonStructEnd()
-		tlvx.WriteAnonStructEnd()
-		tlvx.WriteBool(3, true)
-		tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlvx.WriteArray(0)
+	tlvx.WriteAnonList()
+	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(endpoint))
+	tlvx.WriteUInt(3, mattertlv.TYPE_UINT_2, uint64(cluster))
+	tlvx.WriteUInt(4, mattertlv.TYPE_UINT_1, uint64(attr))
 	tlvx.WriteAnonStructEnd()
-
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteBool(3, true)
+	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlvx.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: INTERACTION_OPCODE_READ_REQ,
-		ExchangeId: 0,
-		ProtocolId: PROTOCOL_ID_INTERACTION,
+		Opcode:        INTERACTION_OPCODE_READ_REQ,
+		ExchangeId:    0,
+		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
 	buffer.Write(tlvx.Bytes())
@@ -342,41 +334,38 @@ func EncodeInvokeRead(endpoint byte, cluster uint16, attr byte) []byte {
 	return buffer.Bytes()
 }
 
-
 func EncodeInvokeSubscribe(endpoint byte, cluster uint16, event byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-	    tlvx.WriteBool(0, false) // keep
-		tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, 10) // min interval
-		tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, 50) // max interval
-		tlvx.WriteArray(4)
-			tlvx.WriteAnonList()
-					tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(endpoint))
-					tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(cluster))
-					tlvx.WriteUInt(3, mattertlv.TYPE_UINT_1, uint64(event))
-					tlvx.WriteBool(4, true) // urgent
-			tlvx.WriteAnonStructEnd()
+	tlvx.WriteBool(0, false)                     // keep
+	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, 10) // min interval
+	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, 50) // max interval
+	tlvx.WriteArray(4)
+	tlvx.WriteAnonList()
+	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(endpoint))
+	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(cluster))
+	tlvx.WriteUInt(3, mattertlv.TYPE_UINT_1, uint64(event))
+	tlvx.WriteBool(4, true) // urgent
+	tlvx.WriteAnonStructEnd()
+	tlvx.WriteAnonStructEnd()
+	/*tlvx.WriteArray(5)
+		tlvx.WriteAnonStruct()
+				tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100))
+				tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(0))
 		tlvx.WriteAnonStructEnd()
-		/*tlvx.WriteArray(5)
-			tlvx.WriteAnonStruct()
-					tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100))
-					tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(0))
-			tlvx.WriteAnonStructEnd()
-		tlvx.WriteAnonStructEnd()*/
-		tlvx.WriteBool(7, false) // fabric filtered
-		tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlvx.WriteAnonStructEnd()*/
+	tlvx.WriteBool(7, false) // fabric filtered
+	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
 	tlvx.WriteAnonStructEnd()
 
-
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
+	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
-		Opcode: INTERACTION_OPCODE_SUBSC_REQ,
-		ExchangeId: 0,
-		ProtocolId: PROTOCOL_ID_INTERACTION,
+		Opcode:        INTERACTION_OPCODE_SUBSC_REQ,
+		ExchangeId:    0,
+		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
-
 
 	prot.Encode(&buffer)
 	buffer.Write(tlvx.Bytes())
@@ -387,19 +376,17 @@ func EncodeInvokeSubscribe(endpoint byte, cluster uint16, event byte) []byte {
 func EncodeStatusResponse(exchange_id uint16, iflag byte) []byte {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-	    tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, 0)
+	tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, 0)
 	tlvx.WriteAnonStructEnd()
 
-
 	var buffer bytes.Buffer
-	prot:= ProtocolMessageHeader{
-		exchangeFlags: 4|iflag,
-		Opcode: INTERACTION_OPCODE_STATUS_RSP,
-		ExchangeId: exchange_id,
-		ProtocolId: PROTOCOL_ID_INTERACTION,
+	prot := ProtocolMessageHeader{
+		exchangeFlags: 4 | iflag,
+		Opcode:        INTERACTION_OPCODE_STATUS_RSP,
+		ExchangeId:    exchange_id,
+		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
-
 
 	buffer.Write(tlvx.Bytes())
 
