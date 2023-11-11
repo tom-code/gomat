@@ -231,9 +231,9 @@ func main() {
 	}
 
 	var tlv mattertlv.TLVBuffer
-	tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100)) // hue
-	tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(200)) // saturation
-	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(20))  // time
+	tlv.WriteUInt8(0, byte(hue))        // hue
+	tlv.WriteUInt8(1, byte(saturation)) // saturation
+	tlv.WriteUInt8(2, byte(time))       // time
 	to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
 	secure_channel.Send(to_send)
 

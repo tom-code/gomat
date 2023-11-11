@@ -157,7 +157,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	// send csr request
 	var tlvb mattertlv.TLVBuffer
 	tlvb.WriteOctetString(0, create_random_bytes(32))
-	to_send := EncodeInvokeCommand(0, 0x3e, 4, tlvb.Bytes())
+	to_send := EncodeIMInvokeRequest(0, 0x3e, 4, tlvb.Bytes())
 	secure_channel.Send(to_send)
 
 	csr_resp, err := secure_channel.Receive()
@@ -176,7 +176,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	//AddTrustedRootCertificate
 	var tlv4 mattertlv.TLVBuffer
 	tlv4.WriteOctetString(0, SerializeCertificateIntoMatter(fabric, fabric.CertificateManager.GetCaCertificate()))
-	to_send = EncodeInvokeCommand(0, 0x3e, 0xb, tlv4.Bytes())
+	to_send = EncodeIMInvokeRequest(0, 0x3e, 0xb, tlv4.Bytes())
 	secure_channel.Send(to_send)
 
 	/*ds :=*/
@@ -191,10 +191,10 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	//AddNOC
 	var tlv5 mattertlv.TLVBuffer
 	tlv5.WriteOctetString(0, noc_matter)
-	tlv5.WriteOctetString(2, fabric.ipk)                    //ipk
-	tlv5.WriteUInt(3, mattertlv.TYPE_UINT_2, controller_id) // admin subject !
-	tlv5.WriteUInt(4, mattertlv.TYPE_UINT_2, 101)           // admin vendorid ??
-	to_send = EncodeInvokeCommand(0, 0x3e, 0x6, tlv5.Bytes())
+	tlv5.WriteOctetString(2, fabric.ipk) //ipk
+	tlv5.WriteUInt64(3, controller_id)   // admin subject !
+	tlv5.WriteUInt16(4, 101)             // admin vendorid ??
+	to_send = EncodeIMInvokeRequest(0, 0x3e, 0x6, tlv5.Bytes())
 
 	secure_channel.Send(to_send)
 
@@ -211,7 +211,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	}
 
 	//commissioning complete
-	to_send = EncodeInvokeCommand(0, 0x30, 4, []byte{})
+	to_send = EncodeIMInvokeRequest(0, 0x30, 4, []byte{})
 	secure_channel.Send(to_send)
 
 	respx, err := secure_channel.Receive()

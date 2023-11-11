@@ -270,7 +270,7 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeInvokeCommand(endpoint byte, cluster uint16, command byte, payload []byte) []byte {
+func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload []byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -305,7 +305,7 @@ func EncodeInvokeCommand(endpoint byte, cluster uint16, command byte, payload []
 	return buffer.Bytes()
 }
 
-func EncodeInvokeRead(endpoint byte, cluster uint16, attr byte) []byte {
+func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
@@ -334,18 +334,18 @@ func EncodeInvokeRead(endpoint byte, cluster uint16, attr byte) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeInvokeSubscribe(endpoint byte, cluster uint16, event byte) []byte {
+func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-	tlvx.WriteBool(0, false)                     // keep
-	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, 10) // min interval
-	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, 50) // max interval
+	tlvx.WriteBool(0, false) // keep
+	tlvx.WriteUInt16(1, 10)  // min interval
+	tlvx.WriteUInt16(2, 50)  // max interval
 	tlvx.WriteArray(4)
 	tlvx.WriteAnonList()
-	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(endpoint))
-	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(cluster))
-	tlvx.WriteUInt(3, mattertlv.TYPE_UINT_1, uint64(event))
+	tlvx.WriteUInt8(1, endpoint)
+	tlvx.WriteUInt16(2, cluster)
+	tlvx.WriteUInt8(3, event)
 	tlvx.WriteBool(4, true) // urgent
 	tlvx.WriteAnonStructEnd()
 	tlvx.WriteAnonStructEnd()
@@ -373,10 +373,10 @@ func EncodeInvokeSubscribe(endpoint byte, cluster uint16, event byte) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeStatusResponse(exchange_id uint16, iflag byte) []byte {
+func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
-	tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, 0)
+	tlvx.WriteUInt8(0, 0)
 	tlvx.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer

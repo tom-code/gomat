@@ -47,6 +47,41 @@ func (b *TLVBuffer) WriteUInt(tag byte, typ int, val uint64) {
 		binary.Write(&b.data, binary.LittleEndian, uint64(val))
 	}
 }
+func (b *TLVBuffer) WriteUInt8(tag byte, val byte) {
+	var ctrl byte
+	ctrl = 0x1 << 5
+	ctrl = ctrl | TYPE_UINT_1
+	b.data.WriteByte(ctrl)
+	b.data.WriteByte(tag)
+	b.data.WriteByte(byte(val))
+}
+
+func (b *TLVBuffer) WriteUInt16(tag byte, val uint16) {
+	var ctrl byte
+	ctrl = 0x1 << 5
+	ctrl = ctrl | TYPE_UINT_2
+	b.data.WriteByte(ctrl)
+	b.data.WriteByte(tag)
+	binary.Write(&b.data, binary.LittleEndian, val)
+}
+
+func (b *TLVBuffer) WriteUInt32(tag byte, val uint32) {
+	var ctrl byte
+	ctrl = 0x1 << 5
+	ctrl = ctrl | TYPE_UINT_4
+	b.data.WriteByte(ctrl)
+	b.data.WriteByte(tag)
+	binary.Write(&b.data, binary.LittleEndian, val)
+}
+
+func (b *TLVBuffer) WriteUInt64(tag byte, val uint64) {
+	var ctrl byte
+	ctrl = 0x1 << 5
+	ctrl = ctrl | TYPE_UINT_8
+	b.data.WriteByte(ctrl)
+	b.data.WriteByte(tag)
+	binary.Write(&b.data, binary.LittleEndian, val)
+}
 
 func (b *TLVBuffer) WriteOctetString(tag byte, data []byte) {
 	var ctrl byte

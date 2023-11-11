@@ -7,7 +7,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tom-code/gomat"
@@ -104,7 +103,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.EncodeInvokeCommand(1, 6, 0, []byte{})
+			to_send := gomat.EncodeIMInvokeRequest(1, 6, 0, []byte{})
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -127,7 +126,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.EncodeInvokeCommand(1, 6, 1, []byte{})
+			to_send := gomat.EncodeIMInvokeRequest(1, 6, 1, []byte{})
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -163,10 +162,10 @@ func main() {
 				panic(err)
 			}
 			var tlv mattertlv.TLVBuffer
-			tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(hue))        // hue
-			tlv.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(saturation)) // saturation
-			tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(time))       // time
-			to_send := gomat.EncodeInvokeCommand(1, 0x300, 6, tlv.Bytes())
+			tlv.WriteUInt8(0, byte(hue))        // hue
+			tlv.WriteUInt8(1, byte(saturation)) // saturation
+			tlv.WriteUInt8(2, byte(time))       // time
+			to_send := gomat.EncodeIMInvokeRequest(1, 0x300, 6, tlv.Bytes())
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -195,7 +194,7 @@ func main() {
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
 			attr, _ := strconv.ParseInt(args[2], 0, 16)
 
-			to_send := gomat.EncodeInvokeRead(byte(endpoint), uint16(cluster), byte(attr))
+			to_send := gomat.EncodeIMReadRequest(byte(endpoint), uint16(cluster), byte(attr))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -224,7 +223,7 @@ func main() {
 			endpoint, _ := strconv.ParseInt(args[0], 0, 16)
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
 			event, _ := strconv.ParseInt(args[2], 0, 16)
-			to_send := gomat.EncodeInvokeSubscribe(byte(endpoint), uint16(cluster), byte(event))
+			to_send := gomat.EncodeIMSubscribeRequest(byte(endpoint), uint16(cluster), byte(event))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -233,7 +232,7 @@ func main() {
 			}
 			resp.ProtocolHeader.Dump()
 
-			sr := gomat.EncodeStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
+			sr := gomat.EncodeIMStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
 			channel.Send(sr)
 			for {
 				r, err := channel.Receive()
@@ -251,10 +250,9 @@ func main() {
 					log.Println("status response")
 					continue
 				}
-				sr = gomat.EncodeStatusResponse(r.ProtocolHeader.ExchangeId, 0)
+				sr = gomat.EncodeIMStatusResponse(r.ProtocolHeader.ExchangeId, 0)
 				channel.Send(sr)
 			}
-			time.Sleep(1000 * time.Second)
 		},
 		Args: cobra.MinimumNArgs(3),
 	})
