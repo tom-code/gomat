@@ -31,6 +31,7 @@ const INTERACTION_OPCODE_SUBSC_REQ Opcode = 0x3
 const INTERACTION_OPCODE_REPORT_DATA Opcode = 0x5
 const INTERACTION_OPCODE_INVOKE_REQ Opcode = 0x8
 const INTERACTION_OPCODE_INVOKE_RSP Opcode = 0x9
+const INTERACTION_OPCODE_TIMED_REQ Opcode = 0xa
 
 const EXCHANGE_FLAGS_INITIATOR = 1
 const EXCHANGE_FLAGS_ACKNOWLEDGE = 2
@@ -270,12 +271,12 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload []byte) []byte {
+func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload []byte, timed bool, exchange uint16) []byte {
 
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	tlvx.WriteBool(0, false)
-	tlvx.WriteBool(1, false)
+	tlvx.WriteBool(1, timed)
 	tlvx.WriteArray(2)
 	tlvx.WriteAnonStruct()
 	tlvx.WriteList(0)
@@ -296,7 +297,7 @@ func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload 
 	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_INVOKE_REQ,
-		ExchangeId:    uint16(randm.Intn(0xffff)),
+		ExchangeId:    exchange,
 		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
@@ -363,6 +364,28 @@ func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte 
 	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_SUBSC_REQ,
+		ExchangeId:    0,
+		ProtocolId:    PROTOCOL_ID_INTERACTION,
+	}
+
+	prot.Encode(&buffer)
+	buffer.Write(tlvx.Bytes())
+
+	return buffer.Bytes()
+}
+
+func EncodeIMTimedRequest() []byte {
+
+	var tlvx mattertlv.TLVBuffer
+	tlvx.WriteAnonStruct()
+	tlvx.WriteUInt16(0, 6000)
+	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlvx.WriteAnonStructEnd()
+
+	var buffer bytes.Buffer
+	prot := ProtocolMessageHeader{
+		exchangeFlags: 5,
+		Opcode:        INTERACTION_OPCODE_TIMED_REQ,
 		ExchangeId:    0,
 		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}

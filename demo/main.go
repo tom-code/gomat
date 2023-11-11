@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"strconv"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/tom-code/gomat/discover"
 	"github.com/tom-code/gomat/mattertlv"
 	"github.com/tom-code/gomat/onboarding_payload"
+	"github.com/tom-code/gomat/symbols"
 )
 
 func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.QrContent) []discover.DiscoveredDevice {
@@ -32,22 +34,278 @@ func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.Q
 	return out
 }
 
-/*
-func command_list_fabrics(fabric *gomat.Fabric, ip net.IP, controller_id, device_id uint64) {
 
-	channel := gomat.NewChannel(ip, 5540, 55555)
-	secure_channel := gomat.SecureChannel {
-		Udp: &channel,
-		Counter: uint32(randm.Intn(0xffffffff)),
+func command_list_fabrics(cmd *cobra.Command) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
 	}
-	secure_channel = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 
-	to_send := gomat.InvokeRead(0, 0x3e, 1)
-	secure_channel.Send(to_send)
+	to_send := gomat.EncodeIMReadRequest(0, 0x3e, 1)
+	channel.Send(to_send)
 
-	resp := secure_channel.Receive()
-	resp.Tlv.Dump(0)
-}*/
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+		panic("did not receive report data message")
+	}
+
+	fabric_array := resp.Tlv.GetItemRec([]int{1,0,1,2})
+	if fabric_array == nil {
+		panic("did not receive fabric list")
+	}
+	for _, fabr := range fabric_array.GetChild() {
+		root_key := fabr.GetItemWithTag(1)
+		if root_key != nil {
+			fmt.Printf("root_key: %s\n", hex.EncodeToString(root_key.GetOctetString()))
+		}
+		vendor_id := fabr.GetItemWithTag(2)
+		if vendor_id != nil {
+			fmt.Printf("vendor_id: %d\n", vendor_id.GetInt())
+		}
+		fabric_id := fabr.GetItemWithTag(3)
+		if fabric_id != nil {
+			fmt.Printf("fabric_id: %d\n", fabric_id.GetInt())
+		}
+		node_id := fabr.GetItemWithTag(4)
+		if node_id != nil {
+			fmt.Printf("node_id: %d\n", node_id.GetInt())
+		}
+	}
+	dict := map[string]string {
+		".0": "Root",
+		".0.1": "AttributeReports",
+		".0.1.0": "AttributeReportIB",
+		".0.1.0.1": "AttributeData",
+		".0.1.0.1.0": "Version",
+		".0.1.0.1.1": "Path",
+		".0.1.0.1.1.2": "Endpoint",
+		".0.1.0.1.1.3": "Cluster",
+		".0.1.0.1.1.4": "Attribute",
+		".0.1.0.1.2": "Data",
+		".0.1.0.1.2.0": "Fabrics",
+		".0.1.0.1.2.0.1": "RootPublicKey",
+		".0.1.0.1.2.0.2": "VendorId",
+		".0.1.0.1.2.0.3": "FabricId",
+		".0.1.0.1.2.0.4": "NodeId",
+		".0.1.0.1.2.0.5": "Label",
+	}
+	resp.Tlv.DumpWithDict(0, "", dict)
+}
+
+func command_list_device_types(cmd *cobra.Command) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+
+	to_send := gomat.EncodeIMReadRequest(0, symbols.CLUSTER_ID_Descriptor, symbols.ATTRIBUTE_ID_Descriptor_DeviceTypeList)
+	channel.Send(to_send)
+
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+		panic("did not receive report data message")
+	}
+
+	dict := map[string]string {
+		".0": "Root",
+		".0.1": "AttributeReports",
+		".0.1.0": "AttributeReportIB",
+		".0.1.0.1": "AttributeData",
+		".0.1.0.1.0": "Version",
+		".0.1.0.1.1": "Path",
+		".0.1.0.1.1.2": "Endpoint",
+		".0.1.0.1.1.3": "Cluster",
+		".0.1.0.1.1.4": "Attribute",
+		".0.1.0.1.2": "Data",
+		".0.1.0.1.2.0": "DeviceType",
+		".0.1.0.1.2.0.0": "DeviceType",
+		".0.1.0.1.2.0.1": "Revision",
+	}
+	resp.Tlv.DumpWithDict(0, "", dict)
+}
+
+func command_list_supported_clusters(cmd *cobra.Command, args []string) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+	endpoint, err := strconv.ParseInt(args[0], 0, 16)
+	if err != nil {
+		panic(err)
+	}
+
+	to_send := gomat.EncodeIMReadRequest(uint8(endpoint), symbols.CLUSTER_ID_Descriptor, symbols.ATTRIBUTE_ID_Descriptor_ServerList)
+	channel.Send(to_send)
+
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+		panic("did not receive report data message")
+	}
+
+	dict := map[string]string {
+		".0": "Root",
+		".0.1": "AttributeReports",
+		".0.1.0": "AttributeReportIB",
+		".0.1.0.1": "AttributeData",
+		".0.1.0.1.0": "Version",
+		".0.1.0.1.1": "Path",
+		".0.1.0.1.1.2": "Endpoint",
+		".0.1.0.1.1.3": "Cluster",
+		".0.1.0.1.1.4": "Attribute",
+		".0.1.0.1.2": "Data",
+		".0.1.0.1.2.0": "ClusterId",
+	}
+	resp.Tlv.DumpWithDict(0, "", dict)
+	clusters := resp.Tlv.GetItemRec([]int{1,0,1,2})
+	if clusters == nil {
+		panic("clusters not found")
+	}
+	for _, c := range clusters.GetChild() {
+		name := symbols.ClusterNameMap[c.GetInt()]
+		fmt.Printf("0x%x %s\n", c.GetInt(), name)
+	}
+}
+
+func command_list_interfaces(cmd *cobra.Command, args []string) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+
+	to_send := gomat.EncodeIMReadRequest(0, symbols.CLUSTER_ID_GeneralDiagnostics, symbols.ATTRIBUTE_ID_GeneralDiagnostics_NetworkInterfaces)
+	channel.Send(to_send)
+
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+		panic("did not receive report data message")
+	}
+	dict := map[string]string {
+		".0": "Root",
+		".0.1": "AttributeReports",
+		".0.1.0": "AttributeReportIB",
+		".0.1.0.1": "AttributeData",
+		".0.1.0.1.0": "Version",
+		".0.1.0.1.1": "Path",
+		".0.1.0.1.1.2": "Endpoint",
+		".0.1.0.1.1.3": "Cluster",
+		".0.1.0.1.1.4": "Attribute",
+		".0.1.0.1.2": "Data",
+		".0.1.0.1.2.0": "Interface",
+		".0.1.0.1.2.0.0": "Name",
+		".0.1.0.1.2.0.1": "IsOperational",
+		".0.1.0.1.2.0.4": "HWAddress",
+		".0.1.0.1.2.0.5": "ipv4Address",
+		".0.1.0.1.2.0.6": "ipv6Address",
+		".0.1.0.1.2.0.7": "type",
+	}
+	resp.Tlv.DumpWithDict(0, "", dict)
+}
+
+
+func command_get_logs(cmd *cobra.Command, args []string) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+	endpoint, err := strconv.ParseInt(args[0], 0, 16)
+	if err != nil {
+		panic(err)
+	}
+
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteUInt8(0, 0) // intent
+	tlv.WriteUInt8(1, 0)
+
+	to_send := gomat.EncodeIMInvokeRequest(uint8(endpoint), symbols.CLUSTER_ID_DiagnosticLogs, symbols.COMMAND_ID_DiagnosticLogs_RetrieveLogsRequest, tlv.Bytes(), false, uint16(rand.Intn(0xffff)))
+	channel.Send(to_send)
+
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
+		panic("did not receive report data message")
+	}
+
+	resp.Tlv.Dump(1)
+}
+
+func command_open_commissioning(cmd *cobra.Command, args []string) {
+
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+	salt := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}
+	iterations := 1000
+	sctx := gomat.NewSpaceCtx()
+	sctx.Gen_w(999, salt, iterations)
+	sctx.Gen_random_X()
+	sctx.Gen_random_Y()
+	sctx.Calc_X()
+	sctx.Calc_ZVb()
+	data := sctx.W0
+	data = append(data, sctx.L.As_bytes()...)
+
+	log.Println(len(data))
+
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteUInt8(0, 240) // timeout
+	tlv.WriteOctetString(1, data)//pake
+	tlv.WriteUInt16(2, 1000) // discrimantor
+	tlv.WriteUInt32(3, uint32(iterations)) // iterations
+	tlv.WriteOctetString(4, salt) // salt
+
+	to_send := gomat.EncodeIMTimedRequest()
+	channel.Send(to_send)
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	resp.Tlv.Dump(1)
+
+
+	to_send = gomat.EncodeIMInvokeRequest(0, symbols.CLUSTER_ID_AdministratorCommissioning, symbols.COMMAND_ID_AdministratorCommissioning_OpenCommissioningWindow, tlv.Bytes(), true, 0)
+	channel.Send(to_send)
+
+	resp, err = channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+
+
+	resp.ProtocolHeader.Dump()
+	resp.StatusReport.Dump()
+	resp.Tlv.Dump(1)
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
+		panic("did not receive report data message")
+	}
+
+	resp.Tlv.Dump(1)
+}
 
 func createBasicFabric(id uint64) *gomat.Fabric {
 	cert_manager := gomat.NewFileCertManager(id)
@@ -96,6 +354,44 @@ func main() {
 	commandCmd.PersistentFlags().StringP("ip", "i", "", "ip address")
 
 	commandCmd.AddCommand(&cobra.Command{
+		Use: "list_fabrics",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_list_fabrics(cmd)
+		},
+	})
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "list_device_types",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_list_device_types(cmd)
+		},
+	})
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "list_supported_clusters [endpoint]",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_list_supported_clusters(cmd, args)
+		},
+		Args: cobra.MinimumNArgs(1),
+	})
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "list_interfaces [endpoint]",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_list_interfaces(cmd, args)
+		},
+	})
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "get_logs [endpoint]",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_get_logs(cmd, args)
+		},
+		Args: cobra.MinimumNArgs(1),
+	})
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "open_commissioning",
+		Run: func(cmd *cobra.Command, args []string) {
+			command_open_commissioning(cmd, args)
+		},
+	})
+	commandCmd.AddCommand(&cobra.Command{
 		Use: "off",
 		Run: func(cmd *cobra.Command, args []string) {
 			fabric := createBasicFabricFromCmd(cmd)
@@ -103,7 +399,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.EncodeIMInvokeRequest(1, 6, 0, []byte{})
+			to_send := gomat.EncodeIMInvokeRequest(1, symbols.CLUSTER_ID_OnOff, symbols.COMMAND_ID_OnOff_Off, []byte{}, false, uint16(rand.Intn(0xffff)))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -126,7 +422,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			to_send := gomat.EncodeIMInvokeRequest(1, 6, 1, []byte{})
+			to_send := gomat.EncodeIMInvokeRequest(1, symbols.CLUSTER_ID_OnOff, symbols.COMMAND_ID_OnOff_On, []byte{}, false, uint16(rand.Intn(0xffff)))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
@@ -165,7 +461,7 @@ func main() {
 			tlv.WriteUInt8(0, byte(hue))        // hue
 			tlv.WriteUInt8(1, byte(saturation)) // saturation
 			tlv.WriteUInt8(2, byte(time))       // time
-			to_send := gomat.EncodeIMInvokeRequest(1, 0x300, 6, tlv.Bytes())
+			to_send := gomat.EncodeIMInvokeRequest(1, 0x300, 6, tlv.Bytes(), false, uint16(rand.Intn(0xffff)))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()

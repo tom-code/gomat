@@ -1,0 +1,4466 @@
+{
+ "Clusters": {
+  "0": {
+   "Name": "NetworkInfrastructure",
+   "Id": 0,
+   "Commands": null,
+   "Attributes": null
+  },
+  "1024": {
+   "Name": "IlluminanceMeasurement",
+   "Id": 1024,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "MeasuredValue",
+     "Id": 0
+    },
+    {
+     "Name": "MinMeasuredValue",
+     "Id": 1
+    },
+    {
+     "Name": "MaxMeasuredValue",
+     "Id": 2
+    },
+    {
+     "Name": "Tolerance",
+     "Id": 3
+    },
+    {
+     "Name": "LightSensorType",
+     "Id": 4
+    }
+   ]
+  },
+  "1026": {
+   "Name": "TemperatureMeasurement",
+   "Id": 1026,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "MeasuredValue",
+     "Id": 0
+    },
+    {
+     "Name": "MinMeasuredValue",
+     "Id": 1
+    },
+    {
+     "Name": "MaxMeasuredValue",
+     "Id": 2
+    },
+    {
+     "Name": "Tolerance",
+     "Id": 3
+    }
+   ]
+  },
+  "1027": {
+   "Name": "PressureMeasurement",
+   "Id": 1027,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "MeasuredValue",
+     "Id": 0
+    },
+    {
+     "Name": "MinMeasuredValue",
+     "Id": 1
+    },
+    {
+     "Name": "MaxMeasuredValue",
+     "Id": 2
+    },
+    {
+     "Name": "Tolerance",
+     "Id": 3
+    },
+    {
+     "Name": "ScaledValue",
+     "Id": 16
+    },
+    {
+     "Name": "MinScaledValue",
+     "Id": 17
+    },
+    {
+     "Name": "MaxScaledValue",
+     "Id": 18
+    },
+    {
+     "Name": "ScaledTolerance",
+     "Id": 19
+    },
+    {
+     "Name": "Scale",
+     "Id": 20
+    }
+   ]
+  },
+  "1028": {
+   "Name": "FlowMeasurement",
+   "Id": 1028,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "MeasuredValue",
+     "Id": 0
+    },
+    {
+     "Name": "MinMeasuredValue",
+     "Id": 1
+    },
+    {
+     "Name": "MaxMeasuredValue",
+     "Id": 2
+    },
+    {
+     "Name": "Tolerance",
+     "Id": 3
+    }
+   ]
+  },
+  "1030": {
+   "Name": "OccupancySensing",
+   "Id": 1030,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "Occupancy",
+     "Id": 0
+    },
+    {
+     "Name": "OccupancySensorType",
+     "Id": 1
+    },
+    {
+     "Name": "OccupancySensorTypeBitmap",
+     "Id": 2
+    },
+    {
+     "Name": "PIROccupiedToUnoccupiedDelay",
+     "Id": 16
+    },
+    {
+     "Name": "PIRUnoccupiedToOccupiedDelay",
+     "Id": 17
+    },
+    {
+     "Name": "PIRUnoccupiedToOccupiedThreshold",
+     "Id": 18
+    },
+    {
+     "Name": "UltrasonicOccupiedToUnoccupiedDelay",
+     "Id": 32
+    },
+    {
+     "Name": "UltrasonicUnoccupiedToOccupiedDelay",
+     "Id": 33
+    },
+    {
+     "Name": "UltrasonicUnoccupiedToOccupiedThreshold",
+     "Id": 34
+    },
+    {
+     "Name": "PhysicalContactOccupiedToUnoccupiedDelay",
+     "Id": 48
+    },
+    {
+     "Name": "PhysicalContactUnoccupiedToOccupiedDelay",
+     "Id": 49
+    },
+    {
+     "Name": "PhysicalContactUnoccupiedToOccupiedThreshold",
+     "Id": 50
+    }
+   ]
+  },
+  "128": {
+   "Name": "BooleanSensorConfiguration",
+   "Id": 128,
+   "Commands": [
+    {
+     "Name": "SuppressRequest",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "SensitivityLevel",
+     "Id": 0
+    },
+    {
+     "Name": "AlarmsActive",
+     "Id": 1
+    },
+    {
+     "Name": "AlarmsSuppressed",
+     "Id": 2
+    },
+    {
+     "Name": "AlarmsEnabled",
+     "Id": 3
+    }
+   ]
+  },
+  "1283": {
+   "Name": "WakeonLAN",
+   "Id": 1283,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "MACAddress",
+     "Id": 0
+    },
+    {
+     "Name": "LinkLocalAddress",
+     "Id": 1
+    }
+   ]
+  },
+  "1284": {
+   "Name": "Channel",
+   "Id": 1284,
+   "Commands": [
+    {
+     "Name": "ChangeChannel",
+     "Id": 0
+    },
+    {
+     "Name": "ChangeChannelResponse",
+     "Id": 1
+    },
+    {
+     "Name": "ChangeChannelByNumber",
+     "Id": 2
+    },
+    {
+     "Name": "SkipChannel",
+     "Id": 3
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "ChannelList",
+     "Id": 0
+    },
+    {
+     "Name": "Lineup",
+     "Id": 1
+    },
+    {
+     "Name": "CurrentChannel",
+     "Id": 2
+    }
+   ]
+  },
+  "1285": {
+   "Name": "TargetNavigator",
+   "Id": 1285,
+   "Commands": [
+    {
+     "Name": "NavigateTarget",
+     "Id": 0
+    },
+    {
+     "Name": "NavigateTargetResponse",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "TargetList",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentTarget",
+     "Id": 1
+    }
+   ]
+  },
+  "1286": {
+   "Name": "MediaPlayback",
+   "Id": 1286,
+   "Commands": [
+    {
+     "Name": "Play",
+     "Id": 0
+    },
+    {
+     "Name": "Pause",
+     "Id": 1
+    },
+    {
+     "Name": "Stop",
+     "Id": 2
+    },
+    {
+     "Name": "StartOver",
+     "Id": 3
+    },
+    {
+     "Name": "Previous",
+     "Id": 4
+    },
+    {
+     "Name": "Next",
+     "Id": 5
+    },
+    {
+     "Name": "Rewind",
+     "Id": 6
+    },
+    {
+     "Name": "FastForward",
+     "Id": 7
+    },
+    {
+     "Name": "SkipForward",
+     "Id": 8
+    },
+    {
+     "Name": "SkipBackward",
+     "Id": 9
+    },
+    {
+     "Name": "PlaybackResponse",
+     "Id": 10
+    },
+    {
+     "Name": "Seek",
+     "Id": 11
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "CurrentState",
+     "Id": 0
+    },
+    {
+     "Name": "StartTime",
+     "Id": 1
+    },
+    {
+     "Name": "Duration",
+     "Id": 2
+    },
+    {
+     "Name": "SampledPosition",
+     "Id": 3
+    },
+    {
+     "Name": "PlaybackSpeed",
+     "Id": 4
+    },
+    {
+     "Name": "SeekRangeEnd",
+     "Id": 5
+    },
+    {
+     "Name": "SeekRangeStart",
+     "Id": 6
+    }
+   ]
+  },
+  "1287": {
+   "Name": "MediaInput",
+   "Id": 1287,
+   "Commands": [
+    {
+     "Name": "SelectInput",
+     "Id": 0
+    },
+    {
+     "Name": "ShowInputStatus",
+     "Id": 1
+    },
+    {
+     "Name": "HideInputStatus",
+     "Id": 2
+    },
+    {
+     "Name": "RenameInput",
+     "Id": 3
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "InputList",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentInput",
+     "Id": 1
+    }
+   ]
+  },
+  "1288": {
+   "Name": "LowPower",
+   "Id": 1288,
+   "Commands": [
+    {
+     "Name": "Sleep",
+     "Id": 0
+    }
+   ],
+   "Attributes": null
+  },
+  "1289": {
+   "Name": "KeypadInput",
+   "Id": 1289,
+   "Commands": [
+    {
+     "Name": "SendKey",
+     "Id": 0
+    },
+    {
+     "Name": "SendKeyResponse",
+     "Id": 1
+    }
+   ],
+   "Attributes": null
+  },
+  "129": {
+   "Name": "ValveConfigurationandControl",
+   "Id": 129,
+   "Commands": [
+    {
+     "Name": "Open",
+     "Id": 0
+    },
+    {
+     "Name": "Close",
+     "Id": 1
+    },
+    {
+     "Name": "SetLevel",
+     "Id": 2
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "OpenDuration",
+     "Id": 0
+    },
+    {
+     "Name": "AutoCloseTime",
+     "Id": 1
+    },
+    {
+     "Name": "RemainingDuration",
+     "Id": 2
+    },
+    {
+     "Name": "CurrentState",
+     "Id": 3
+    },
+    {
+     "Name": "TargetState",
+     "Id": 4
+    },
+    {
+     "Name": "StartUpState",
+     "Id": 5
+    },
+    {
+     "Name": "CurrentLevel",
+     "Id": 6
+    },
+    {
+     "Name": "TargetLevel",
+     "Id": 7
+    },
+    {
+     "Name": "OpenLevel",
+     "Id": 8
+    },
+    {
+     "Name": "ValveFault",
+     "Id": 9
+    }
+   ]
+  },
+  "1290": {
+   "Name": "ContentLauncher",
+   "Id": 1290,
+   "Commands": [
+    {
+     "Name": "LaunchContent",
+     "Id": 0
+    },
+    {
+     "Name": "LaunchURL",
+     "Id": 1
+    },
+    {
+     "Name": "LauncherResponse",
+     "Id": 2
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "AcceptHeader",
+     "Id": 0
+    },
+    {
+     "Name": "SupportedStreamingProtocols",
+     "Id": 1
+    }
+   ]
+  },
+  "1291": {
+   "Name": "AudioOutput",
+   "Id": 1291,
+   "Commands": [
+    {
+     "Name": "SelectOutput",
+     "Id": 0
+    },
+    {
+     "Name": "RenameOutput",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "OutputList",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentOutput",
+     "Id": 1
+    }
+   ]
+  },
+  "1292": {
+   "Name": "ApplicationLauncher",
+   "Id": 1292,
+   "Commands": [
+    {
+     "Name": "LaunchApp",
+     "Id": 0
+    },
+    {
+     "Name": "StopApp",
+     "Id": 1
+    },
+    {
+     "Name": "HideApp",
+     "Id": 2
+    },
+    {
+     "Name": "LauncherResponse",
+     "Id": 3
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "CatalogList",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentApp",
+     "Id": 1
+    }
+   ]
+  },
+  "1293": {
+   "Name": "ApplicationBasic",
+   "Id": 1293,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "VendorName",
+     "Id": 0
+    },
+    {
+     "Name": "VendorID",
+     "Id": 1
+    },
+    {
+     "Name": "ApplicationName",
+     "Id": 2
+    },
+    {
+     "Name": "ProductID",
+     "Id": 3
+    },
+    {
+     "Name": "Application",
+     "Id": 4
+    },
+    {
+     "Name": "Status",
+     "Id": 5
+    },
+    {
+     "Name": "ApplicationVersion",
+     "Id": 6
+    },
+    {
+     "Name": "AllowedVendorList",
+     "Id": 7
+    }
+   ]
+  },
+  "1294": {
+   "Name": "AccountLogin",
+   "Id": 1294,
+   "Commands": [
+    {
+     "Name": "GetSetupPIN",
+     "Id": 0
+    },
+    {
+     "Name": "GetSetupPINResponse",
+     "Id": 1
+    },
+    {
+     "Name": "Login",
+     "Id": 2
+    },
+    {
+     "Name": "Logout",
+     "Id": 3
+    }
+   ],
+   "Attributes": null
+  },
+  "1295": {
+   "Name": "MicrowaveOvenControl",
+   "Id": 1295,
+   "Commands": [
+    {
+     "Name": "SetCookingParameters",
+     "Id": 0
+    },
+    {
+     "Name": "AddMoreTime",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "CookTime",
+     "Id": 1
+    },
+    {
+     "Name": "PowerSetting",
+     "Id": 2
+    },
+    {
+     "Name": "MinPower",
+     "Id": 3
+    },
+    {
+     "Name": "MaxPower",
+     "Id": 4
+    },
+    {
+     "Name": "PowerStep",
+     "Id": 5
+    }
+   ]
+  },
+  "1296": {
+   "Name": "ContentAppObserver",
+   "Id": 1296,
+   "Commands": [
+    {
+     "Name": "ContentAppMessage",
+     "Id": 0
+    },
+    {
+     "Name": "ContentAppMessageResponse",
+     "Id": 1
+    }
+   ],
+   "Attributes": null
+  },
+  "144": {
+   "Name": "ElectricalPowerMeasurement",
+   "Id": 144,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "PowerMode",
+     "Id": 0
+    },
+    {
+     "Name": "Accuracy",
+     "Id": 1
+    },
+    {
+     "Name": "Ranges",
+     "Id": 2
+    },
+    {
+     "Name": "Voltage",
+     "Id": 3
+    },
+    {
+     "Name": "Current",
+     "Id": 4
+    },
+    {
+     "Name": "ActivePower",
+     "Id": 5
+    },
+    {
+     "Name": "RMSCurrent",
+     "Id": 6
+    },
+    {
+     "Name": "RMSPower",
+     "Id": 7
+    },
+    {
+     "Name": "ApparentPower",
+     "Id": 8
+    },
+    {
+     "Name": "ReactivePower",
+     "Id": 9
+    },
+    {
+     "Name": "Frequency",
+     "Id": 10
+    },
+    {
+     "Name": "HarmonicCurrents",
+     "Id": 11
+    },
+    {
+     "Name": "HarmonicPhases",
+     "Id": 12
+    },
+    {
+     "Name": "PowerFactor",
+     "Id": 13
+    },
+    {
+     "Name": "LineCurrent",
+     "Id": 14
+    },
+    {
+     "Name": "NeutralCurrent",
+     "Id": 15
+    }
+   ]
+  },
+  "145": {
+   "Name": "ElectricalEnergyMeasurement",
+   "Id": 145,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "Measured",
+     "Id": 0
+    },
+    {
+     "Name": "CumulativeEnergyImportedTime",
+     "Id": 1
+    },
+    {
+     "Name": "CumulativeEnergyImported",
+     "Id": 2
+    },
+    {
+     "Name": "CumulativeEnergyExportedTime",
+     "Id": 3
+    },
+    {
+     "Name": "CumulativeEnergyExported",
+     "Id": 4
+    },
+    {
+     "Name": "PeriodicEnergyImportedStartTime",
+     "Id": 5
+    },
+    {
+     "Name": "PeriodicEnergyImportedEndTime",
+     "Id": 6
+    },
+    {
+     "Name": "PeriodicEnergyImported",
+     "Id": 7
+    },
+    {
+     "Name": "PeriodicEnergyExportedStartTime",
+     "Id": 8
+    },
+    {
+     "Name": "PeriodicEnergyExportedEndTime",
+     "Id": 9
+    },
+    {
+     "Name": "PeriodicEnergyExported",
+     "Id": 10
+    },
+    {
+     "Name": "EphemeralEnergyImported",
+     "Id": 11
+    }
+   ]
+  },
+  "148": {
+   "Name": "WaterHeaterManagement",
+   "Id": 148,
+   "Commands": [
+    {
+     "Name": "Boost",
+     "Id": 1
+    },
+    {
+     "Name": "CancelBoost",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "HeaterTypes",
+     "Id": 0
+    },
+    {
+     "Name": "HeatDemand",
+     "Id": 1
+    },
+    {
+     "Name": "TankVolume",
+     "Id": 2
+    },
+    {
+     "Name": "EstimatedHeatRequired",
+     "Id": 3
+    },
+    {
+     "Name": "TankPercentage",
+     "Id": 4
+    }
+   ]
+  },
+  "149": {
+   "Name": "EnergyPrice",
+   "Id": 149,
+   "Commands": [
+    {
+     "Name": "GetDetailedPriceRequest",
+     "Id": 0
+    },
+    {
+     "Name": "GetDetailedPriceResponse",
+     "Id": 1
+    },
+    {
+     "Name": "GetDetailedForecastRequest",
+     "Id": 2
+    },
+    {
+     "Name": "GetDetailedForecastResponse",
+     "Id": 3
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "UnitOfMeasure",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentPrice",
+     "Id": 1
+    },
+    {
+     "Name": "PriceForecast",
+     "Id": 2
+    }
+   ]
+  },
+  "150": {
+   "Name": "DemandResponseandLoadControl",
+   "Id": 150,
+   "Commands": [
+    {
+     "Name": "RegisterLoadControlProgramRequest",
+     "Id": 0
+    },
+    {
+     "Name": "UnregisterLoadControlProgramRequest",
+     "Id": 1
+    },
+    {
+     "Name": "AddLoadControlEventRequest",
+     "Id": 2
+    },
+    {
+     "Name": "RemoveLoadControlEventRequest",
+     "Id": 3
+    },
+    {
+     "Name": "ClearLoadControlEventsRequest",
+     "Id": 4
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "DeviceClass",
+     "Id": 0
+    },
+    {
+     "Name": "LoadControlPrograms",
+     "Id": 1
+    },
+    {
+     "Name": "NumberOfLoadControlPrograms",
+     "Id": 2
+    },
+    {
+     "Name": "Events",
+     "Id": 3
+    },
+    {
+     "Name": "NumberOfEventsPerProgram",
+     "Id": 4
+    },
+    {
+     "Name": "NumberOfTransitions",
+     "Id": 5
+    },
+    {
+     "Name": "DefaultRandomStart",
+     "Id": 6
+    },
+    {
+     "Name": "DefaultRandomDuration",
+     "Id": 7
+    }
+   ]
+  },
+  "151": {
+   "Name": "Messages",
+   "Id": 151,
+   "Commands": [
+    {
+     "Name": "PresentMessagesRequest",
+     "Id": 0
+    },
+    {
+     "Name": "CancelMessagesRequest",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "Messages",
+     "Id": 0
+    },
+    {
+     "Name": "ActiveMessageIDs",
+     "Id": 1
+    }
+   ]
+  },
+  "152": {
+   "Name": "DeviceEnergyManagement",
+   "Id": 152,
+   "Commands": [
+    {
+     "Name": "PowerAdjustRequest",
+     "Id": 0
+    },
+    {
+     "Name": "CancelPowerAdjustRequest",
+     "Id": 1
+    },
+    {
+     "Name": "StartTimeAdjustRequest",
+     "Id": 2
+    },
+    {
+     "Name": "PauseRequest",
+     "Id": 3
+    },
+    {
+     "Name": "ResumeRequest",
+     "Id": 4
+    },
+    {
+     "Name": "ModifyPowerForecastRequest",
+     "Id": 5
+    },
+    {
+     "Name": "RequestLimitBasedPowerForecast",
+     "Id": 6
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "EsaType",
+     "Id": 0
+    },
+    {
+     "Name": "EsaIsGenerator",
+     "Id": 1
+    },
+    {
+     "Name": "EsaState",
+     "Id": 2
+    },
+    {
+     "Name": "AbsMinPower",
+     "Id": 3
+    },
+    {
+     "Name": "AbsMaxPower",
+     "Id": 4
+    },
+    {
+     "Name": "PowerAdjustmentCapability",
+     "Id": 5
+    },
+    {
+     "Name": "PowerForecast",
+     "Id": 6
+    }
+   ]
+  },
+  "154": {
+   "Name": "EnergyCalendar",
+   "Id": 154,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "CalendarID",
+     "Id": 0
+    },
+    {
+     "Name": "Name",
+     "Id": 1
+    },
+    {
+     "Name": "ProviderID",
+     "Id": 2
+    },
+    {
+     "Name": "EventID",
+     "Id": 3
+    },
+    {
+     "Name": "StartDate",
+     "Id": 4
+    },
+    {
+     "Name": "TimeReference",
+     "Id": 5
+    },
+    {
+     "Name": "CalendarPeriods",
+     "Id": 6
+    },
+    {
+     "Name": "SpecialDays",
+     "Id": 7
+    },
+    {
+     "Name": "CurrentDay",
+     "Id": 10
+    },
+    {
+     "Name": "NextDay",
+     "Id": 13
+    },
+    {
+     "Name": "CurrentTransition",
+     "Id": 13
+    },
+    {
+     "Name": "PeakPeriodStatus",
+     "Id": 15
+    },
+    {
+     "Name": "PeakPeriodStartTime",
+     "Id": 16
+    },
+    {
+     "Name": "PeakPeriodEndTime",
+     "Id": 17
+    }
+   ]
+  },
+  "155": {
+   "Name": "EnergyPreference",
+   "Id": 155,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "EnergyBalances",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentEnergyBalance",
+     "Id": 1
+    },
+    {
+     "Name": "CurrentLowPowerModeSensitivity",
+     "Id": 1
+    },
+    {
+     "Name": "EnergyPriorities",
+     "Id": 2
+    },
+    {
+     "Name": "LowPowerModeSensitivities",
+     "Id": 3
+    }
+   ]
+  },
+  "257": {
+   "Name": "DoorLock",
+   "Id": 257,
+   "Commands": [
+    {
+     "Name": "LockDoor",
+     "Id": 0
+    },
+    {
+     "Name": "UnlockDoor",
+     "Id": 1
+    },
+    {
+     "Name": "Toggle",
+     "Id": 2
+    },
+    {
+     "Name": "UnlockwithTimeout",
+     "Id": 3
+    },
+    {
+     "Name": "GetLogRecord",
+     "Id": 4
+    },
+    {
+     "Name": "GetLogRecordResponse",
+     "Id": 4
+    },
+    {
+     "Name": "SetPINCode",
+     "Id": 5
+    },
+    {
+     "Name": "GetPINCode",
+     "Id": 6
+    },
+    {
+     "Name": "GetPINCodeResponse",
+     "Id": 6
+    },
+    {
+     "Name": "ClearPINCode",
+     "Id": 7
+    },
+    {
+     "Name": "ClearAllPINCodes",
+     "Id": 8
+    },
+    {
+     "Name": "SetUserStatus",
+     "Id": 9
+    },
+    {
+     "Name": "GetUserStatus",
+     "Id": 10
+    },
+    {
+     "Name": "GetUserStatusResponse",
+     "Id": 10
+    },
+    {
+     "Name": "SetWeekDaySchedule",
+     "Id": 11
+    },
+    {
+     "Name": "GetWeekDaySchedule",
+     "Id": 12
+    },
+    {
+     "Name": "GetWeekDayScheduleResponse",
+     "Id": 12
+    },
+    {
+     "Name": "ClearWeekDaySchedule",
+     "Id": 13
+    },
+    {
+     "Name": "SetYearDaySchedule",
+     "Id": 14
+    },
+    {
+     "Name": "GetYearDaySchedule",
+     "Id": 15
+    },
+    {
+     "Name": "GetYearDayScheduleResponse",
+     "Id": 15
+    },
+    {
+     "Name": "ClearYearDaySchedule",
+     "Id": 16
+    },
+    {
+     "Name": "SetHolidaySchedule",
+     "Id": 17
+    },
+    {
+     "Name": "GetHolidaySchedule",
+     "Id": 18
+    },
+    {
+     "Name": "GetHolidayScheduleResponse",
+     "Id": 18
+    },
+    {
+     "Name": "ClearHolidaySchedule",
+     "Id": 19
+    },
+    {
+     "Name": "SetUserType",
+     "Id": 20
+    },
+    {
+     "Name": "GetUserType",
+     "Id": 21
+    },
+    {
+     "Name": "GetUserTypeResponse",
+     "Id": 21
+    },
+    {
+     "Name": "SetRFIDCode",
+     "Id": 22
+    },
+    {
+     "Name": "GetRFIDCode",
+     "Id": 23
+    },
+    {
+     "Name": "GetRFIDCodeResponse",
+     "Id": 23
+    },
+    {
+     "Name": "ClearRFIDCode",
+     "Id": 24
+    },
+    {
+     "Name": "ClearAllRFIDCodes",
+     "Id": 25
+    },
+    {
+     "Name": "SetUser",
+     "Id": 26
+    },
+    {
+     "Name": "GetUser",
+     "Id": 27
+    },
+    {
+     "Name": "GetUserResponse",
+     "Id": 28
+    },
+    {
+     "Name": "ClearUser",
+     "Id": 29
+    },
+    {
+     "Name": "OperatingEventNotification",
+     "Id": 32
+    },
+    {
+     "Name": "ProgrammingEventNotification",
+     "Id": 33
+    },
+    {
+     "Name": "SetCredential",
+     "Id": 34
+    },
+    {
+     "Name": "SetCredentialResponse",
+     "Id": 35
+    },
+    {
+     "Name": "GetCredentialStatus",
+     "Id": 36
+    },
+    {
+     "Name": "GetCredentialStatusResponse",
+     "Id": 37
+    },
+    {
+     "Name": "ClearCredential",
+     "Id": 38
+    },
+    {
+     "Name": "UnboltDoor",
+     "Id": 39
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "LockState",
+     "Id": 0
+    },
+    {
+     "Name": "LockType",
+     "Id": 1
+    },
+    {
+     "Name": "ActuatorEnabled",
+     "Id": 2
+    },
+    {
+     "Name": "DoorState",
+     "Id": 3
+    },
+    {
+     "Name": "DoorOpenEvents",
+     "Id": 4
+    },
+    {
+     "Name": "DoorClosedEvents",
+     "Id": 5
+    },
+    {
+     "Name": "OpenPeriod",
+     "Id": 6
+    },
+    {
+     "Name": "NumberOfLogRecordsSupported",
+     "Id": 16
+    },
+    {
+     "Name": "NumberOfTotalUsersSupported",
+     "Id": 17
+    },
+    {
+     "Name": "NumberOfPINUsersSupported",
+     "Id": 18
+    },
+    {
+     "Name": "NumberOfRFIDUsersSupported",
+     "Id": 19
+    },
+    {
+     "Name": "NumberOfWeekDaySchedulesSupportedPerUser",
+     "Id": 20
+    },
+    {
+     "Name": "NumberOfYearDaySchedulesSupportedPerUser",
+     "Id": 21
+    },
+    {
+     "Name": "NumberOfHolidaySchedulesSupported",
+     "Id": 22
+    },
+    {
+     "Name": "MaxPINCodeLength",
+     "Id": 23
+    },
+    {
+     "Name": "MinPINCodeLength",
+     "Id": 24
+    },
+    {
+     "Name": "MaxRFIDCodeLength",
+     "Id": 25
+    },
+    {
+     "Name": "MinRFIDCodeLength",
+     "Id": 26
+    },
+    {
+     "Name": "CredentialRulesSupport",
+     "Id": 27
+    },
+    {
+     "Name": "NumberOfCredentialsSupportedPerUser",
+     "Id": 28
+    },
+    {
+     "Name": "EnableLogging",
+     "Id": 32
+    },
+    {
+     "Name": "Language",
+     "Id": 33
+    },
+    {
+     "Name": "LEDSettings",
+     "Id": 34
+    },
+    {
+     "Name": "AutoRelockTime",
+     "Id": 35
+    },
+    {
+     "Name": "SoundVolume",
+     "Id": 36
+    },
+    {
+     "Name": "OperatingMode",
+     "Id": 37
+    },
+    {
+     "Name": "SupportedOperatingModes",
+     "Id": 38
+    },
+    {
+     "Name": "DefaultConfigurationRegister",
+     "Id": 39
+    },
+    {
+     "Name": "EnableLocalProgramming",
+     "Id": 40
+    },
+    {
+     "Name": "EnableOneTouchLocking",
+     "Id": 41
+    },
+    {
+     "Name": "EnableInsideStatusLED",
+     "Id": 42
+    },
+    {
+     "Name": "EnablePrivacyModeButton",
+     "Id": 43
+    },
+    {
+     "Name": "LocalProgrammingFeatures",
+     "Id": 44
+    },
+    {
+     "Name": "WrongCodeEntryLimit",
+     "Id": 48
+    },
+    {
+     "Name": "UserCodeTemporaryDisableTime",
+     "Id": 49
+    },
+    {
+     "Name": "SendPINOverTheAir",
+     "Id": 50
+    },
+    {
+     "Name": "RequirePINforRemoteOperation",
+     "Id": 51
+    },
+    {
+     "Name": "SecurityLevel",
+     "Id": 52
+    },
+    {
+     "Name": "ExpiringUserTimeout",
+     "Id": 53
+    },
+    {
+     "Name": "AlarmMask",
+     "Id": 64
+    },
+    {
+     "Name": "KeypadOperationEventMask",
+     "Id": 65
+    },
+    {
+     "Name": "RemoteOperationEventMask",
+     "Id": 66
+    },
+    {
+     "Name": "ManualOperationEventMask",
+     "Id": 67
+    },
+    {
+     "Name": "RFIDOperationEventMask",
+     "Id": 68
+    },
+    {
+     "Name": "KeypadProgrammingEventMask",
+     "Id": 69
+    },
+    {
+     "Name": "RemoteProgrammingEventMask",
+     "Id": 70
+    },
+    {
+     "Name": "RFIDProgrammingEventMask",
+     "Id": 71
+    }
+   ]
+  },
+  "258": {
+   "Name": "WindowCovering",
+   "Id": 258,
+   "Commands": [
+    {
+     "Name": "UpOrOpen",
+     "Id": 0
+    },
+    {
+     "Name": "DownOrClose",
+     "Id": 1
+    },
+    {
+     "Name": "StopMotion",
+     "Id": 2
+    },
+    {
+     "Name": "GoToLiftValue",
+     "Id": 4
+    },
+    {
+     "Name": "GoToLiftPercentage",
+     "Id": 5
+    },
+    {
+     "Name": "GoToTiltValue",
+     "Id": 7
+    },
+    {
+     "Name": "GoToTiltPercentage",
+     "Id": 8
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "Type",
+     "Id": 0
+    },
+    {
+     "Name": "PhysicalClosedLimitLift",
+     "Id": 1
+    },
+    {
+     "Name": "PhysicalClosedLimitTilt",
+     "Id": 2
+    },
+    {
+     "Name": "CurrentPositionLift",
+     "Id": 3
+    },
+    {
+     "Name": "CurrentPositionTilt",
+     "Id": 4
+    },
+    {
+     "Name": "NumberOfActuationsLift",
+     "Id": 5
+    },
+    {
+     "Name": "NumberOfActuationsTilt",
+     "Id": 6
+    },
+    {
+     "Name": "ConfigStatus",
+     "Id": 7
+    },
+    {
+     "Name": "CurrentPositionLiftPercentage",
+     "Id": 8
+    },
+    {
+     "Name": "CurrentPositionTiltPercentage",
+     "Id": 9
+    },
+    {
+     "Name": "OperationalStatus",
+     "Id": 10
+    },
+    {
+     "Name": "TargetPositionLiftPercent100ths",
+     "Id": 11
+    },
+    {
+     "Name": "TargetPositionTiltPercent100ths",
+     "Id": 12
+    },
+    {
+     "Name": "EndProductType",
+     "Id": 13
+    },
+    {
+     "Name": "CurrentPositionLiftPercent100ths",
+     "Id": 14
+    },
+    {
+     "Name": "CurrentPositionTiltPercent100ths",
+     "Id": 15
+    },
+    {
+     "Name": "InstalledOpenLimitLift",
+     "Id": 16
+    },
+    {
+     "Name": "InstalledClosedLimitLift",
+     "Id": 17
+    },
+    {
+     "Name": "InstalledOpenLimitTilt",
+     "Id": 18
+    },
+    {
+     "Name": "InstalledClosedLimitTilt",
+     "Id": 19
+    },
+    {
+     "Name": "VelocityLift",
+     "Id": 20
+    },
+    {
+     "Name": "AccelerationTimeLift",
+     "Id": 21
+    },
+    {
+     "Name": "DecelerationTimeLift",
+     "Id": 22
+    },
+    {
+     "Name": "Mode",
+     "Id": 23
+    },
+    {
+     "Name": "IntermediateSetpointsLift",
+     "Id": 24
+    },
+    {
+     "Name": "IntermediateSetpointsTilt",
+     "Id": 25
+    },
+    {
+     "Name": "SafetyStatus",
+     "Id": 26
+    }
+   ]
+  },
+  "29": {
+   "Name": "Descriptor",
+   "Id": 29,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "DeviceTypeList",
+     "Id": 0
+    },
+    {
+     "Name": "ServerList",
+     "Id": 1
+    },
+    {
+     "Name": "ClientList",
+     "Id": 2
+    },
+    {
+     "Name": "PartsList",
+     "Id": 3
+    },
+    {
+     "Name": "TagList",
+     "Id": 4
+    }
+   ]
+  },
+  "3": {
+   "Name": "Identify",
+   "Id": 3,
+   "Commands": [
+    {
+     "Name": "Identify",
+     "Id": 0
+    },
+    {
+     "Name": "IdentifyQueryResponse",
+     "Id": 0
+    },
+    {
+     "Name": "IdentifyQuery",
+     "Id": 1
+    },
+    {
+     "Name": "TriggerEffect",
+     "Id": 64
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "IdentifyTime",
+     "Id": 0
+    },
+    {
+     "Name": "IdentifyType",
+     "Id": 1
+    }
+   ]
+  },
+  "30": {
+   "Name": "Binding",
+   "Id": 30,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "Binding",
+     "Id": 0
+    }
+   ]
+  },
+  "31": {
+   "Name": "AccessControl",
+   "Id": 31,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "ACL",
+     "Id": 0
+    },
+    {
+     "Name": "Extension",
+     "Id": 1
+    },
+    {
+     "Name": "SubjectsPerAccessControlEntry",
+     "Id": 2
+    },
+    {
+     "Name": "TargetsPerAccessControlEntry",
+     "Id": 3
+    },
+    {
+     "Name": "AccessControlEntriesPerFabric",
+     "Id": 4
+    }
+   ]
+  },
+  "37": {
+   "Name": "Actions",
+   "Id": 37,
+   "Commands": [
+    {
+     "Name": "InstantAction",
+     "Id": 0
+    },
+    {
+     "Name": "InstantActionWithTransition",
+     "Id": 1
+    },
+    {
+     "Name": "StartAction",
+     "Id": 2
+    },
+    {
+     "Name": "StartActionWithDuration",
+     "Id": 3
+    },
+    {
+     "Name": "StopAction",
+     "Id": 4
+    },
+    {
+     "Name": "PauseAction",
+     "Id": 5
+    },
+    {
+     "Name": "PauseActionWithDuration",
+     "Id": 6
+    },
+    {
+     "Name": "ResumeAction",
+     "Id": 7
+    },
+    {
+     "Name": "EnableAction",
+     "Id": 8
+    },
+    {
+     "Name": "EnableActionWithDuration",
+     "Id": 9
+    },
+    {
+     "Name": "DisableAction",
+     "Id": 10
+    },
+    {
+     "Name": "DisableActionWithDuration",
+     "Id": 11
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "ActionList",
+     "Id": 0
+    },
+    {
+     "Name": "EndpointLists",
+     "Id": 1
+    },
+    {
+     "Name": "SetupURL",
+     "Id": 2
+    }
+   ]
+  },
+  "4": {
+   "Name": "Groups",
+   "Id": 4,
+   "Commands": [
+    {
+     "Name": "AddGroup",
+     "Id": 0
+    },
+    {
+     "Name": "AddGroupResponse",
+     "Id": 0
+    },
+    {
+     "Name": "ViewGroup",
+     "Id": 1
+    },
+    {
+     "Name": "ViewGroupResponse",
+     "Id": 1
+    },
+    {
+     "Name": "GetGroupMembership",
+     "Id": 2
+    },
+    {
+     "Name": "GetGroupMembershipResponse",
+     "Id": 2
+    },
+    {
+     "Name": "RemoveGroup",
+     "Id": 3
+    },
+    {
+     "Name": "RemoveGroupResponse",
+     "Id": 3
+    },
+    {
+     "Name": "RemoveAllGroups",
+     "Id": 4
+    },
+    {
+     "Name": "AddGroupIfIdentifying",
+     "Id": 5
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "NameSupport",
+     "Id": 0
+    }
+   ]
+  },
+  "40": {
+   "Name": "BasicInformation",
+   "Id": 40,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "DataModelRevision",
+     "Id": 0
+    },
+    {
+     "Name": "VendorName",
+     "Id": 1
+    },
+    {
+     "Name": "VendorID",
+     "Id": 2
+    },
+    {
+     "Name": "ProductName",
+     "Id": 3
+    },
+    {
+     "Name": "ProductID",
+     "Id": 4
+    },
+    {
+     "Name": "NodeLabel",
+     "Id": 5
+    },
+    {
+     "Name": "Location",
+     "Id": 6
+    },
+    {
+     "Name": "HardwareVersion",
+     "Id": 7
+    },
+    {
+     "Name": "HardwareVersionString",
+     "Id": 8
+    },
+    {
+     "Name": "SoftwareVersion",
+     "Id": 9
+    },
+    {
+     "Name": "SoftwareVersionString",
+     "Id": 10
+    },
+    {
+     "Name": "ManufacturingDate",
+     "Id": 11
+    },
+    {
+     "Name": "PartNumber",
+     "Id": 12
+    },
+    {
+     "Name": "ProductURL",
+     "Id": 13
+    },
+    {
+     "Name": "ProductLabel",
+     "Id": 14
+    },
+    {
+     "Name": "SerialNumber",
+     "Id": 15
+    },
+    {
+     "Name": "LocalConfigDisabled",
+     "Id": 16
+    },
+    {
+     "Name": "Reachable",
+     "Id": 17
+    },
+    {
+     "Name": "UniqueID",
+     "Id": 18
+    },
+    {
+     "Name": "CapabilityMinima",
+     "Id": 19
+    },
+    {
+     "Name": "ProductAppearance",
+     "Id": 20
+    },
+    {
+     "Name": "SpecificationVersion",
+     "Id": 21
+    },
+    {
+     "Name": "MaxPathsPerInvoke",
+     "Id": 22
+    }
+   ]
+  },
+  "43": {
+   "Name": "LocalizationConfiguration",
+   "Id": 43,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "ActiveLocale",
+     "Id": 0
+    },
+    {
+     "Name": "SupportedLocales",
+     "Id": 1
+    }
+   ]
+  },
+  "44": {
+   "Name": "TimeFormatLocalization",
+   "Id": 44,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "HourFormat",
+     "Id": 0
+    },
+    {
+     "Name": "ActiveCalendarType",
+     "Id": 1
+    },
+    {
+     "Name": "SupportedCalendarTypes",
+     "Id": 2
+    }
+   ]
+  },
+  "45": {
+   "Name": "UnitLocalization",
+   "Id": 45,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "TemperatureUnit",
+     "Id": 0
+    }
+   ]
+  },
+  "46": {
+   "Name": "PowerSourceConfiguration",
+   "Id": 46,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "Sources",
+     "Id": 0
+    }
+   ]
+  },
+  "47": {
+   "Name": "PowerSource",
+   "Id": 47,
+   "Commands": [
+    {
+     "Name": "DisableBattery",
+     "Id": 1
+    },
+    {
+     "Name": "EnableBatteryCharging",
+     "Id": 2
+    },
+    {
+     "Name": "EnableBatteryDischarging",
+     "Id": 3
+    },
+    {
+     "Name": "StartBatteryDiagnostics",
+     "Id": 4
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "Status",
+     "Id": 0
+    },
+    {
+     "Name": "Order",
+     "Id": 1
+    },
+    {
+     "Name": "Description",
+     "Id": 2
+    },
+    {
+     "Name": "WiredAssessedInputVoltage",
+     "Id": 3
+    },
+    {
+     "Name": "WiredAssessedInputFrequency",
+     "Id": 4
+    },
+    {
+     "Name": "WiredCurrentType",
+     "Id": 5
+    },
+    {
+     "Name": "WiredAssessedCurrent",
+     "Id": 6
+    },
+    {
+     "Name": "WiredNominalVoltage",
+     "Id": 7
+    },
+    {
+     "Name": "WiredMaximumCurrent",
+     "Id": 8
+    },
+    {
+     "Name": "WiredPresent",
+     "Id": 9
+    },
+    {
+     "Name": "ActiveWiredFaults",
+     "Id": 10
+    },
+    {
+     "Name": "BatVoltage",
+     "Id": 11
+    },
+    {
+     "Name": "BatPercentRemaining",
+     "Id": 12
+    },
+    {
+     "Name": "BatTimeRemaining",
+     "Id": 13
+    },
+    {
+     "Name": "BatChargeLevel",
+     "Id": 14
+    },
+    {
+     "Name": "BatReplacementNeeded",
+     "Id": 15
+    },
+    {
+     "Name": "BatReplaceability",
+     "Id": 16
+    },
+    {
+     "Name": "BatPresent",
+     "Id": 17
+    },
+    {
+     "Name": "ActiveBatFaults",
+     "Id": 18
+    },
+    {
+     "Name": "BatReplacementDescription",
+     "Id": 19
+    },
+    {
+     "Name": "BatCommonDesignation",
+     "Id": 20
+    },
+    {
+     "Name": "BatANSIDesignation",
+     "Id": 21
+    },
+    {
+     "Name": "BatIECDesignation",
+     "Id": 22
+    },
+    {
+     "Name": "BatApprovedChemistry",
+     "Id": 23
+    },
+    {
+     "Name": "BatCapacity",
+     "Id": 24
+    },
+    {
+     "Name": "BatQuantity",
+     "Id": 25
+    },
+    {
+     "Name": "BatChargeState",
+     "Id": 26
+    },
+    {
+     "Name": "BatTimeToFullCharge",
+     "Id": 27
+    },
+    {
+     "Name": "BatFunctionalWhileCharging",
+     "Id": 28
+    },
+    {
+     "Name": "BatChargingCurrent",
+     "Id": 29
+    },
+    {
+     "Name": "ActiveBatChargeFaults",
+     "Id": 30
+    },
+    {
+     "Name": "EndpointList",
+     "Id": 31
+    },
+    {
+     "Name": "BatAbsMaxChargeCurrent",
+     "Id": 32
+    },
+    {
+     "Name": "BatAbsMinChargeCurrent",
+     "Id": 33
+    },
+    {
+     "Name": "BatAbsMaxDischargeCurrent",
+     "Id": 34
+    },
+    {
+     "Name": "BatMaxChargeCurrent",
+     "Id": 35
+    },
+    {
+     "Name": "BatMinChargeCurrent",
+     "Id": 36
+    },
+    {
+     "Name": "BatMaxDischargeCurrent",
+     "Id": 37
+    },
+    {
+     "Name": "BatChargePermissions",
+     "Id": 38
+    },
+    {
+     "Name": "BatEnableChargeTime",
+     "Id": 39
+    },
+    {
+     "Name": "BatEnableDischargeTime",
+     "Id": 40
+    },
+    {
+     "Name": "WiredMaxAmperage",
+     "Id": 41
+    },
+    {
+     "Name": "WiredAbsMaxAmperage",
+     "Id": 42
+    }
+   ]
+  },
+  "48": {
+   "Name": "GeneralCommissioning",
+   "Id": 48,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "Breadcrumb",
+     "Id": 0
+    },
+    {
+     "Name": "BasicCommissioningInfo",
+     "Id": 1
+    },
+    {
+     "Name": "RegulatoryConfig",
+     "Id": 2
+    },
+    {
+     "Name": "LocationCapability",
+     "Id": 3
+    },
+    {
+     "Name": "SupportsConcurrentConnection",
+     "Id": 4
+    }
+   ]
+  },
+  "49": {
+   "Name": "NetworkCommissioning",
+   "Id": 49,
+   "Commands": [
+    {
+     "Name": "ScanNetworks",
+     "Id": 0
+    },
+    {
+     "Name": "ScanNetworksResponse",
+     "Id": 1
+    },
+    {
+     "Name": "AddOrUpdateWiFiNetwork",
+     "Id": 2
+    },
+    {
+     "Name": "AddOrUpdateThreadNetwork",
+     "Id": 3
+    },
+    {
+     "Name": "RemoveNetwork",
+     "Id": 4
+    },
+    {
+     "Name": "NetworkConfigResponse",
+     "Id": 5
+    },
+    {
+     "Name": "ConnectNetwork",
+     "Id": 6
+    },
+    {
+     "Name": "ConnectNetworkResponse",
+     "Id": 7
+    },
+    {
+     "Name": "ReorderNetwork",
+     "Id": 8
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "MaxNetworks",
+     "Id": 0
+    },
+    {
+     "Name": "Networks",
+     "Id": 1
+    },
+    {
+     "Name": "ScanMaxTimeSeconds",
+     "Id": 2
+    },
+    {
+     "Name": "ConnectMaxTimeSeconds",
+     "Id": 3
+    },
+    {
+     "Name": "InterfaceEnabled",
+     "Id": 4
+    },
+    {
+     "Name": "LastNetworkingStatus",
+     "Id": 5
+    },
+    {
+     "Name": "LastNetworkID",
+     "Id": 6
+    },
+    {
+     "Name": "LastConnectErrorValue",
+     "Id": 7
+    },
+    {
+     "Name": "SupportedWiFiBands",
+     "Id": 8
+    },
+    {
+     "Name": "SupportedThreadFeatures",
+     "Id": 9
+    },
+    {
+     "Name": "ThreadVersion",
+     "Id": 10
+    }
+   ]
+  },
+  "5": {
+   "Name": "Scenes",
+   "Id": 5,
+   "Commands": [
+    {
+     "Name": "AddScene",
+     "Id": 0
+    },
+    {
+     "Name": "AddSceneResponse",
+     "Id": 0
+    },
+    {
+     "Name": "ViewScene",
+     "Id": 1
+    },
+    {
+     "Name": "ViewSceneResponse",
+     "Id": 1
+    },
+    {
+     "Name": "RemoveScene",
+     "Id": 2
+    },
+    {
+     "Name": "RemoveSceneResponse",
+     "Id": 2
+    },
+    {
+     "Name": "RemoveAllScenes",
+     "Id": 3
+    },
+    {
+     "Name": "RemoveAllScenesResponse",
+     "Id": 3
+    },
+    {
+     "Name": "StoreScene",
+     "Id": 4
+    },
+    {
+     "Name": "StoreSceneResponse",
+     "Id": 4
+    },
+    {
+     "Name": "RecallScene",
+     "Id": 5
+    },
+    {
+     "Name": "GetSceneMembership",
+     "Id": 6
+    },
+    {
+     "Name": "GetSceneMembershipResponse",
+     "Id": 6
+    },
+    {
+     "Name": "EnhancedAddScene",
+     "Id": 64
+    },
+    {
+     "Name": "EnhancedAddSceneResponse",
+     "Id": 64
+    },
+    {
+     "Name": "EnhancedViewScene",
+     "Id": 65
+    },
+    {
+     "Name": "EnhancedViewSceneResponse",
+     "Id": 65
+    },
+    {
+     "Name": "CopyScene",
+     "Id": 66
+    },
+    {
+     "Name": "CopySceneResponse",
+     "Id": 66
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "SceneCount",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentScene",
+     "Id": 1
+    },
+    {
+     "Name": "CurrentGroup",
+     "Id": 2
+    },
+    {
+     "Name": "SceneValid",
+     "Id": 3
+    },
+    {
+     "Name": "NameSupport",
+     "Id": 4
+    },
+    {
+     "Name": "LastConfiguredBy",
+     "Id": 5
+    },
+    {
+     "Name": "SceneTableSize",
+     "Id": 6
+    },
+    {
+     "Name": "FabricSceneInfo",
+     "Id": 7
+    }
+   ]
+  },
+  "50": {
+   "Name": "DiagnosticLogs",
+   "Id": 50,
+   "Commands": [
+    {
+     "Name": "RetrieveLogsRequest",
+     "Id": 0
+    },
+    {
+     "Name": "RetrieveLogsResponse",
+     "Id": 1
+    }
+   ],
+   "Attributes": null
+  },
+  "51": {
+   "Name": "GeneralDiagnostics",
+   "Id": 51,
+   "Commands": [
+    {
+     "Name": "TestEventTrigger",
+     "Id": 0
+    },
+    {
+     "Name": "TimeSnapshot",
+     "Id": 1
+    },
+    {
+     "Name": "TimeSnapshotResponse",
+     "Id": 2
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "NetworkInterfaces",
+     "Id": 0
+    },
+    {
+     "Name": "RebootCount",
+     "Id": 1
+    },
+    {
+     "Name": "UpTime",
+     "Id": 2
+    },
+    {
+     "Name": "TotalOperationalHours",
+     "Id": 3
+    },
+    {
+     "Name": "BootReason",
+     "Id": 4
+    },
+    {
+     "Name": "ActiveHardwareFaults",
+     "Id": 5
+    },
+    {
+     "Name": "ActiveRadioFaults",
+     "Id": 6
+    },
+    {
+     "Name": "ActiveNetworkFaults",
+     "Id": 7
+    },
+    {
+     "Name": "TestEventTriggersEnabled",
+     "Id": 8
+    }
+   ]
+  },
+  "512": {
+   "Name": "PumpConfigurationandControl",
+   "Id": 512,
+   "Commands": null,
+   "Attributes": null
+  },
+  "513": {
+   "Name": "Thermostat",
+   "Id": 513,
+   "Commands": [
+    {
+     "Name": "SetpointRaiseLower",
+     "Id": 0
+    },
+    {
+     "Name": "GetWeeklyScheduleResponse",
+     "Id": 0
+    },
+    {
+     "Name": "SetWeeklySchedule",
+     "Id": 1
+    },
+    {
+     "Name": "GetRelayStatusLogResponse",
+     "Id": 1
+    },
+    {
+     "Name": "GetWeeklySchedule",
+     "Id": 2
+    },
+    {
+     "Name": "ClearWeeklySchedule",
+     "Id": 3
+    },
+    {
+     "Name": "GetRelayStatusLog",
+     "Id": 4
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "LocalTemperature",
+     "Id": 0
+    },
+    {
+     "Name": "OutdoorTemperature",
+     "Id": 1
+    },
+    {
+     "Name": "Occupancy",
+     "Id": 2
+    },
+    {
+     "Name": "AbsMinHeatSetpointLimit",
+     "Id": 3
+    },
+    {
+     "Name": "AbsMaxHeatSetpointLimit",
+     "Id": 4
+    },
+    {
+     "Name": "AbsMinCoolSetpointLimit",
+     "Id": 5
+    },
+    {
+     "Name": "AbsMaxCoolSetpointLimit",
+     "Id": 6
+    },
+    {
+     "Name": "PICoolingDemand",
+     "Id": 7
+    },
+    {
+     "Name": "PIHeatingDemand",
+     "Id": 8
+    },
+    {
+     "Name": "HVACSystemTypeConfiguration",
+     "Id": 9
+    },
+    {
+     "Name": "LocalTemperatureCalibration",
+     "Id": 16
+    },
+    {
+     "Name": "OccupiedCoolingSetpoint",
+     "Id": 17
+    },
+    {
+     "Name": "OccupiedHeatingSetpoint",
+     "Id": 18
+    },
+    {
+     "Name": "UnoccupiedCoolingSetpoint",
+     "Id": 19
+    },
+    {
+     "Name": "UnoccupiedHeatingSetpoint",
+     "Id": 20
+    },
+    {
+     "Name": "MinHeatSetpointLimit",
+     "Id": 21
+    },
+    {
+     "Name": "MaxHeatSetpointLimit",
+     "Id": 22
+    },
+    {
+     "Name": "MinCoolSetpointLimit",
+     "Id": 23
+    },
+    {
+     "Name": "MaxCoolSetpointLimit",
+     "Id": 24
+    },
+    {
+     "Name": "MinSetpointDeadBand",
+     "Id": 25
+    },
+    {
+     "Name": "RemoteSensing",
+     "Id": 26
+    },
+    {
+     "Name": "ControlSequenceOfOperation",
+     "Id": 27
+    },
+    {
+     "Name": "SystemMode",
+     "Id": 28
+    },
+    {
+     "Name": "AlarmMask",
+     "Id": 29
+    },
+    {
+     "Name": "ThermostatRunningMode",
+     "Id": 30
+    },
+    {
+     "Name": "StartOfWeek",
+     "Id": 32
+    },
+    {
+     "Name": "NumberOfWeeklyTransitions",
+     "Id": 33
+    },
+    {
+     "Name": "NumberOfDailyTransitions",
+     "Id": 34
+    },
+    {
+     "Name": "TemperatureSetpointHold",
+     "Id": 35
+    },
+    {
+     "Name": "TemperatureSetpointHoldDuration",
+     "Id": 36
+    },
+    {
+     "Name": "ThermostatProgrammingOperationMode",
+     "Id": 37
+    },
+    {
+     "Name": "ThermostatRunningState",
+     "Id": 41
+    },
+    {
+     "Name": "SetpointChangeSource",
+     "Id": 48
+    },
+    {
+     "Name": "SetpointChangeAmount",
+     "Id": 49
+    },
+    {
+     "Name": "SetpointChangeSourceTimestamp",
+     "Id": 50
+    },
+    {
+     "Name": "OccupiedSetback",
+     "Id": 52
+    },
+    {
+     "Name": "OccupiedSetbackMin",
+     "Id": 53
+    },
+    {
+     "Name": "OccupiedSetbackMax",
+     "Id": 54
+    },
+    {
+     "Name": "UnoccupiedSetback",
+     "Id": 55
+    },
+    {
+     "Name": "UnoccupiedSetbackMin",
+     "Id": 56
+    },
+    {
+     "Name": "UnoccupiedSetbackMax",
+     "Id": 57
+    },
+    {
+     "Name": "EmergencyHeatDelta",
+     "Id": 58
+    },
+    {
+     "Name": "ACType",
+     "Id": 64
+    },
+    {
+     "Name": "ACCapacity",
+     "Id": 65
+    },
+    {
+     "Name": "ACRefrigerantType",
+     "Id": 66
+    },
+    {
+     "Name": "ACCompressorType",
+     "Id": 67
+    },
+    {
+     "Name": "ACErrorCode",
+     "Id": 68
+    },
+    {
+     "Name": "ACLouverPosition",
+     "Id": 69
+    },
+    {
+     "Name": "ACCoilTemperature",
+     "Id": 70
+    },
+    {
+     "Name": "ACCapacityFormat",
+     "Id": 71
+    }
+   ]
+  },
+  "514": {
+   "Name": "FanControl",
+   "Id": 514,
+   "Commands": [
+    {
+     "Name": "Step",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "FanMode",
+     "Id": 0
+    },
+    {
+     "Name": "FanModeSequence",
+     "Id": 1
+    },
+    {
+     "Name": "PercentSetting",
+     "Id": 2
+    },
+    {
+     "Name": "PercentCurrent",
+     "Id": 3
+    },
+    {
+     "Name": "SpeedMax",
+     "Id": 4
+    },
+    {
+     "Name": "SpeedSetting",
+     "Id": 5
+    },
+    {
+     "Name": "SpeedCurrent",
+     "Id": 6
+    },
+    {
+     "Name": "RockSupport",
+     "Id": 7
+    },
+    {
+     "Name": "RockSetting",
+     "Id": 8
+    },
+    {
+     "Name": "WindSupport",
+     "Id": 9
+    },
+    {
+     "Name": "WindSetting",
+     "Id": 10
+    },
+    {
+     "Name": "AirflowDirection",
+     "Id": 11
+    }
+   ]
+  },
+  "516": {
+   "Name": "ThermostatUserInterfaceConfiguration",
+   "Id": 516,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "TemperatureDisplayMode",
+     "Id": 0
+    },
+    {
+     "Name": "KeypadLockout",
+     "Id": 1
+    },
+    {
+     "Name": "ScheduleProgrammingVisibility",
+     "Id": 2
+    }
+   ]
+  },
+  "52": {
+   "Name": "SoftwareDiagnostics",
+   "Id": 52,
+   "Commands": [
+    {
+     "Name": "ResetWatermarks",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "ThreadMetrics",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentHeapFree",
+     "Id": 1
+    },
+    {
+     "Name": "CurrentHeapUsed",
+     "Id": 2
+    },
+    {
+     "Name": "CurrentHeapHighWatermark",
+     "Id": 3
+    }
+   ]
+  },
+  "53": {
+   "Name": "ThreadNetworkDiagnostics",
+   "Id": 53,
+   "Commands": [
+    {
+     "Name": "ResetCounts",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "Channel",
+     "Id": 0
+    },
+    {
+     "Name": "RoutingRole",
+     "Id": 1
+    },
+    {
+     "Name": "NetworkName",
+     "Id": 2
+    },
+    {
+     "Name": "PanId",
+     "Id": 3
+    },
+    {
+     "Name": "ExtendedPanId",
+     "Id": 4
+    },
+    {
+     "Name": "MeshLocalPrefix",
+     "Id": 5
+    },
+    {
+     "Name": "OverrunCount",
+     "Id": 6
+    },
+    {
+     "Name": "NeighborTable",
+     "Id": 7
+    },
+    {
+     "Name": "RouteTable",
+     "Id": 8
+    },
+    {
+     "Name": "PartitionId",
+     "Id": 9
+    },
+    {
+     "Name": "Weighting",
+     "Id": 10
+    },
+    {
+     "Name": "DataVersion",
+     "Id": 11
+    },
+    {
+     "Name": "StableDataVersion",
+     "Id": 12
+    },
+    {
+     "Name": "LeaderRouterId",
+     "Id": 13
+    },
+    {
+     "Name": "DetachedRoleCount",
+     "Id": 14
+    },
+    {
+     "Name": "ChildRoleCount",
+     "Id": 15
+    },
+    {
+     "Name": "RouterRoleCount",
+     "Id": 16
+    },
+    {
+     "Name": "LeaderRoleCount",
+     "Id": 17
+    },
+    {
+     "Name": "AttachAttemptCount",
+     "Id": 18
+    },
+    {
+     "Name": "PartitionIdChangeCount",
+     "Id": 19
+    },
+    {
+     "Name": "BetterPartitionAttachAttemptCount",
+     "Id": 20
+    },
+    {
+     "Name": "ParentChangeCount",
+     "Id": 21
+    },
+    {
+     "Name": "TxTotalCount",
+     "Id": 22
+    },
+    {
+     "Name": "TxUnicastCount",
+     "Id": 23
+    },
+    {
+     "Name": "TxBroadcastCount",
+     "Id": 24
+    },
+    {
+     "Name": "TxAckRequestedCount",
+     "Id": 25
+    },
+    {
+     "Name": "TxAckedCount",
+     "Id": 26
+    },
+    {
+     "Name": "TxNoAckRequestedCount",
+     "Id": 27
+    },
+    {
+     "Name": "TxDataCount",
+     "Id": 28
+    },
+    {
+     "Name": "TxDataPollCount",
+     "Id": 29
+    },
+    {
+     "Name": "TxBeaconCount",
+     "Id": 30
+    },
+    {
+     "Name": "TxBeaconRequestCount",
+     "Id": 31
+    },
+    {
+     "Name": "TxOtherCount",
+     "Id": 32
+    },
+    {
+     "Name": "TxRetryCount",
+     "Id": 33
+    },
+    {
+     "Name": "TxDirectMaxRetryExpiryCount",
+     "Id": 34
+    },
+    {
+     "Name": "TxIndirectMaxRetryExpiryCount",
+     "Id": 35
+    },
+    {
+     "Name": "TxErrCcaCount",
+     "Id": 36
+    },
+    {
+     "Name": "TxErrAbortCount",
+     "Id": 37
+    },
+    {
+     "Name": "TxErrBusyChannelCount",
+     "Id": 38
+    },
+    {
+     "Name": "RxTotalCount",
+     "Id": 39
+    },
+    {
+     "Name": "RxUnicastCount",
+     "Id": 40
+    },
+    {
+     "Name": "RxBroadcastCount",
+     "Id": 41
+    },
+    {
+     "Name": "RxDataCount",
+     "Id": 42
+    },
+    {
+     "Name": "RxDataPollCount",
+     "Id": 43
+    },
+    {
+     "Name": "RxBeaconCount",
+     "Id": 44
+    },
+    {
+     "Name": "RxBeaconRequestCount",
+     "Id": 45
+    },
+    {
+     "Name": "RxOtherCount",
+     "Id": 46
+    },
+    {
+     "Name": "RxAddressFilteredCount",
+     "Id": 47
+    },
+    {
+     "Name": "RxDestAddrFilteredCount",
+     "Id": 48
+    },
+    {
+     "Name": "RxDuplicatedCount",
+     "Id": 49
+    },
+    {
+     "Name": "RxErrNoFrameCount",
+     "Id": 50
+    },
+    {
+     "Name": "RxErrUnknownNeighborCount",
+     "Id": 51
+    },
+    {
+     "Name": "RxErrInvalidSrcAddrCount",
+     "Id": 52
+    },
+    {
+     "Name": "RxErrSecCount",
+     "Id": 53
+    },
+    {
+     "Name": "RxErrFcsCount",
+     "Id": 54
+    },
+    {
+     "Name": "RxErrOtherCount",
+     "Id": 55
+    },
+    {
+     "Name": "ActiveTimestamp",
+     "Id": 56
+    },
+    {
+     "Name": "PendingTimestamp",
+     "Id": 57
+    },
+    {
+     "Name": "Delay",
+     "Id": 58
+    },
+    {
+     "Name": "SecurityPolicy",
+     "Id": 59
+    },
+    {
+     "Name": "ChannelPage0Mask",
+     "Id": 60
+    },
+    {
+     "Name": "OperationalDatasetComponents",
+     "Id": 61
+    },
+    {
+     "Name": "ActiveNetworkFaults",
+     "Id": 62
+    }
+   ]
+  },
+  "54": {
+   "Name": "WiFiNetworkDiagnostics",
+   "Id": 54,
+   "Commands": [
+    {
+     "Name": "ResetCounts",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "BSSID",
+     "Id": 0
+    },
+    {
+     "Name": "SecurityType",
+     "Id": 1
+    },
+    {
+     "Name": "WiFiVersion",
+     "Id": 2
+    },
+    {
+     "Name": "ChannelNumber",
+     "Id": 3
+    },
+    {
+     "Name": "RSSI",
+     "Id": 4
+    },
+    {
+     "Name": "BeaconLostCount",
+     "Id": 5
+    },
+    {
+     "Name": "BeaconRxCount",
+     "Id": 6
+    },
+    {
+     "Name": "PacketMulticastRxCount",
+     "Id": 7
+    },
+    {
+     "Name": "PacketMulticastTxCount",
+     "Id": 8
+    },
+    {
+     "Name": "PacketUnicastRxCount",
+     "Id": 9
+    },
+    {
+     "Name": "PacketUnicastTxCount",
+     "Id": 10
+    },
+    {
+     "Name": "CurrentMaxRate",
+     "Id": 11
+    },
+    {
+     "Name": "OverrunCount",
+     "Id": 12
+    }
+   ]
+  },
+  "55": {
+   "Name": "EthernetNetworkDiagnostics",
+   "Id": 55,
+   "Commands": [
+    {
+     "Name": "ResetCounts",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "PHYRate",
+     "Id": 0
+    },
+    {
+     "Name": "FullDuplex",
+     "Id": 1
+    },
+    {
+     "Name": "PacketRxCount",
+     "Id": 2
+    },
+    {
+     "Name": "PacketTxCount",
+     "Id": 3
+    },
+    {
+     "Name": "TxErrCount",
+     "Id": 4
+    },
+    {
+     "Name": "CollisionCount",
+     "Id": 5
+    },
+    {
+     "Name": "OverrunCount",
+     "Id": 6
+    },
+    {
+     "Name": "CarrierDetect",
+     "Id": 7
+    },
+    {
+     "Name": "TimeSinceReset",
+     "Id": 8
+    }
+   ]
+  },
+  "56": {
+   "Name": "TimeSync",
+   "Id": 56,
+   "Commands": null,
+   "Attributes": null
+  },
+  "57": {
+   "Name": "BridgedDeviceBasicInformation",
+   "Id": 57,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "DataModelRevision",
+     "Id": 0
+    },
+    {
+     "Name": "VendorName",
+     "Id": 1
+    },
+    {
+     "Name": "VendorID",
+     "Id": 2
+    },
+    {
+     "Name": "ProductName",
+     "Id": 3
+    },
+    {
+     "Name": "ProductID",
+     "Id": 4
+    },
+    {
+     "Name": "NodeLabel",
+     "Id": 5
+    },
+    {
+     "Name": "Location",
+     "Id": 6
+    },
+    {
+     "Name": "HardwareVersion",
+     "Id": 7
+    },
+    {
+     "Name": "HardwareVersionString",
+     "Id": 8
+    },
+    {
+     "Name": "SoftwareVersion",
+     "Id": 9
+    },
+    {
+     "Name": "SoftwareVersionString",
+     "Id": 10
+    },
+    {
+     "Name": "ManufacturingDate",
+     "Id": 11
+    },
+    {
+     "Name": "PartNumber",
+     "Id": 12
+    },
+    {
+     "Name": "ProductURL",
+     "Id": 13
+    },
+    {
+     "Name": "ProductLabel",
+     "Id": 14
+    },
+    {
+     "Name": "SerialNumber",
+     "Id": 15
+    },
+    {
+     "Name": "LocalConfigDisabled",
+     "Id": 16
+    },
+    {
+     "Name": "Reachable",
+     "Id": 17
+    },
+    {
+     "Name": "UniqueID",
+     "Id": 18
+    },
+    {
+     "Name": "CapabilityMinima",
+     "Id": 19
+    },
+    {
+     "Name": "ProductAppearance",
+     "Id": 20
+    },
+    {
+     "Name": "SpecificationVersion",
+     "Id": 21
+    },
+    {
+     "Name": "MaxPathsPerInvoke",
+     "Id": 22
+    }
+   ]
+  },
+  "59": {
+   "Name": "Switch",
+   "Id": 59,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "NumberOfPositions",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentPosition",
+     "Id": 1
+    },
+    {
+     "Name": "MultiPressMax",
+     "Id": 2
+    }
+   ]
+  },
+  "6": {
+   "Name": "OnOff",
+   "Id": 6,
+   "Commands": [
+    {
+     "Name": "Off",
+     "Id": 0
+    },
+    {
+     "Name": "On",
+     "Id": 1
+    },
+    {
+     "Name": "Toggle",
+     "Id": 2
+    },
+    {
+     "Name": "OffWithEffect",
+     "Id": 64
+    },
+    {
+     "Name": "OnWithRecallGlobalScene",
+     "Id": 65
+    },
+    {
+     "Name": "OnWithTimedOff",
+     "Id": 66
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "OnOff",
+     "Id": 0
+    },
+    {
+     "Name": "GlobalSceneControl",
+     "Id": 16384
+    },
+    {
+     "Name": "OnTime",
+     "Id": 16385
+    },
+    {
+     "Name": "OffWaitTime",
+     "Id": 16386
+    },
+    {
+     "Name": "StartUpOnOff",
+     "Id": 16387
+    }
+   ]
+  },
+  "60": {
+   "Name": "AdministratorCommissioning",
+   "Id": 60,
+   "Commands": [
+    {
+     "Name": "OpenCommissioningWindow",
+     "Id": 0
+    },
+    {
+     "Name": "OpenBasicCommissioningWindow",
+     "Id": 1
+    },
+    {
+     "Name": "RevokeCommissioning",
+     "Id": 2
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "WindowStatus",
+     "Id": 0
+    },
+    {
+     "Name": "AdminFabricIndex",
+     "Id": 1
+    },
+    {
+     "Name": "AdminVendorId",
+     "Id": 2
+    }
+   ]
+  },
+  "62": {
+   "Name": "OperationalCredentials",
+   "Id": 62,
+   "Commands": [
+    {
+     "Name": "AttestationRequest",
+     "Id": 0
+    },
+    {
+     "Name": "AttestationResponse",
+     "Id": 1
+    },
+    {
+     "Name": "CertificateChainRequest",
+     "Id": 2
+    },
+    {
+     "Name": "CertificateChainResponse",
+     "Id": 3
+    },
+    {
+     "Name": "CSRRequest",
+     "Id": 4
+    },
+    {
+     "Name": "CSRResponse",
+     "Id": 5
+    },
+    {
+     "Name": "AddNOC",
+     "Id": 6
+    },
+    {
+     "Name": "UpdateNOC",
+     "Id": 7
+    },
+    {
+     "Name": "NOCResponse",
+     "Id": 8
+    },
+    {
+     "Name": "UpdateFabricLabel",
+     "Id": 9
+    },
+    {
+     "Name": "RemoveFabric",
+     "Id": 10
+    },
+    {
+     "Name": "AddTrustedRootCertificate",
+     "Id": 11
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "NOCs",
+     "Id": 0
+    },
+    {
+     "Name": "Fabrics",
+     "Id": 1
+    },
+    {
+     "Name": "SupportedFabrics",
+     "Id": 2
+    },
+    {
+     "Name": "CommissionedFabrics",
+     "Id": 3
+    },
+    {
+     "Name": "TrustedRootCertificates",
+     "Id": 4
+    },
+    {
+     "Name": "CurrentFabricIndex",
+     "Id": 5
+    }
+   ]
+  },
+  "63": {
+   "Name": "GroupKeyManagement",
+   "Id": 63,
+   "Commands": [
+    {
+     "Name": "KeySetWriteCommand",
+     "Id": 0
+    },
+    {
+     "Name": "KeySetReadCommand",
+     "Id": 1
+    },
+    {
+     "Name": "KeySetReadResponseCommand",
+     "Id": 2
+    },
+    {
+     "Name": "KeySetRemoveCommand",
+     "Id": 3
+    },
+    {
+     "Name": "KeySetReadAllIndicesCommand",
+     "Id": 4
+    },
+    {
+     "Name": "KeySetReadAllIndicesResponseCommand",
+     "Id": 5
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "GroupKeyMap",
+     "Id": 0
+    },
+    {
+     "Name": "GroupTable",
+     "Id": 1
+    },
+    {
+     "Name": "MaxGroupsPerFabric",
+     "Id": 2
+    },
+    {
+     "Name": "MaxGroupKeysPerFabric",
+     "Id": 3
+    }
+   ]
+  },
+  "64": {
+   "Name": "FixedLabel",
+   "Id": 64,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "LabelList",
+     "Id": 0
+    }
+   ]
+  },
+  "65": {
+   "Name": "UserLabel",
+   "Id": 65,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "LabelList",
+     "Id": 0
+    }
+   ]
+  },
+  "69": {
+   "Name": "BooleanState",
+   "Id": 69,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "StateValue",
+     "Id": 0
+    }
+   ]
+  },
+  "71": {
+   "Name": "Timer",
+   "Id": 71,
+   "Commands": [
+    {
+     "Name": "SetTimer",
+     "Id": 0
+    },
+    {
+     "Name": "ResetTimer",
+     "Id": 1
+    },
+    {
+     "Name": "AddTime",
+     "Id": 2
+    },
+    {
+     "Name": "ReduceTime",
+     "Id": 3
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "SetTime",
+     "Id": 0
+    },
+    {
+     "Name": "TimeRemaining",
+     "Id": 1
+    },
+    {
+     "Name": "TimerState",
+     "Id": 2
+    }
+   ]
+  },
+  "72": {
+   "Name": "OvenCavityOperationalState",
+   "Id": 72,
+   "Commands": null,
+   "Attributes": null
+  },
+  "73": {
+   "Name": "OvenMode",
+   "Id": 73,
+   "Commands": null,
+   "Attributes": null
+  },
+  "74": {
+   "Name": "LaundryDryerControls",
+   "Id": 74,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "SupportedDrynessLevels",
+     "Id": 0
+    },
+    {
+     "Name": "SelectedDrynessLevel",
+     "Id": 1
+    }
+   ]
+  },
+  "768": {
+   "Name": "ColorControl",
+   "Id": 768,
+   "Commands": [
+    {
+     "Name": "MoveToHue",
+     "Id": 0
+    },
+    {
+     "Name": "MoveHue",
+     "Id": 1
+    },
+    {
+     "Name": "StepHue",
+     "Id": 2
+    },
+    {
+     "Name": "MoveToSaturation",
+     "Id": 3
+    },
+    {
+     "Name": "MoveSaturation",
+     "Id": 4
+    },
+    {
+     "Name": "StepSaturation",
+     "Id": 5
+    },
+    {
+     "Name": "MoveToHueAndSaturation",
+     "Id": 6
+    },
+    {
+     "Name": "MoveToColor",
+     "Id": 7
+    },
+    {
+     "Name": "MoveColor",
+     "Id": 8
+    },
+    {
+     "Name": "StepColor",
+     "Id": 9
+    },
+    {
+     "Name": "MoveToColorTemperature",
+     "Id": 10
+    },
+    {
+     "Name": "EnhancedMoveToHue",
+     "Id": 64
+    },
+    {
+     "Name": "EnhancedMoveHue",
+     "Id": 65
+    },
+    {
+     "Name": "EnhancedStepHue",
+     "Id": 66
+    },
+    {
+     "Name": "EnhancedMoveToHueAndSaturation",
+     "Id": 67
+    },
+    {
+     "Name": "ColorLoopSet",
+     "Id": 68
+    },
+    {
+     "Name": "StopMoveStep",
+     "Id": 71
+    },
+    {
+     "Name": "MoveColorTemperature",
+     "Id": 75
+    },
+    {
+     "Name": "StepColorTemperature",
+     "Id": 76
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "CurrentHue",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentSaturation",
+     "Id": 1
+    },
+    {
+     "Name": "RemainingTime",
+     "Id": 2
+    },
+    {
+     "Name": "CurrentX",
+     "Id": 3
+    },
+    {
+     "Name": "CurrentY",
+     "Id": 4
+    },
+    {
+     "Name": "DriftCompensation",
+     "Id": 5
+    },
+    {
+     "Name": "CompensationText",
+     "Id": 6
+    },
+    {
+     "Name": "ColorTemperatureMireds",
+     "Id": 7
+    },
+    {
+     "Name": "ColorMode",
+     "Id": 8
+    },
+    {
+     "Name": "Options",
+     "Id": 15
+    },
+    {
+     "Name": "NumberOfPrimaries",
+     "Id": 16
+    },
+    {
+     "Name": "Primary1X",
+     "Id": 17
+    },
+    {
+     "Name": "Primary1Y",
+     "Id": 18
+    },
+    {
+     "Name": "Primary1Intensity",
+     "Id": 19
+    },
+    {
+     "Name": "Primary2X",
+     "Id": 21
+    },
+    {
+     "Name": "Primary2Y",
+     "Id": 22
+    },
+    {
+     "Name": "Primary2Intensity",
+     "Id": 23
+    },
+    {
+     "Name": "Primary3X",
+     "Id": 25
+    },
+    {
+     "Name": "Primary3Y",
+     "Id": 26
+    },
+    {
+     "Name": "Primary3Intensity",
+     "Id": 27
+    },
+    {
+     "Name": "Primary4X",
+     "Id": 32
+    },
+    {
+     "Name": "Primary4Y",
+     "Id": 33
+    },
+    {
+     "Name": "Primary4Intensity",
+     "Id": 34
+    },
+    {
+     "Name": "Primary5X",
+     "Id": 36
+    },
+    {
+     "Name": "Primary5Y",
+     "Id": 37
+    },
+    {
+     "Name": "Primary5Intensity",
+     "Id": 38
+    },
+    {
+     "Name": "Primary6X",
+     "Id": 40
+    },
+    {
+     "Name": "Primary6Y",
+     "Id": 41
+    },
+    {
+     "Name": "Primary6Intensity",
+     "Id": 42
+    },
+    {
+     "Name": "WhitePointX",
+     "Id": 48
+    },
+    {
+     "Name": "WhitePointY",
+     "Id": 49
+    },
+    {
+     "Name": "ColorPointRX",
+     "Id": 50
+    },
+    {
+     "Name": "ColorPointRY",
+     "Id": 51
+    },
+    {
+     "Name": "ColorPointRIntensity",
+     "Id": 52
+    },
+    {
+     "Name": "ColorPointGX",
+     "Id": 54
+    },
+    {
+     "Name": "ColorPointGY",
+     "Id": 55
+    },
+    {
+     "Name": "ColorPointGIntensity",
+     "Id": 56
+    },
+    {
+     "Name": "ColorPointBX",
+     "Id": 58
+    },
+    {
+     "Name": "ColorPointBY",
+     "Id": 59
+    },
+    {
+     "Name": "ColorPointBIntensity",
+     "Id": 60
+    },
+    {
+     "Name": "EnhancedCurrentHue",
+     "Id": 16384
+    },
+    {
+     "Name": "EnhancedColorMode",
+     "Id": 16385
+    },
+    {
+     "Name": "ColorLoopActive",
+     "Id": 16386
+    },
+    {
+     "Name": "ColorLoopDirection",
+     "Id": 16387
+    },
+    {
+     "Name": "ColorLoopTime",
+     "Id": 16388
+    },
+    {
+     "Name": "ColorLoopStartEnhancedHue",
+     "Id": 16389
+    },
+    {
+     "Name": "ColorLoopStoredEnhancedHue",
+     "Id": 16390
+    },
+    {
+     "Name": "ColorCapabilities",
+     "Id": 16394
+    },
+    {
+     "Name": "ColorTempPhysicalMinMireds",
+     "Id": 16395
+    },
+    {
+     "Name": "ColorTempPhysicalMaxMireds",
+     "Id": 16396
+    },
+    {
+     "Name": "CoupleColorTempToLevelMinMireds",
+     "Id": 16397
+    },
+    {
+     "Name": "StartUpColorTemperatureMireds",
+     "Id": 16400
+    }
+   ]
+  },
+  "769": {
+   "Name": "BallastConfiguration",
+   "Id": 769,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "PhysicalMinLevel",
+     "Id": 0
+    },
+    {
+     "Name": "PhysicalMaxLevel",
+     "Id": 1
+    },
+    {
+     "Name": "BallastStatus",
+     "Id": 2
+    },
+    {
+     "Name": "MinLevel",
+     "Id": 16
+    },
+    {
+     "Name": "MaxLevel",
+     "Id": 17
+    },
+    {
+     "Name": "PowerOnLevel",
+     "Id": 18
+    },
+    {
+     "Name": "PowerOnFadeTime",
+     "Id": 19
+    },
+    {
+     "Name": "IntrinsicBallastFactor",
+     "Id": 20
+    },
+    {
+     "Name": "BallastFactorAdjustment",
+     "Id": 21
+    },
+    {
+     "Name": "LampQuantity",
+     "Id": 32
+    },
+    {
+     "Name": "LampType",
+     "Id": 48
+    },
+    {
+     "Name": "LampManufacturer",
+     "Id": 49
+    },
+    {
+     "Name": "LampRatedHours",
+     "Id": 50
+    },
+    {
+     "Name": "LampBurnHours",
+     "Id": 51
+    },
+    {
+     "Name": "LampAlarmMode",
+     "Id": 52
+    },
+    {
+     "Name": "LampBurnHoursTripPoint",
+     "Id": 53
+    }
+   ]
+  },
+  "8": {
+   "Name": "LevelControl",
+   "Id": 8,
+   "Commands": [
+    {
+     "Name": "MoveToLevel",
+     "Id": 0
+    },
+    {
+     "Name": "Move",
+     "Id": 1
+    },
+    {
+     "Name": "Step",
+     "Id": 2
+    },
+    {
+     "Name": "Stop",
+     "Id": 3
+    },
+    {
+     "Name": "MoveToLevelWithOnOff",
+     "Id": 4
+    },
+    {
+     "Name": "MoveWithOnOff",
+     "Id": 5
+    },
+    {
+     "Name": "StepWithOnOff",
+     "Id": 6
+    },
+    {
+     "Name": "StopWithOnOff",
+     "Id": 7
+    },
+    {
+     "Name": "MoveToClosestFrequency",
+     "Id": 8
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "CurrentLevel",
+     "Id": 0
+    },
+    {
+     "Name": "RemainingTime",
+     "Id": 1
+    },
+    {
+     "Name": "MinLevel",
+     "Id": 2
+    },
+    {
+     "Name": "MaxLevel",
+     "Id": 3
+    },
+    {
+     "Name": "CurrentFrequency",
+     "Id": 4
+    },
+    {
+     "Name": "MinFrequency",
+     "Id": 5
+    },
+    {
+     "Name": "MaxFrequency",
+     "Id": 6
+    },
+    {
+     "Name": "Options",
+     "Id": 15
+    },
+    {
+     "Name": "OnOffTransitionTime",
+     "Id": 16
+    },
+    {
+     "Name": "OnLevel",
+     "Id": 17
+    },
+    {
+     "Name": "OnTransitionTime",
+     "Id": 18
+    },
+    {
+     "Name": "OffTransitionTime",
+     "Id": 19
+    },
+    {
+     "Name": "DefaultMoveRate",
+     "Id": 20
+    },
+    {
+     "Name": "StartUpCurrentLevel",
+     "Id": 16384
+    }
+   ]
+  },
+  "80": {
+   "Name": "ModeSelect",
+   "Id": 80,
+   "Commands": [
+    {
+     "Name": "ChangeToMode",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "Description",
+     "Id": 0
+    },
+    {
+     "Name": "StandardNamespace",
+     "Id": 1
+    },
+    {
+     "Name": "SupportedModes",
+     "Id": 2
+    },
+    {
+     "Name": "CurrentMode",
+     "Id": 3
+    },
+    {
+     "Name": "StartUpMode",
+     "Id": 4
+    },
+    {
+     "Name": "OnMode",
+     "Id": 5
+    }
+   ]
+  },
+  "81": {
+   "Name": "LaundryWasherMode",
+   "Id": 81,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "SupportedModes",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentMode",
+     "Id": 1
+    },
+    {
+     "Name": "StartUpMode",
+     "Id": 2
+    },
+    {
+     "Name": "OnMode",
+     "Id": 3
+    }
+   ]
+  },
+  "82": {
+   "Name": "RefrigeratorAndTemperatureControlledCabinetMode",
+   "Id": 82,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "SupportedModes",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentMode",
+     "Id": 1
+    },
+    {
+     "Name": "StartUpMode",
+     "Id": 2
+    },
+    {
+     "Name": "OnMode",
+     "Id": 3
+    }
+   ]
+  },
+  "83": {
+   "Name": "LaundryWasherControls",
+   "Id": 83,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "SpinSpeeds",
+     "Id": 0
+    },
+    {
+     "Name": "SpinSpeedCurrent",
+     "Id": 1
+    },
+    {
+     "Name": "NumberOfRinses",
+     "Id": 2
+    },
+    {
+     "Name": "SupportedRinses",
+     "Id": 3
+    }
+   ]
+  },
+  "84": {
+   "Name": "RVCRunMode",
+   "Id": 84,
+   "Commands": null,
+   "Attributes": null
+  },
+  "85": {
+   "Name": "RVCCleanMode",
+   "Id": 85,
+   "Commands": null,
+   "Attributes": null
+  },
+  "86": {
+   "Name": "TemperatureControl",
+   "Id": 86,
+   "Commands": [
+    {
+     "Name": "SetTemperature",
+     "Id": 0
+    }
+   ],
+   "Attributes": null
+  },
+  "87": {
+   "Name": "RefrigeratorAlarm",
+   "Id": 87,
+   "Commands": [
+    {
+     "Name": "ModifyEnabledAlarms",
+     "Id": 1
+    }
+   ],
+   "Attributes": null
+  },
+  "89": {
+   "Name": "DishwasherMode",
+   "Id": 89,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "SupportedModes",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentMode",
+     "Id": 1
+    },
+    {
+     "Name": "StartUpMode",
+     "Id": 2
+    },
+    {
+     "Name": "OnMode",
+     "Id": 3
+    }
+   ]
+  },
+  "91": {
+   "Name": "AirQuality",
+   "Id": 91,
+   "Commands": null,
+   "Attributes": [
+    {
+     "Name": "AirQuality",
+     "Id": 0
+    }
+   ]
+  },
+  "92": {
+   "Name": "SmokeCOAlarm",
+   "Id": 92,
+   "Commands": [
+    {
+     "Name": "SelfTestRequest",
+     "Id": 0
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "ExpressedState",
+     "Id": 0
+    },
+    {
+     "Name": "SmokeState",
+     "Id": 1
+    },
+    {
+     "Name": "COState",
+     "Id": 2
+    },
+    {
+     "Name": "BatteryAlert",
+     "Id": 3
+    },
+    {
+     "Name": "DeviceMuted",
+     "Id": 4
+    },
+    {
+     "Name": "TestInProgress",
+     "Id": 5
+    },
+    {
+     "Name": "HardwareFaultAlert",
+     "Id": 6
+    },
+    {
+     "Name": "EndOfServiceAlert",
+     "Id": 7
+    },
+    {
+     "Name": "InterconnectSmokeAlarm",
+     "Id": 8
+    },
+    {
+     "Name": "InterconnectCOAlarm",
+     "Id": 9
+    },
+    {
+     "Name": "ContaminationState",
+     "Id": 10
+    },
+    {
+     "Name": "SmokeSensitivityLevel",
+     "Id": 11
+    },
+    {
+     "Name": "ExpiryDate",
+     "Id": 12
+    }
+   ]
+  },
+  "93": {
+   "Name": "DishwasherAlarm",
+   "Id": 93,
+   "Commands": null,
+   "Attributes": null
+  },
+  "94": {
+   "Name": "MicrowaveOvenMode",
+   "Id": 94,
+   "Commands": [
+    {
+     "Name": "ChangeToMode",
+     "Id": 0
+    },
+    {
+     "Name": "ChangeToModeResponse",
+     "Id": 1
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "SupportedModes",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentMode",
+     "Id": 1
+    },
+    {
+     "Name": "StartUpMode",
+     "Id": 2
+    },
+    {
+     "Name": "OnMode",
+     "Id": 3
+    }
+   ]
+  },
+  "96": {
+   "Name": "OperationalState",
+   "Id": 96,
+   "Commands": [
+    {
+     "Name": "Pause",
+     "Id": 0
+    },
+    {
+     "Name": "Stop",
+     "Id": 1
+    },
+    {
+     "Name": "Start",
+     "Id": 2
+    },
+    {
+     "Name": "Resume",
+     "Id": 3
+    },
+    {
+     "Name": "OperationalCommandResponse",
+     "Id": 4
+    }
+   ],
+   "Attributes": [
+    {
+     "Name": "PhaseList",
+     "Id": 0
+    },
+    {
+     "Name": "CurrentPhase",
+     "Id": 1
+    },
+    {
+     "Name": "CountdownTime",
+     "Id": 2
+    },
+    {
+     "Name": "OperationalStateList",
+     "Id": 3
+    },
+    {
+     "Name": "OperationalState",
+     "Id": 4
+    },
+    {
+     "Name": "OperationalError",
+     "Id": 5
+    }
+   ]
+  },
+  "97": {
+   "Name": "RVCOperationalState",
+   "Id": 97,
+   "Commands": null,
+   "Attributes": null
+  }
+ }
+}

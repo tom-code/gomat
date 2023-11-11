@@ -1,3 +1,4 @@
 *.pem
 tmp
 main
+symbols/xml

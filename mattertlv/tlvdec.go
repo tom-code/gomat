@@ -27,6 +27,19 @@ type TlvItem struct {
 	valueList        []TlvItem
 }
 
+func (i TlvItem) GetChild() []TlvItem {
+	return i.valueList
+}
+
+func (i TlvItem) GetItemWithTag(tag int) *TlvItem {
+	for n, item := range i.valueList {
+		if item.Tag == tag {
+			return &i.valueList[n]
+		}
+	}
+	return nil
+}
+
 func (i TlvItem) GetInt() int {
 	return int(i.valueInt)
 }
@@ -58,6 +71,38 @@ func (i TlvItem) Dump(pad int) {
 		fmt.Printf("struct:\n")
 		for _, ii := range i.valueList {
 			ii.Dump(pad + 2)
+		}
+		//fmt.Println()
+	default:
+		fmt.Printf("unknown %d\n", i.Type)
+	}
+}
+
+func (i TlvItem) DumpWithDict(pad int, path string, dictionary map[string]string) {
+	path_me := fmt.Sprintf("%s.%d", path, i.Tag)
+	pads := strings.Repeat(" ", pad)
+	//fmt.Printf("path %s\n", path_me)
+	fmt.Printf(pads)
+	name, ok := dictionary[path_me]
+	if !ok {
+		name = fmt.Sprintf("%d", i.Tag)
+	}
+	fmt.Printf("%s ", name)
+	switch i.Type {
+	case TypeNull:
+		fmt.Printf("null\n")
+	case TypeInt:
+		fmt.Printf("%d\n", i.valueInt)
+	case TypeBool:
+		fmt.Printf("%v\n", i.valueBool)
+	case TypeUTF8String:
+		fmt.Printf("%s\n", i.valueString)
+	case TypeOctetString:
+		fmt.Printf("%s\n", hex.EncodeToString(i.valueOctetString))
+	case TypeList:
+		fmt.Printf("\n")
+		for _, ii := range i.valueList {
+			ii.DumpWithDict(pad + 2, path_me, dictionary)
 		}
 		//fmt.Println()
 	default:
