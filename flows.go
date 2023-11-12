@@ -108,7 +108,8 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	if err != nil {
 		return SecureChannel{}, err
 	}
-	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == 0) && (sigma_context.sigma2dec.ProtocolHeader.Opcode == 0x40) {
+	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == PROTOCOL_ID_SECURE_CHANNEL) &&
+		(sigma_context.sigma2dec.ProtocolHeader.Opcode == SEC_CHAN_OPCODE_STATUS_REP) {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.StatusReport.GeneralCode,
 			sigma_context.sigma2dec.StatusReport.ProtocolCode)
 	}
@@ -132,8 +133,18 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	}
 	secure_channel.Send(to_send)
 
-	/*respx :=*/
-	secure_channel.Receive()
+	sigma_result, err := secure_channel.Receive()
+	if err != nil {
+		return SecureChannel{}, err
+	}
+	if sigma_result.ProtocolHeader.Opcode != SEC_CHAN_OPCODE_STATUS_REP {
+		return SecureChannel{}, fmt.Errorf("unexpected message (opcode:0x%x)", sigma_result.ProtocolHeader.Opcode)
+	}
+	if !sigma_result.StatusReport.IsOk() {
+		return SecureChannel{}, fmt.Errorf("sigma result is not ok %d %d %d",
+			sigma_result.StatusReport.GeneralCode,
+			sigma_result.StatusReport.ProtocolId, sigma_result.StatusReport.ProtocolCode)
+	}
 
 	secure_channel.decrypt_key = sigma_context.r2ikey
 	secure_channel.encrypt_key = sigma_context.i2rkey
@@ -171,6 +182,9 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	}
 
 	nocsr := csr_resp.Tlv.GetOctetStringRec([]int{1, 0, 0, 1, 0})
+	if len(nocsr) == 0 {
+		return fmt.Errorf("no csr not received")
+	}
 	tlv2 := mattertlv.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
 	csrp, err := x509.ParseCertificateRequest(csr)

@@ -8,10 +8,6 @@ Simple matter protocol implementation
 - it can commission devices and send commands to them
 - commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
 
-### TODO
-- event subscriptions
-- better handling of names cluster/commands/attribute - support human readable names rather than raw numbers
-  - https://github.com/project-chip/connectedhomeip/tree/master/data_model/clusters
 
 #### tested devices
 - tested against virtual devices which are part of reference implementation https://github.com/project-chip/connectedhomeip
@@ -21,7 +17,7 @@ Simple matter protocol implementation
 
 ### general info
 - it is best to understand matter to use this, but here is most important info:
-  - device ownership is managed using certificates
+  - device access is managed using certificates
   - easiest way how to talk to device is to have signed certificate of device admin user (alternative is setup ACLs and use non-admin user)
   - certificates are signed by CA
   - during commissioning procedure root CA certificate is pushed to device together with id of device admin user

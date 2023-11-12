@@ -247,6 +247,19 @@ func (sr StatusReportElements) Dump() {
 	fmt.Printf("  protocol code: %d\n", sr.ProtocolCode)
 }
 
+func (sr StatusReportElements) IsOk() bool {
+	if sr.GeneralCode != 0 {
+		return false
+	}
+	if sr.ProtocolId != 0 {
+		return false
+	}
+	if sr.ProtocolCode != 0 {
+		return false
+	}
+	return true
+}
+
 type DecodedGeneric struct {
 	MessageHeader  MessageHeader
 	ProtocolHeader ProtocolMessageHeader
@@ -273,25 +286,25 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 
 func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload []byte, timed bool, exchange uint16) []byte {
 
-	var tlvx mattertlv.TLVBuffer
-	tlvx.WriteAnonStruct()
-	tlvx.WriteBool(0, false)
-	tlvx.WriteBool(1, timed)
-	tlvx.WriteArray(2)
-	tlvx.WriteAnonStruct()
-	tlvx.WriteList(0)
-	tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
-	tlvx.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
-	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteStruct(1)
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteBool(0, false)
+	tlv.WriteBool(1, timed)
+	tlv.WriteArray(2)
+	tlv.WriteAnonStruct()
+	tlv.WriteList(0)
+	tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
+	tlv.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
+	tlv.WriteAnonStructEnd()
+	tlv.WriteStruct(1)
 	//tlv.writeOctetString(0, payload)
-	tlvx.WriteRaw(payload)
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlvx.WriteAnonStructEnd()
+	tlv.WriteRaw(payload)
+	tlv.WriteAnonStructEnd()
+	tlv.WriteAnonStructEnd()
+	tlv.WriteAnonStructEnd()
+	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -301,25 +314,25 @@ func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload 
 		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
-	buffer.Write(tlvx.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }
 
 func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
 
-	var tlvx mattertlv.TLVBuffer
-	tlvx.WriteAnonStruct()
-	tlvx.WriteArray(0)
-	tlvx.WriteAnonList()
-	tlvx.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(endpoint))
-	tlvx.WriteUInt(3, mattertlv.TYPE_UINT_2, uint64(cluster))
-	tlvx.WriteUInt(4, mattertlv.TYPE_UINT_1, uint64(attr))
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteBool(3, true)
-	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlvx.WriteAnonStructEnd()
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteArray(0)
+	tlv.WriteAnonList()
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(endpoint))
+	tlv.WriteUInt(3, mattertlv.TYPE_UINT_2, uint64(cluster))
+	tlv.WriteUInt(4, mattertlv.TYPE_UINT_1, uint64(attr))
+	tlv.WriteAnonStructEnd()
+	tlv.WriteAnonStructEnd()
+	tlv.WriteBool(3, true)
+	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 
@@ -330,35 +343,35 @@ func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
 		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 	prot.Encode(&buffer)
-	buffer.Write(tlvx.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }
 
 func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte {
 
-	var tlvx mattertlv.TLVBuffer
-	tlvx.WriteAnonStruct()
-	tlvx.WriteBool(0, false) // keep
-	tlvx.WriteUInt16(1, 10)  // min interval
-	tlvx.WriteUInt16(2, 50)  // max interval
-	tlvx.WriteArray(4)
-	tlvx.WriteAnonList()
-	tlvx.WriteUInt8(1, endpoint)
-	tlvx.WriteUInt16(2, cluster)
-	tlvx.WriteUInt8(3, event)
-	tlvx.WriteBool(4, true) // urgent
-	tlvx.WriteAnonStructEnd()
-	tlvx.WriteAnonStructEnd()
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteBool(0, false) // keep
+	tlv.WriteUInt16(1, 10)  // min interval
+	tlv.WriteUInt16(2, 50)  // max interval
+	tlv.WriteArray(4)
+	tlv.WriteAnonList()
+	tlv.WriteUInt8(1, endpoint)
+	tlv.WriteUInt16(2, cluster)
+	tlv.WriteUInt8(3, event)
+	tlv.WriteBool(4, true) // urgent
+	tlv.WriteAnonStructEnd()
+	tlv.WriteAnonStructEnd()
 	/*tlvx.WriteArray(5)
 		tlvx.WriteAnonStruct()
 				tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100))
 				tlvx.WriteUInt(1, mattertlv.TYPE_UINT_1, uint64(0))
 		tlvx.WriteAnonStructEnd()
 	tlvx.WriteAnonStructEnd()*/
-	tlvx.WriteBool(7, false) // fabric filtered
-	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlvx.WriteAnonStructEnd()
+	tlv.WriteBool(7, false) // fabric filtered
+	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -369,38 +382,38 @@ func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte 
 	}
 
 	prot.Encode(&buffer)
-	buffer.Write(tlvx.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }
 
-func EncodeIMTimedRequest() []byte {
-
-	var tlvx mattertlv.TLVBuffer
-	tlvx.WriteAnonStruct()
-	tlvx.WriteUInt16(0, 6000)
-	tlvx.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlvx.WriteAnonStructEnd()
+func EncodeIMTimedRequest(exchange uint16, timeout uint16) []byte {
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteUInt16(0, timeout)
+	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
+	tlv.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_TIMED_REQ,
-		ExchangeId:    0,
+		ExchangeId:    exchange,
 		ProtocolId:    PROTOCOL_ID_INTERACTION,
 	}
 
 	prot.Encode(&buffer)
-	buffer.Write(tlvx.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
 }
 
+// EncodeIMStatusResponse encodes success IM InvokeResponse
 func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
-	var tlvx mattertlv.TLVBuffer
-	tlvx.WriteAnonStruct()
-	tlvx.WriteUInt8(0, 0)
-	tlvx.WriteAnonStructEnd()
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteAnonStruct()
+	tlv.WriteUInt8(0, 0)
+	tlv.WriteAnonStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -411,7 +424,26 @@ func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
 	}
 	prot.Encode(&buffer)
 
-	buffer.Write(tlvx.Bytes())
+	buffer.Write(tlv.Bytes())
 
 	return buffer.Bytes()
+}
+
+// ParseImInvokeResponse parses IM InvokeResponse TLV
+//   - returns 0 when success
+//   - returns -1 when parsing did fail
+//   - returned number > 0 is ClusterStatus code
+func ParseImInvokeResponse(resp *mattertlv.TlvItem) int {
+	common_status := resp.GetItemRec([]int{1, 0, 1, 1, 0})
+	if common_status == nil {
+		return -1
+	}
+	if common_status.GetInt() == 0 {
+		return 0
+	}
+	cluster_status := resp.GetItemRec([]int{1, 0, 1, 1, 1})
+	if cluster_status == nil {
+		return -1
+	}
+	return cluster_status.GetInt()
 }

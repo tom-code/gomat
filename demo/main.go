@@ -251,7 +251,6 @@ func command_get_logs(cmd *cobra.Command, args []string) {
 }
 
 func command_open_commissioning(cmd *cobra.Command, args []string) {
-
 	pin, err := strconv.ParseInt(args[0], 0, 16)
 	if err != nil {
 		panic(err)
@@ -273,24 +272,35 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 	data := sctx.W0
 	data = append(data, sctx.L.As_bytes()...)
 
-	log.Println(len(data))
-
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteUInt8(0, 240)                 // timeout
-	tlv.WriteOctetString(1, data)          //pake
+	tlv.WriteOctetString(1, data)          // pake
 	tlv.WriteUInt16(2, 1000)               // discrimantor
 	tlv.WriteUInt32(3, uint32(iterations)) // iterations
 	tlv.WriteOctetString(4, salt)          // salt
 
-	to_send := gomat.EncodeIMTimedRequest()
+	var exchange uint16 = uint16(rand.Intn(0xffff))
+	to_send := gomat.EncodeIMTimedRequest(exchange, 6000)
 	channel.Send(to_send)
 	resp, err := channel.Receive()
 	if err != nil {
 		panic(err)
 	}
-	resp.Tlv.Dump(1)
+	if resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_STATUS_RSP {
+		status := resp.Tlv.GetItemWithTag(0)
+		if status != nil {
+			if status.GetInt() != 0 {
+				panic(fmt.Sprintf("TimedRequest failed with status: %d\n", status.GetInt()))
+			}
+		} else {
+			log.Printf("TimedRequest status parse failed %v\n", resp.Payload)
+		}
+	} else {
+		resp.ProtocolHeader.Dump()
+		panic("unexpected opcode")
+	}
 
-	to_send = gomat.EncodeIMInvokeRequest(0, symbols.CLUSTER_ID_AdministratorCommissioning, symbols.COMMAND_ID_AdministratorCommissioning_OpenCommissioningWindow, tlv.Bytes(), true, 0)
+	to_send = gomat.EncodeIMInvokeRequest(0, symbols.CLUSTER_ID_AdministratorCommissioning, symbols.COMMAND_ID_AdministratorCommissioning_OpenCommissioningWindow, tlv.Bytes(), true, exchange)
 	channel.Send(to_send)
 
 	resp, err = channel.Receive()
@@ -298,13 +308,23 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	resp.ProtocolHeader.Dump()
-	resp.StatusReport.Dump()
 	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
 		panic("did not receive report data message")
 	}
 
-	resp.Tlv.Dump(1)
+	final_result := gomat.ParseImInvokeResponse(&resp.Tlv)
+	switch final_result {
+	case 0:
+		log.Println("open commissioning success")
+	case 2:
+		log.Println("failed with busy (2)")
+	case 3:
+		log.Println("failed with pake parameter error (3)")
+	case 4:
+		log.Println("failed with window not open (4)")
+	default:
+		log.Printf("failed with unknown code 0x%x\n", final_result)
+	}
 }
 
 func createBasicFabric(id uint64) *gomat.Fabric {
@@ -337,6 +357,31 @@ func connectDeviceFromCmd(fabric *gomat.Fabric, cmd *cobra.Command) (gomat.Secur
 	}
 	secure_channel, err = gomat.SigmaExchange(fabric, controller_id, device_id, secure_channel)
 	return secure_channel, err
+}
+
+var report_data_dictionary = map[string]string{
+	".0":           "Root",
+	".0.0":         "SubscriptionID",
+	".0.1":         "AttributeReports",
+	".0.2":         "EventReports",
+	".0.2.0":       "EventReport",
+	".0.2.0.0":     "EventStatus",
+	".0.2.0.1":     "EventData",
+	".0.2.0.1.0":   "Path",
+	".0.2.0.1.0.0": "Node",
+	".0.2.0.1.0.1": "Endpoint",
+	".0.2.0.1.0.2": "Cluster",
+	".0.2.0.1.0.3": "Event",
+	".0.2.0.1.0.4": "Urgent",
+	".0.2.0.1.1":   "EventNumber",
+	".0.2.0.1.2":   "Priority",
+	".0.2.0.1.3":   "EpochTimestamp",
+	".0.2.0.1.4":   "SystemTimestamp",
+	".0.2.0.1.5":   "DeltaEpochTimestamp",
+	".0.2.0.1.6":   "DeltaTimestamp",
+	".0.2.0.1.7":   "Data",
+	".0.3":         "MoreChunkedMessages",
+	".0.4":         "SuppressResponse",
 }
 
 func main() {
@@ -527,7 +572,12 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			resp.ProtocolHeader.Dump()
+			if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+				log.Println("unexpected message")
+				resp.ProtocolHeader.Dump()
+			} else {
+				resp.Tlv.DumpWithDict(0, "", report_data_dictionary)
+			}
 
 			sr := gomat.EncodeIMStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
 			channel.Send(sr)
@@ -537,8 +587,6 @@ func main() {
 					log.Println(err)
 					continue
 				}
-				r.ProtocolHeader.Dump()
-				r.Tlv.Dump(1)
 				if r.ProtocolHeader.Opcode == 4 {
 					log.Println("subscribe response")
 					continue
@@ -547,8 +595,15 @@ func main() {
 					log.Println("status response")
 					continue
 				}
-				sr = gomat.EncodeIMStatusResponse(r.ProtocolHeader.ExchangeId, 0)
-				channel.Send(sr)
+				if r.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA {
+					fmt.Printf("EVENT:\n")
+					r.Tlv.DumpWithDict(0, "", report_data_dictionary)
+					sr = gomat.EncodeIMStatusResponse(r.ProtocolHeader.ExchangeId, 0)
+					channel.Send(sr)
+				} else {
+					log.Printf("unexpected opcode %x\n", r.ProtocolHeader.Opcode)
+					r.ProtocolHeader.Dump()
+				}
 			}
 		},
 		Args: cobra.MinimumNArgs(3),
