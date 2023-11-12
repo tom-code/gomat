@@ -327,6 +327,59 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 	}
 }
 
+func test_subscribe(cmd *cobra.Command, args []string) {
+	fabric := createBasicFabricFromCmd(cmd)
+	channel, err := connectDeviceFromCmd(fabric, cmd)
+	if err != nil {
+		panic(err)
+	}
+
+	endpoint, _ := strconv.ParseInt(args[0], 0, 16)
+	cluster, _ := strconv.ParseInt(args[1], 0, 16)
+	event, _ := strconv.ParseInt(args[2], 0, 16)
+	to_send := gomat.EncodeIMSubscribeRequest(byte(endpoint), uint16(cluster), byte(event))
+	channel.Send(to_send)
+
+	resp, err := channel.Receive()
+	if err != nil {
+		panic(err)
+	}
+	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
+		log.Println("unexpected message")
+		resp.ProtocolHeader.Dump()
+	} else {
+		resp.Tlv.DumpWithDict(0, "", report_data_dictionary)
+	}
+
+	sr := gomat.EncodeIMStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
+	channel.Send(sr)
+	for {
+		r, err := channel.Receive()
+		if err != nil {
+			log.Println("it is ok to see timeout on following line")
+			log.Println(err)
+			continue
+		}
+		if r.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_SUBSC_RSP {
+			log.Println("subscribe response")
+			continue
+		}
+		if r.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_STATUS_RSP {
+			log.Println("status response")
+			continue
+		}
+		if r.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA {
+			fmt.Printf("EVENT:\n")
+			r.Tlv.DumpWithDict(0, "", report_data_dictionary)
+			sr = gomat.EncodeIMStatusResponse(r.ProtocolHeader.ExchangeId, 0)
+			channel.Send(sr)
+		} else {
+			log.Printf("unexpected opcode %x\n", r.ProtocolHeader.Opcode)
+			r.ProtocolHeader.Dump()
+		}
+	}
+}
+
 func createBasicFabric(id uint64) *gomat.Fabric {
 	cert_manager := gomat.NewFileCertManager(id)
 	err := cert_manager.Load()
@@ -555,57 +608,7 @@ func main() {
 	commandCmd.AddCommand(&cobra.Command{
 		Use:     "subscribe [endpoint] [cluster] [event]",
 		Example: "subscribe 1 0x101 1",
-		Run: func(cmd *cobra.Command, args []string) {
-			fabric := createBasicFabricFromCmd(cmd)
-			channel, err := connectDeviceFromCmd(fabric, cmd)
-			if err != nil {
-				panic(err)
-			}
-
-			endpoint, _ := strconv.ParseInt(args[0], 0, 16)
-			cluster, _ := strconv.ParseInt(args[1], 0, 16)
-			event, _ := strconv.ParseInt(args[2], 0, 16)
-			to_send := gomat.EncodeIMSubscribeRequest(byte(endpoint), uint16(cluster), byte(event))
-			channel.Send(to_send)
-
-			resp, err := channel.Receive()
-			if err != nil {
-				panic(err)
-			}
-			if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
-				log.Println("unexpected message")
-				resp.ProtocolHeader.Dump()
-			} else {
-				resp.Tlv.DumpWithDict(0, "", report_data_dictionary)
-			}
-
-			sr := gomat.EncodeIMStatusResponse(resp.ProtocolHeader.ExchangeId, 1)
-			channel.Send(sr)
-			for {
-				r, err := channel.Receive()
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				if r.ProtocolHeader.Opcode == 4 {
-					log.Println("subscribe response")
-					continue
-				}
-				if r.ProtocolHeader.Opcode == 1 {
-					log.Println("status response")
-					continue
-				}
-				if r.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA {
-					fmt.Printf("EVENT:\n")
-					r.Tlv.DumpWithDict(0, "", report_data_dictionary)
-					sr = gomat.EncodeIMStatusResponse(r.ProtocolHeader.ExchangeId, 0)
-					channel.Send(sr)
-				} else {
-					log.Printf("unexpected opcode %x\n", r.ProtocolHeader.Opcode)
-					r.ProtocolHeader.Dump()
-				}
-			}
-		},
+		Run: test_subscribe,
 		Args: cobra.MinimumNArgs(3),
 	})
 

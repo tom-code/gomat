@@ -87,7 +87,7 @@ func (i TlvItem) DumpWithDict(pad int, path string, dictionary map[string]string
 	if !ok {
 		name = fmt.Sprintf("%d", i.Tag)
 	}
-	fmt.Printf("%s ", name)
+	fmt.Printf("%s: ", name)
 	switch i.Type {
 	case TypeNull:
 		fmt.Printf("null\n")

@@ -4,6 +4,9 @@ Simple matter protocol implementation
 ![go build](https://github.com/tom-code/gomat/actions/workflows/go.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tom-code/gomat)](https://goreportcard.com/report/github.com/tom-code/gomat)
 
+### goal of project
+The goal is to create golang library and supporting tools to access matter devices.
+
 ### status of project
 - it can commission devices and send commands to them
 - commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
@@ -28,7 +31,6 @@ Simple matter protocol implementation
     - when device is commissioned - connected to some fabric, it can be commissionined into other fabrics using api, where existing admin user sets device to be open for additional commissioning. During that device can be connected to additional fabric(s) - additional root CA installed and additional admin user configured
 
 ### how to use test application
-
 - compile
   `go build -o gomat github.com/tom-code/gomat/demo`
 
