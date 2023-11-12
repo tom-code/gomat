@@ -34,7 +34,6 @@ func filter_devices(devices []discover.DiscoveredDevice, qr onboarding_payload.Q
 	return out
 }
 
-
 func command_list_fabrics(cmd *cobra.Command) {
 
 	fabric := createBasicFabricFromCmd(cmd)
@@ -54,7 +53,7 @@ func command_list_fabrics(cmd *cobra.Command) {
 		panic("did not receive report data message")
 	}
 
-	fabric_array := resp.Tlv.GetItemRec([]int{1,0,1,2})
+	fabric_array := resp.Tlv.GetItemRec([]int{1, 0, 1, 2})
 	if fabric_array == nil {
 		panic("did not receive fabric list")
 	}
@@ -76,18 +75,18 @@ func command_list_fabrics(cmd *cobra.Command) {
 			fmt.Printf("node_id: %d\n", node_id.GetInt())
 		}
 	}
-	dict := map[string]string {
-		".0": "Root",
-		".0.1": "AttributeReports",
-		".0.1.0": "AttributeReportIB",
-		".0.1.0.1": "AttributeData",
-		".0.1.0.1.0": "Version",
-		".0.1.0.1.1": "Path",
-		".0.1.0.1.1.2": "Endpoint",
-		".0.1.0.1.1.3": "Cluster",
-		".0.1.0.1.1.4": "Attribute",
-		".0.1.0.1.2": "Data",
-		".0.1.0.1.2.0": "Fabrics",
+	dict := map[string]string{
+		".0":             "Root",
+		".0.1":           "AttributeReports",
+		".0.1.0":         "AttributeReportIB",
+		".0.1.0.1":       "AttributeData",
+		".0.1.0.1.0":     "Version",
+		".0.1.0.1.1":     "Path",
+		".0.1.0.1.1.2":   "Endpoint",
+		".0.1.0.1.1.3":   "Cluster",
+		".0.1.0.1.1.4":   "Attribute",
+		".0.1.0.1.2":     "Data",
+		".0.1.0.1.2.0":   "Fabrics",
 		".0.1.0.1.2.0.1": "RootPublicKey",
 		".0.1.0.1.2.0.2": "VendorId",
 		".0.1.0.1.2.0.3": "FabricId",
@@ -116,18 +115,18 @@ func command_list_device_types(cmd *cobra.Command) {
 		panic("did not receive report data message")
 	}
 
-	dict := map[string]string {
-		".0": "Root",
-		".0.1": "AttributeReports",
-		".0.1.0": "AttributeReportIB",
-		".0.1.0.1": "AttributeData",
-		".0.1.0.1.0": "Version",
-		".0.1.0.1.1": "Path",
-		".0.1.0.1.1.2": "Endpoint",
-		".0.1.0.1.1.3": "Cluster",
-		".0.1.0.1.1.4": "Attribute",
-		".0.1.0.1.2": "Data",
-		".0.1.0.1.2.0": "DeviceType",
+	dict := map[string]string{
+		".0":             "Root",
+		".0.1":           "AttributeReports",
+		".0.1.0":         "AttributeReportIB",
+		".0.1.0.1":       "AttributeData",
+		".0.1.0.1.0":     "Version",
+		".0.1.0.1.1":     "Path",
+		".0.1.0.1.1.2":   "Endpoint",
+		".0.1.0.1.1.3":   "Cluster",
+		".0.1.0.1.1.4":   "Attribute",
+		".0.1.0.1.2":     "Data",
+		".0.1.0.1.2.0":   "DeviceType",
 		".0.1.0.1.2.0.0": "DeviceType",
 		".0.1.0.1.2.0.1": "Revision",
 	}
@@ -157,21 +156,21 @@ func command_list_supported_clusters(cmd *cobra.Command, args []string) {
 		panic("did not receive report data message")
 	}
 
-	dict := map[string]string {
-		".0": "Root",
-		".0.1": "AttributeReports",
-		".0.1.0": "AttributeReportIB",
-		".0.1.0.1": "AttributeData",
-		".0.1.0.1.0": "Version",
-		".0.1.0.1.1": "Path",
+	dict := map[string]string{
+		".0":           "Root",
+		".0.1":         "AttributeReports",
+		".0.1.0":       "AttributeReportIB",
+		".0.1.0.1":     "AttributeData",
+		".0.1.0.1.0":   "Version",
+		".0.1.0.1.1":   "Path",
 		".0.1.0.1.1.2": "Endpoint",
 		".0.1.0.1.1.3": "Cluster",
 		".0.1.0.1.1.4": "Attribute",
-		".0.1.0.1.2": "Data",
+		".0.1.0.1.2":   "Data",
 		".0.1.0.1.2.0": "ClusterId",
 	}
 	resp.Tlv.DumpWithDict(0, "", dict)
-	clusters := resp.Tlv.GetItemRec([]int{1,0,1,2})
+	clusters := resp.Tlv.GetItemRec([]int{1, 0, 1, 2})
 	if clusters == nil {
 		panic("clusters not found")
 	}
@@ -199,18 +198,18 @@ func command_list_interfaces(cmd *cobra.Command, args []string) {
 	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_REPORT_DATA {
 		panic("did not receive report data message")
 	}
-	dict := map[string]string {
-		".0": "Root",
-		".0.1": "AttributeReports",
-		".0.1.0": "AttributeReportIB",
-		".0.1.0.1": "AttributeData",
-		".0.1.0.1.0": "Version",
-		".0.1.0.1.1": "Path",
-		".0.1.0.1.1.2": "Endpoint",
-		".0.1.0.1.1.3": "Cluster",
-		".0.1.0.1.1.4": "Attribute",
-		".0.1.0.1.2": "Data",
-		".0.1.0.1.2.0": "Interface",
+	dict := map[string]string{
+		".0":             "Root",
+		".0.1":           "AttributeReports",
+		".0.1.0":         "AttributeReportIB",
+		".0.1.0.1":       "AttributeData",
+		".0.1.0.1.0":     "Version",
+		".0.1.0.1.1":     "Path",
+		".0.1.0.1.1.2":   "Endpoint",
+		".0.1.0.1.1.3":   "Cluster",
+		".0.1.0.1.1.4":   "Attribute",
+		".0.1.0.1.2":     "Data",
+		".0.1.0.1.2.0":   "Interface",
 		".0.1.0.1.2.0.0": "Name",
 		".0.1.0.1.2.0.1": "IsOperational",
 		".0.1.0.1.2.0.4": "HWAddress",
@@ -220,7 +219,6 @@ func command_list_interfaces(cmd *cobra.Command, args []string) {
 	}
 	resp.Tlv.DumpWithDict(0, "", dict)
 }
-
 
 func command_get_logs(cmd *cobra.Command, args []string) {
 
@@ -278,11 +276,11 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 	log.Println(len(data))
 
 	var tlv mattertlv.TLVBuffer
-	tlv.WriteUInt8(0, 240) // timeout
-	tlv.WriteOctetString(1, data)//pake
-	tlv.WriteUInt16(2, 1000) // discrimantor
+	tlv.WriteUInt8(0, 240)                 // timeout
+	tlv.WriteOctetString(1, data)          //pake
+	tlv.WriteUInt16(2, 1000)               // discrimantor
 	tlv.WriteUInt32(3, uint32(iterations)) // iterations
-	tlv.WriteOctetString(4, salt) // salt
+	tlv.WriteOctetString(4, salt)          // salt
 
 	to_send := gomat.EncodeIMTimedRequest()
 	channel.Send(to_send)
@@ -292,7 +290,6 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 	}
 	resp.Tlv.Dump(1)
 
-
 	to_send = gomat.EncodeIMInvokeRequest(0, symbols.CLUSTER_ID_AdministratorCommissioning, symbols.COMMAND_ID_AdministratorCommissioning_OpenCommissioningWindow, tlv.Bytes(), true, 0)
 	channel.Send(to_send)
 
@@ -300,7 +297,6 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 	if err != nil {
 		panic(err)
 	}
-
 
 	resp.ProtocolHeader.Dump()
 	resp.StatusReport.Dump()

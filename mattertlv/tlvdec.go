@@ -102,7 +102,7 @@ func (i TlvItem) DumpWithDict(pad int, path string, dictionary map[string]string
 	case TypeList:
 		fmt.Printf("\n")
 		for _, ii := range i.valueList {
-			ii.DumpWithDict(pad + 2, path_me, dictionary)
+			ii.DumpWithDict(pad+2, path_me, dictionary)
 		}
 		//fmt.Println()
 	default:

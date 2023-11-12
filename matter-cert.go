@@ -58,7 +58,7 @@ func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteOctetString(1, in.SerialNumber.Bytes()) // serial number
-	tlv.WriteUInt8(2, 1)       // signature algorithm
+	tlv.WriteUInt8(2, 1)                             // signature algorithm
 
 	tlv.WriteList(3) // issuer
 	caConvertDN(in.Issuer, &tlv)
