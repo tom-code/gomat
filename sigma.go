@@ -130,7 +130,7 @@ func (sc *sigmaContext) sigma3(fabric *Fabric) ([]byte, error) {
 		return []byte{}, err
 	}
 	s3k_th := sc.sigma1payload
-	s3k_th = append(s3k_th, sc.sigma2dec.payload...)
+	s3k_th = append(s3k_th, sc.sigma2dec.Payload...)
 
 	transcript_hash := sha256_enc(s3k_th)
 	s3_salt := fabric.make_ipk()

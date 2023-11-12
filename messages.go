@@ -251,7 +251,7 @@ type DecodedGeneric struct {
 	MessageHeader  MessageHeader
 	ProtocolHeader ProtocolMessageHeader
 	Tlv            mattertlv.TlvItem
-	payload        []byte
+	Payload        []byte
 	StatusReport   StatusReportElements
 }
 

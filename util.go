@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-func create_random_bytes(n int) []byte {
+func CreateRandomBytes(n int) []byte {
 	out := make([]byte, n)
 	rand.Read(out)
 	return out

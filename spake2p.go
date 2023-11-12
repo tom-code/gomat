@@ -107,10 +107,10 @@ func (ctx *SpakeCtx) Gen_w(passcode int, salt []byte, iterations int) {
 }
 
 func (ctx *SpakeCtx) Gen_random_X() {
-	ctx.x_random.SetBytes(create_random_bytes(32))
+	ctx.x_random.SetBytes(CreateRandomBytes(32))
 }
 func (ctx *SpakeCtx) Gen_random_Y() {
-	ctx.y_random.SetBytes(create_random_bytes(32))
+	ctx.y_random.SetBytes(CreateRandomBytes(32))
 }
 func (ctx *SpakeCtx) Calc_X() {
 	// X=x*P+w0*M

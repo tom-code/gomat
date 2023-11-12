@@ -112,14 +112,14 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 		if len(decoder.Bytes()) > 0 {
 			tlvdata := make([]byte, decoder.Len())
 			n, _ := decoder.Read(tlvdata)
-			out.payload = tlvdata[:n]
+			out.Payload = tlvdata[:n]
 		}
 	} else {
 		out.ProtocolHeader.Decode(decode_buffer)
 		if len(decode_buffer.Bytes()) > 0 {
 			tlvdata := make([]byte, decode_buffer.Len())
 			n, _ := decode_buffer.Read(tlvdata)
-			out.payload = tlvdata[:n]
+			out.Payload = tlvdata[:n]
 		}
 	}
 
@@ -134,15 +134,15 @@ func (sc *SecureChannel) Receive() (DecodedGeneric, error) {
 
 	if out.ProtocolHeader.ProtocolId == 0 {
 		if out.ProtocolHeader.Opcode == SEC_CHAN_OPCODE_STATUS_REP { // status report
-			buf := bytes.NewBuffer(out.payload)
+			buf := bytes.NewBuffer(out.Payload)
 			binary.Read(buf, binary.LittleEndian, &out.StatusReport.GeneralCode)
 			binary.Read(buf, binary.LittleEndian, &out.StatusReport.ProtocolId)
 			binary.Read(buf, binary.LittleEndian, &out.StatusReport.ProtocolCode)
 			return out, nil
 		}
 	}
-	if len(out.payload) > 0 {
-		out.Tlv = mattertlv.Decode(out.payload)
+	if len(out.Payload) > 0 {
+		out.Tlv = mattertlv.Decode(out.Payload)
 	}
 	return out, nil
 }
@@ -188,6 +188,9 @@ func (sc *SecureChannel) Send(data []byte) error {
 
 // Close secure channel. Send close session message to remote end and relase UDP port.
 func (sc *SecureChannel) Close() {
+	if sc.Udp == nil || sc.Udp.Udp == nil {
+		return
+	}
 	sr := EncodeStatusReport(StatusReportElements{
 		GeneralCode:  0,
 		ProtocolId:   0,

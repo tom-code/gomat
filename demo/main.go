@@ -254,15 +254,20 @@ func command_get_logs(cmd *cobra.Command, args []string) {
 
 func command_open_commissioning(cmd *cobra.Command, args []string) {
 
+	pin, err := strconv.ParseInt(args[0], 0, 16)
+	if err != nil {
+		panic(err)
+	}
+
 	fabric := createBasicFabricFromCmd(cmd)
 	channel, err := connectDeviceFromCmd(fabric, cmd)
 	if err != nil {
 		panic(err)
 	}
-	salt := []byte{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16}
+	salt := gomat.CreateRandomBytes(32)
 	iterations := 1000
 	sctx := gomat.NewSpaceCtx()
-	sctx.Gen_w(999, salt, iterations)
+	sctx.Gen_w(int(pin), salt, iterations)
 	sctx.Gen_random_X()
 	sctx.Gen_random_Y()
 	sctx.Calc_X()
@@ -299,7 +304,6 @@ func command_open_commissioning(cmd *cobra.Command, args []string) {
 
 	resp.ProtocolHeader.Dump()
 	resp.StatusReport.Dump()
-	resp.Tlv.Dump(1)
 	if resp.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
 		panic("did not receive report data message")
 	}
@@ -390,6 +394,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			command_open_commissioning(cmd, args)
 		},
+		Args: cobra.MinimumNArgs(1),
 	})
 	commandCmd.AddCommand(&cobra.Command{
 		Use: "off",

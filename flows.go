@@ -63,7 +63,7 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	sctx.calc_ZV()
 	ttseed := []byte("CHIP PAKE V1 Commissioning")
 	ttseed = append(ttseed, pbkdf_request[6:]...) // 6 is size of proto header
-	ttseed = append(ttseed, pbkdf_responseS.payload...)
+	ttseed = append(ttseed, pbkdf_responseS.Payload...)
 	err = sctx.calc_hash(ttseed)
 	if err != nil {
 		return SecureChannel{}, err
@@ -72,8 +72,13 @@ func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
 	pake3 := pake3ParamRequest(exchange, sctx.cA)
 	secure_channel.Send(pake3)
 
-	/*status_report :=*/
-	secure_channel.Receive()
+	status_report, err := secure_channel.Receive()
+	if err != nil {
+		return SecureChannel{}, err
+	}
+	if status_report.StatusReport.ProtocolCode != 0 {
+		return SecureChannel{}, fmt.Errorf("pake3 is not success code: %d", status_report.StatusReport.ProtocolCode)
+	}
 
 	secure_channel = SecureChannel{
 		Udp:         udp,
@@ -156,7 +161,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 
 	// send csr request
 	var tlvb mattertlv.TLVBuffer
-	tlvb.WriteOctetString(0, create_random_bytes(32))
+	tlvb.WriteOctetString(0, CreateRandomBytes(32))
 	to_send := EncodeIMInvokeRequest(0, 0x3e, 4, tlvb.Bytes(), false, uint16(randm.Intn(0xffff)))
 	secure_channel.Send(to_send)
 
