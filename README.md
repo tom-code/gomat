@@ -251,3 +251,6 @@ func main() {
 
 #### certificate manager
 NewFabric function accepts certificate manager object as input parameter. Certificate manager must implement interface CertificateManager and user can supply own implementation. Supplied CertManager created by NewFileCertManager is very simple and stores all data in .pem files under pem directory.
+
+#### notes
+consider move to https://pkg.go.dev/filippo.io/nistec
