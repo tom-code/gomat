@@ -1,5 +1,5 @@
 # gomat
-Simple matter protocol implementation
+Simple matter protocol library
 
 ![go build](https://github.com/tom-code/gomat/actions/workflows/go.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tom-code/gomat)](https://goreportcard.com/report/github.com/tom-code/gomat)
