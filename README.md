@@ -1,6 +1,7 @@
 # gomat
 Simple matter protocol library
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/tom-code/gomat.svg)](https://pkg.go.dev/github.com/tom-code/gomat)
 ![go build](https://github.com/tom-code/gomat/actions/workflows/go.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tom-code/gomat)](https://goreportcard.com/report/github.com/tom-code/gomat)
 
