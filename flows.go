@@ -13,7 +13,7 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-func Spake2pExchange(pin int, udp *UdpChannel) (SecureChannel, error) {
+func Spake2pExchange(pin int, udp *udpChannel) (SecureChannel, error) {
 	exchange := uint16(randm.Intn(0xffff))
 	secure_channel := SecureChannel{
 		Udp:     udp,
@@ -156,7 +156,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 
 func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) error {
 
-	channel, err := StartUdpChannel(device_ip, 5540, 55555)
+	channel, err := startUdpChannel(device_ip, 5540, 55555)
 	if err != nil {
 		return err
 	}

@@ -13,13 +13,13 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-type UdpChannel struct {
+type udpChannel struct {
 	Udp            net.PacketConn
 	Remote_address net.UDPAddr
 }
 
-func StartUdpChannel(remote_ip net.IP, remote_port, local_port int) (*UdpChannel, error) {
-	var out *UdpChannel = new(UdpChannel)
+func startUdpChannel(remote_ip net.IP, remote_port, local_port int) (*udpChannel, error) {
+	var out *udpChannel = new(udpChannel)
 	out.Remote_address = net.UDPAddr{
 		IP:   remote_ip,
 		Port: remote_port,
@@ -32,11 +32,11 @@ func StartUdpChannel(remote_ip net.IP, remote_port, local_port int) (*UdpChannel
 	return out, nil
 }
 
-func (ch *UdpChannel) send(data []byte) error {
+func (ch *udpChannel) send(data []byte) error {
 	_, err := ch.Udp.WriteTo(data, &ch.Remote_address)
 	return err
 }
-func (ch *UdpChannel) receive() ([]byte, error) {
+func (ch *udpChannel) receive() ([]byte, error) {
 	buf := make([]byte, 1024*10)
 	n, _, errx := ch.Udp.ReadFrom(buf)
 	if errx != nil {
@@ -54,7 +54,7 @@ func make_nonce3(counter uint32, node []byte) []byte {
 }
 
 type SecureChannel struct {
-	Udp         *UdpChannel
+	Udp         *udpChannel
 	encrypt_key []byte
 	decrypt_key []byte
 	remote_node []byte
@@ -67,7 +67,7 @@ type SecureChannel struct {
 // It initializes UDP interface and blocks local udp port.
 // Secure channel becomes encrypted after encryption keys are supplied.
 func StartSecureChannel(remote_ip net.IP, remote_port, local_port int) (SecureChannel, error) {
-	udp, err := StartUdpChannel(remote_ip, remote_port, local_port)
+	udp, err := startUdpChannel(remote_ip, remote_port, local_port)
 	if err != nil {
 		return SecureChannel{}, err
 	}

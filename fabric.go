@@ -6,6 +6,9 @@ import (
 	"encoding/binary"
 )
 
+
+// Fabric structure represents matter Fabric.
+// Its main parameters are Id of fabric and certificate manager.
 type Fabric struct {
 	id                 uint64
 	CertificateManager CertificateManager
