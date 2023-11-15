@@ -609,8 +609,8 @@ func main() {
 	commandCmd.AddCommand(&cobra.Command{
 		Use:     "subscribe [endpoint] [cluster] [event]",
 		Example: "subscribe 1 0x101 1",
-		Run: test_subscribe,
-		Args: cobra.MinimumNArgs(3),
+		Run:     test_subscribe,
+		Args:    cobra.MinimumNArgs(3),
 	})
 
 	rootCmd.AddCommand(commandCmd)
