@@ -596,7 +596,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			if (resp.ProtocolHeader.ProtocolId == gomat.PROTOCOL_ID_INTERACTION) &&
+			if (resp.ProtocolHeader.ProtocolId == gomat.ProtocolIdInteraction) &&
 				(resp.ProtocolHeader.Opcode == gomat.INTERACTION_OPCODE_REPORT_DATA) {
 				resp.Tlv.Dump(0)
 			}

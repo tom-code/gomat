@@ -12,8 +12,8 @@ import (
 
 type ProtocolId uint16
 
-const PROTOCOL_ID_SECURE_CHANNEL ProtocolId = 0
-const PROTOCOL_ID_INTERACTION ProtocolId = 1
+const ProtocolIdSecureChannel ProtocolId = 0
+const ProtocolIdInteraction ProtocolId = 1
 
 type Opcode byte
 
@@ -34,8 +34,8 @@ const INTERACTION_OPCODE_INVOKE_REQ Opcode = 0x8
 const INTERACTION_OPCODE_INVOKE_RSP Opcode = 0x9
 const INTERACTION_OPCODE_TIMED_REQ Opcode = 0xa
 
-const EXCHANGE_FLAGS_INITIATOR = 1
-const EXCHANGE_FLAGS_ACKNOWLEDGE = 2
+const exchangeFlagsInitiator = 1
+const exchangeFlagsAcknowledge = 2
 
 type MessageHeader struct {
 	flags             byte
@@ -165,7 +165,7 @@ func pBKDFParamRequest(exchange uint16) []byte {
 		exchangeFlags: 5,
 		Opcode:        SEC_CHAN_OPCODE_PBKDF_REQ,
 		ExchangeId:    exchange,
-		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
+		ProtocolId:    ProtocolIdSecureChannel,
 	}
 	prot.Encode(&buffer)
 	var tlvx mattertlv.TLVBuffer
@@ -188,7 +188,7 @@ func pake1ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeFlags: 5,
 		Opcode:        SEC_CHAN_OPCODE_PAKE1,
 		ExchangeId:    exchange,
-		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
+		ProtocolId:    ProtocolIdSecureChannel,
 	}
 	prot.Encode(&buffer)
 
@@ -206,7 +206,7 @@ func pake3ParamRequest(exchange uint16, key []byte) []byte {
 		exchangeFlags: 5,
 		Opcode:        SEC_CHAN_OPCODE_PAKE3,
 		ExchangeId:    exchange,
-		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
+		ProtocolId:    ProtocolIdSecureChannel,
 	}
 	prot.Encode(&buffer)
 
@@ -221,15 +221,15 @@ func pake3ParamRequest(exchange uint16, key []byte) []byte {
 func ackGen(p ProtocolMessageHeader, counter uint32) []byte {
 	var buffer bytes.Buffer
 
-	var eflags byte = EXCHANGE_FLAGS_ACKNOWLEDGE
-	if (p.exchangeFlags & EXCHANGE_FLAGS_INITIATOR) == 0 {
-		eflags |= EXCHANGE_FLAGS_INITIATOR
+	var eflags byte = exchangeFlagsAcknowledge
+	if (p.exchangeFlags & exchangeFlagsInitiator) == 0 {
+		eflags |= exchangeFlagsInitiator
 	}
 	prot := ProtocolMessageHeader{
 		exchangeFlags: eflags,
 		Opcode:        SEC_CHAN_OPCODE_ACK,
 		ExchangeId:    p.ExchangeId,
-		ProtocolId:    PROTOCOL_ID_SECURE_CHANNEL,
+		ProtocolId:    ProtocolIdSecureChannel,
 	}
 	prot.Encode(&buffer)
 	binary.Write(&buffer, binary.LittleEndian, counter)
@@ -276,7 +276,7 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	var exchange_id uint16
 	exchange_id = uint16(randm.Intn(0xffff))
 	binary.Write(&buffer, binary.LittleEndian, exchange_id)
-	var protocol_id uint16 = uint16(PROTOCOL_ID_SECURE_CHANNEL)
+	var protocol_id uint16 = uint16(ProtocolIdSecureChannel)
 	binary.Write(&buffer, binary.LittleEndian, protocol_id)
 	binary.Write(&buffer, binary.LittleEndian, code.GeneralCode)
 	binary.Write(&buffer, binary.LittleEndian, code.ProtocolId)
@@ -312,7 +312,7 @@ func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload 
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_INVOKE_REQ,
 		ExchangeId:    exchange,
-		ProtocolId:    PROTOCOL_ID_INTERACTION,
+		ProtocolId:    ProtocolIdInteraction,
 	}
 	prot.Encode(&buffer)
 	buffer.Write(tlv.Bytes())
@@ -341,7 +341,7 @@ func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_READ_REQ,
 		ExchangeId:    0,
-		ProtocolId:    PROTOCOL_ID_INTERACTION,
+		ProtocolId:    ProtocolIdInteraction,
 	}
 	prot.Encode(&buffer)
 	buffer.Write(tlv.Bytes())
@@ -379,7 +379,7 @@ func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte 
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_SUBSC_REQ,
 		ExchangeId:    0,
-		ProtocolId:    PROTOCOL_ID_INTERACTION,
+		ProtocolId:    ProtocolIdInteraction,
 	}
 
 	prot.Encode(&buffer)
@@ -400,7 +400,7 @@ func EncodeIMTimedRequest(exchange uint16, timeout uint16) []byte {
 		exchangeFlags: 5,
 		Opcode:        INTERACTION_OPCODE_TIMED_REQ,
 		ExchangeId:    exchange,
-		ProtocolId:    PROTOCOL_ID_INTERACTION,
+		ProtocolId:    ProtocolIdInteraction,
 	}
 
 	prot.Encode(&buffer)
@@ -421,7 +421,7 @@ func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
 		exchangeFlags: 4 | iflag,
 		Opcode:        INTERACTION_OPCODE_STATUS_RSP,
 		ExchangeId:    exchange_id,
-		ProtocolId:    PROTOCOL_ID_INTERACTION,
+		ProtocolId:    ProtocolIdInteraction,
 	}
 	prot.Encode(&buffer)
 

@@ -108,7 +108,7 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 	if err != nil {
 		return SecureChannel{}, err
 	}
-	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == PROTOCOL_ID_SECURE_CHANNEL) &&
+	if (sigma_context.sigma2dec.ProtocolHeader.ProtocolId == ProtocolIdSecureChannel) &&
 		(sigma_context.sigma2dec.ProtocolHeader.Opcode == SEC_CHAN_OPCODE_STATUS_REP) {
 		return SecureChannel{}, fmt.Errorf("sigma2 not received. status: %x %x", sigma_context.sigma2dec.StatusReport.GeneralCode,
 			sigma_context.sigma2dec.StatusReport.ProtocolCode)
