@@ -285,7 +285,7 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload []byte, timed bool, exchange uint16) []byte {
+func EncodeIMInvokeRequest(endpoint uint16, cluster uint32, command uint32, payload []byte, timed bool, exchange uint16) []byte {
 
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
@@ -294,9 +294,9 @@ func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload 
 	tlv.WriteArray(2)
 	tlv.WriteAnonStruct()
 	tlv.WriteList(0)
-	tlv.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(endpoint))
-	tlv.WriteUInt(1, mattertlv.TYPE_UINT_2, uint64(cluster))
-	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(command))
+	tlv.WriteUInt(0, mattertlv.TYPE_UINT_2, uint64(endpoint))
+	tlv.WriteUInt(1, mattertlv.TYPE_UINT_4, uint64(cluster))
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_4, uint64(command))
 	tlv.WriteAnonStructEnd()
 	tlv.WriteStruct(1)
 	//tlv.writeOctetString(0, payload)
@@ -320,15 +320,15 @@ func EncodeIMInvokeRequest(endpoint byte, cluster uint16, command byte, payload 
 	return buffer.Bytes()
 }
 
-func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
+func EncodeIMReadRequest(endpoint uint16, cluster uint32, attr uint32) []byte {
 
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteArray(0)
 	tlv.WriteAnonList()
-	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(endpoint))
-	tlv.WriteUInt(3, mattertlv.TYPE_UINT_2, uint64(cluster))
-	tlv.WriteUInt(4, mattertlv.TYPE_UINT_1, uint64(attr))
+	tlv.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(endpoint))
+	tlv.WriteUInt(3, mattertlv.TYPE_UINT_4, uint64(cluster))
+	tlv.WriteUInt(4, mattertlv.TYPE_UINT_4, uint64(attr))
 	tlv.WriteAnonStructEnd()
 	tlv.WriteAnonStructEnd()
 	tlv.WriteBool(3, true)
@@ -349,7 +349,7 @@ func EncodeIMReadRequest(endpoint byte, cluster uint16, attr byte) []byte {
 	return buffer.Bytes()
 }
 
-func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte {
+func EncodeIMSubscribeRequest(endpoint uint16, cluster uint32, event uint32) []byte {
 
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
@@ -358,9 +358,9 @@ func EncodeIMSubscribeRequest(endpoint byte, cluster uint16, event byte) []byte 
 	tlv.WriteUInt16(2, 50)  // max interval
 	tlv.WriteArray(4)
 	tlv.WriteAnonList()
-	tlv.WriteUInt8(1, endpoint)
-	tlv.WriteUInt16(2, cluster)
-	tlv.WriteUInt8(3, event)
+	tlv.WriteUInt16(1, endpoint)
+	tlv.WriteUInt32(2, cluster)
+	tlv.WriteUInt32(3, event)
 	tlv.WriteBool(4, true) // urgent
 	tlv.WriteAnonStructEnd()
 	tlv.WriteAnonStructEnd()

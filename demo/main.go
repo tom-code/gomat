@@ -146,7 +146,7 @@ func command_list_supported_clusters(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	to_send := gomat.EncodeIMReadRequest(uint8(endpoint), symbols.CLUSTER_ID_Descriptor, symbols.ATTRIBUTE_ID_Descriptor_ServerList)
+	to_send := gomat.EncodeIMReadRequest(uint16(endpoint), symbols.CLUSTER_ID_Descriptor, symbols.ATTRIBUTE_ID_Descriptor_ServerList)
 	channel.Send(to_send)
 
 	resp, err := channel.Receive()
@@ -237,7 +237,7 @@ func command_get_logs(cmd *cobra.Command, args []string) {
 	tlv.WriteUInt8(0, 0) // intent
 	tlv.WriteUInt8(1, 0)
 
-	to_send := gomat.EncodeIMInvokeRequest(uint8(endpoint), symbols.CLUSTER_ID_DiagnosticLogs, symbols.COMMAND_ID_DiagnosticLogs_RetrieveLogsRequest, tlv.Bytes(), false, uint16(rand.Intn(0xffff)))
+	to_send := gomat.EncodeIMInvokeRequest(uint16(endpoint), symbols.CLUSTER_ID_DiagnosticLogs, symbols.COMMAND_ID_DiagnosticLogs_RetrieveLogsRequest, tlv.Bytes(), false, uint16(rand.Intn(0xffff)))
 	channel.Send(to_send)
 
 	resp, err := channel.Receive()
@@ -338,7 +338,7 @@ func test_subscribe(cmd *cobra.Command, args []string) {
 	endpoint, _ := strconv.ParseInt(args[0], 0, 16)
 	cluster, _ := strconv.ParseInt(args[1], 0, 16)
 	event, _ := strconv.ParseInt(args[2], 0, 16)
-	to_send := gomat.EncodeIMSubscribeRequest(byte(endpoint), uint16(cluster), byte(event))
+	to_send := gomat.EncodeIMSubscribeRequest(uint16(endpoint), uint32(cluster), uint32(event))
 	channel.Send(to_send)
 
 	resp, err := channel.Receive()
@@ -590,7 +590,7 @@ func main() {
 			cluster, _ := strconv.ParseInt(args[1], 0, 16)
 			attr, _ := strconv.ParseInt(args[2], 0, 16)
 
-			to_send := gomat.EncodeIMReadRequest(byte(endpoint), uint16(cluster), byte(attr))
+			to_send := gomat.EncodeIMReadRequest(uint16(endpoint), uint32(cluster), uint32(attr))
 			channel.Send(to_send)
 
 			resp, err := channel.Receive()
