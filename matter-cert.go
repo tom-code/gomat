@@ -44,6 +44,10 @@ func caConvertDN(in pkix.Name, out *mattertlv.TLVBuffer) {
 	}
 }
 
+// SerializeCertificateIntoMatter serializes x509 certificate into matter certificate format.
+// Matter certificate format is way how to make matter even more weird and complicated.
+// Signature of matter vertificate must match signature of  certificate reencoded to DER encoding.
+// This requires to handle very carefully order and presence of all elements in original x509.
 func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte {
 	pub := in.PublicKey.(*ecdsa.PublicKey)
 	public_key := elliptic.Marshal(elliptic.P256(), pub.X, pub.Y)

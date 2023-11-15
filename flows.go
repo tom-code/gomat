@@ -183,7 +183,7 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 
 	nocsr := csr_resp.Tlv.GetOctetStringRec([]int{1, 0, 0, 1, 0})
 	if len(nocsr) == 0 {
-		return fmt.Errorf("no csr not received")
+		return fmt.Errorf("nocsr not received")
 	}
 	tlv2 := mattertlv.Decode(nocsr)
 	csr := tlv2.GetOctetStringRec([]int{1})
@@ -198,8 +198,14 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	to_send = EncodeIMInvokeRequest(0, 0x3e, 0xb, tlv4.Bytes(), false, uint16(randm.Intn(0xffff)))
 	secure_channel.Send(to_send)
 
-	/*ds :=*/
-	secure_channel.Receive()
+	resp, err := secure_channel.Receive()
+	if err != nil {
+		return err
+	}
+	resp_status := ParseImInvokeResponse(&resp.Tlv)
+	if resp_status != 0 {
+		return fmt.Errorf("unexpected status to AddTrustedRootCertificate %d", resp_status)
+	}
 
 	//noc_x509 := sign_cert(csrp, 2, "user")
 	noc_x509, err := fabric.CertificateManager.SignCertificate(csrp.PublicKey.(*ecdsa.PublicKey), device_id)
@@ -217,8 +223,14 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 
 	secure_channel.Send(to_send)
 
-	/*ds =*/
-	secure_channel.Receive()
+	resp, err = secure_channel.Receive()
+	if err != nil {
+		return err
+	}
+	resp_status_add_noc, err := resp.Tlv.GetIntRec([]int{1, 0, 0, 1, 0})
+	if resp_status_add_noc != 0 {
+		return fmt.Errorf("unexpected status to AddNOC %d", resp_status_add_noc)
+	}
 
 	secure_channel.decrypt_key = []byte{}
 	secure_channel.encrypt_key = []byte{}

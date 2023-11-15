@@ -74,6 +74,7 @@ func command_list_fabrics(cmd *cobra.Command) {
 		if node_id != nil {
 			fmt.Printf("node_id: %d\n", node_id.GetInt())
 		}
+		fmt.Println("---------------------------------")
 	}
 	dict := map[string]string{
 		".0":             "Root",

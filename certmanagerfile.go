@@ -29,24 +29,25 @@ func certIdToName(id uint64) string {
 	return fmt.Sprintf("%d", id)
 }
 
-type CertManager struct {
+// PEM file backed certiticate manager
+type FileCertManager struct {
 	fabric         uint64
 	ca_certificate *x509.Certificate
 	ca_private_key *ecdsa.PrivateKey
 }
 
-func NewFileCertManager(fabric uint64) *CertManager {
-	return &CertManager{
+func NewFileCertManager(fabric uint64) *FileCertManager {
+	return &FileCertManager{
 		fabric: fabric,
 	}
 }
-func (cm *CertManager) GetCaPublicKey() ecdsa.PublicKey {
+func (cm *FileCertManager) GetCaPublicKey() ecdsa.PublicKey {
 	return cm.ca_private_key.PublicKey
 }
-func (cm *CertManager) GetCaCertificate() *x509.Certificate {
+func (cm *FileCertManager) GetCaCertificate() *x509.Certificate {
 	return cm.ca_certificate
 }
-func (cm *CertManager) Load() error {
+func (cm *FileCertManager) Load() error {
 	_, err := os.Stat("pem/ca-private.pem")
 	if err != nil {
 		log.Printf("can't open CA key. continue anyway %s\n", err.Error())
@@ -61,10 +62,10 @@ func (cm *CertManager) Load() error {
 	return err
 }
 
-func (cm *CertManager) GetCertificate(id uint64) (*x509.Certificate, error) {
+func (cm *FileCertManager) GetCertificate(id uint64) (*x509.Certificate, error) {
 	return loadCertificate("pem/" + certIdToName(id) + "-cert.pem")
 }
-func (cm *CertManager) GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
+func (cm *FileCertManager) GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
 	pk, err := loadPrivKey("pem/" + certIdToName(id) + "-private.pem")
 	if err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func (cm *CertManager) GetPrivkey(id uint64) (*ecdsa.PrivateKey, error) {
 	return pk.(*ecdsa.PrivateKey), nil
 }
 
-func (cm *CertManager) CreateUser(node_id uint64) error {
+func (cm *FileCertManager) CreateUser(node_id uint64) error {
 	id := fmt.Sprintf("%d", node_id)
 	privkey, err := generateAndStoreKeyEcdsa("pem/" + id)
 	if err != nil {
@@ -81,7 +82,7 @@ func (cm *CertManager) CreateUser(node_id uint64) error {
 	cm.SignCertificate(&privkey.PublicKey, node_id)
 	return nil
 }
-func (cm *CertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error) {
+func (cm *FileCertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uint64) (*x509.Certificate, error) {
 
 	public_key_auth := elliptic.Marshal(elliptic.P256(), cm.ca_private_key.PublicKey.X, cm.ca_private_key.PublicKey.Y)
 	sh := sha1.New()
@@ -127,6 +128,8 @@ func (cm *CertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uin
 	template.IsCA = false
 	template.SerialNumber = big.NewInt(10001)
 
+	// order of extensions Matters!
+	// this is why some standard parameters are in this list - to enforce right order
 	extkeyusa, _ := hex.DecodeString("301406082B0601050507030206082B06010505070301")
 	template.ExtraExtensions = []pkix.Extension{
 		{
@@ -169,7 +172,7 @@ func (cm *CertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id uin
 	return out_parsed, nil
 }
 
-func (cm *CertManager) BootstrapCa() {
+func (cm *FileCertManager) BootstrapCa() {
 
 	_, err := os.Stat("pem/ca-private.pem")
 	if err == nil {
@@ -181,7 +184,7 @@ func (cm *CertManager) BootstrapCa() {
 	cm.createCaCert()
 }
 
-func (cm *CertManager) createCaCert() error {
+func (cm *FileCertManager) createCaCert() error {
 	pubany, err := loadPublicKey("pem/ca-public.pem")
 	if err != nil {
 		return err
