@@ -285,8 +285,8 @@ func EncodeStatusReport(code StatusReportElements) []byte {
 	return buffer.Bytes()
 }
 
+// EncodeIMInvokeRequest encodes Interaction Model Invoke Request message
 func EncodeIMInvokeRequest(endpoint uint16, cluster uint32, command uint32, payload []byte, timed bool, exchange uint16) []byte {
-
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteBool(0, false)
@@ -320,8 +320,8 @@ func EncodeIMInvokeRequest(endpoint uint16, cluster uint32, command uint32, payl
 	return buffer.Bytes()
 }
 
+// EncodeIMInvokeRequest encodes Interaction Model Read Request message
 func EncodeIMReadRequest(endpoint uint16, cluster uint32, attr uint32) []byte {
-
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteArray(0)
@@ -349,8 +349,8 @@ func EncodeIMReadRequest(endpoint uint16, cluster uint32, attr uint32) []byte {
 	return buffer.Bytes()
 }
 
+// EncodeIMInvokeRequest encodes Interaction Model Read Request message
 func EncodeIMSubscribeRequest(endpoint uint16, cluster uint32, event uint32) []byte {
-
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteBool(0, false) // keep
@@ -388,6 +388,7 @@ func EncodeIMSubscribeRequest(endpoint uint16, cluster uint32, event uint32) []b
 	return buffer.Bytes()
 }
 
+// EncodeIMInvokeRequest encodes Interaction Model Timed Request message
 func EncodeIMTimedRequest(exchange uint16, timeout uint16) []byte {
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
@@ -409,7 +410,7 @@ func EncodeIMTimedRequest(exchange uint16, timeout uint16) []byte {
 	return buffer.Bytes()
 }
 
-// EncodeIMStatusResponse encodes success IM InvokeResponse
+// EncodeIMStatusResponse encodes success Interaction Model Invoke Response
 func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
