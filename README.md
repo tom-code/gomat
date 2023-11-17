@@ -33,7 +33,11 @@ The goal is to create golang library and supporting tools to access matter devic
 
 ### how to use test application
 - compile
-  `go build -o gomat github.com/tom-code/gomat/demo`
+```
+git clone git@github.com:tom-code/gomat.git
+cd gomat
+go build -o gomat demo/main.go 
+```
 
 - create directory to hold keys and certificates `mkdir pem`
 - generate CA key and certificate using `./gomat ca-bootstrap`

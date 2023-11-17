@@ -10,7 +10,7 @@ const TYPE_UINT_2 = 5
 const TYPE_UINT_4 = 6
 const TYPE_UINT_8 = 7
 
-// TLVBuffer is buffer used to serialize TLV into bytes.
+// TLVBuffer is buffer used to serialize matter TLV into bytes.
 type TLVBuffer struct {
 	data bytes.Buffer
 }
