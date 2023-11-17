@@ -13,7 +13,6 @@ import (
 	"github.com/tom-code/gomat/mattertlv"
 )
 
-
 // Spake2pExchange establishes secure session using PASE (Passcode-Authenticated Session Establishment).
 // This uses SPAKE2+ protocol
 func Spake2pExchange(pin int, udp *udpChannel) (SecureChannel, error) {
@@ -159,10 +158,10 @@ func SigmaExchange(fabric *Fabric, controller_id uint64, device_id uint64, secur
 }
 
 // Commission performs commissioning procedure on device with device_ip ip address
-//  - fabric is fabric object with approriate certificate authority
-//  - pin is passcode used for device pairing
-//  - controller_id is identifier of node whioch will be owner/admin of this device
-//  - device_id_id is identifier of "new" device
+//   - fabric is fabric object with approriate certificate authority
+//   - pin is passcode used for device pairing
+//   - controller_id is identifier of node whioch will be owner/admin of this device
+//   - device_id_id is identifier of "new" device
 func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device_id uint64) error {
 
 	channel, err := startUdpChannel(device_ip, 5540, 55555)

@@ -62,7 +62,7 @@ func (sc *sigmaContext) genSigma1(fabric *Fabric, device_id uint64) {
 	tlvx.WriteOctetString(3, destinationIdentifier)
 
 	tlvx.WriteOctetString(4, sc.session_privkey.PublicKey().Bytes())
-	tlvx.WriteAnonStructEnd()
+	tlvx.WriteStructEnd()
 	sc.sigma1payload = tlvx.Bytes()
 }
 
@@ -105,7 +105,7 @@ func (sc *sigmaContext) sigma3(fabric *Fabric) ([]byte, error) {
 		return []byte{}, err
 	}
 	tlv_s3tbs.WriteOctetString(4, responder_public)
-	tlv_s3tbs.WriteAnonStructEnd()
+	tlv_s3tbs.WriteStructEnd()
 	//log.Printf("responder public %s\n", hex.EncodeToString(responder_public))
 
 	tlv_s3tbs_hash := sha256_enc(tlv_s3tbs.Bytes())
@@ -119,7 +119,7 @@ func (sc *sigmaContext) sigma3(fabric *Fabric) ([]byte, error) {
 	tlv_s3tbe.WriteAnonStruct()
 	tlv_s3tbe.WriteOctetString(1, sc.controller_matter_certificate)
 	tlv_s3tbe.WriteOctetString(3, tlv_s3tbs_out)
-	tlv_s3tbe.WriteAnonStructEnd()
+	tlv_s3tbe.WriteStructEnd()
 
 	pub, err := ecdh.P256().NewPublicKey(responder_public)
 	if err != nil {
@@ -152,7 +152,7 @@ func (sc *sigmaContext) sigma3(fabric *Fabric) ([]byte, error) {
 	var tlv_s3 mattertlv.TLVBuffer
 	tlv_s3.WriteAnonStruct()
 	tlv_s3.WriteOctetString(1, CipherText)
-	tlv_s3.WriteAnonStructEnd()
+	tlv_s3.WriteStructEnd()
 
 	to_send := genSigma3Req2(tlv_s3.Bytes(), sc.exchange)
 

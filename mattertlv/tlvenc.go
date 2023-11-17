@@ -10,6 +10,7 @@ const TYPE_UINT_2 = 5
 const TYPE_UINT_4 = 6
 const TYPE_UINT_8 = 7
 
+// TLVBuffer is buffer used to serialize TLV into bytes.
 type TLVBuffer struct {
 	data bytes.Buffer
 }
@@ -114,24 +115,36 @@ func (b *TLVBuffer) WriteBool(tag byte, val bool) {
 	b.data.WriteByte(tag)
 }
 
+// WriteAnonStruct encodes start of structure without tag
 func (b *TLVBuffer) WriteAnonStruct() {
 	b.data.WriteByte(0x15)
 }
+
+// WriteAnonList encodes start of list without tag
 func (b *TLVBuffer) WriteAnonList() {
 	b.data.WriteByte(0x17)
 }
+
+// WriteAnonList encodes start of structure with specified tag
 func (b *TLVBuffer) WriteStruct(tag byte) {
 	b.data.WriteByte(0x35)
 	b.data.WriteByte(tag)
 }
+
+// WriteArray encodes start of array with specified tag
 func (b *TLVBuffer) WriteArray(tag byte) {
 	b.data.WriteByte(0x36)
 	b.data.WriteByte(tag)
 }
+
+// WriteList encodes start of list with specified tag
 func (b *TLVBuffer) WriteList(tag byte) {
 	b.data.WriteByte(0x37)
 	b.data.WriteByte(tag)
 }
-func (b *TLVBuffer) WriteAnonStructEnd() {
+
+// WriteList encodes end of structure.
+// This is used to terminate also list and array.
+func (b *TLVBuffer) WriteStructEnd() {
 	b.data.WriteByte(0x18)
 }

@@ -17,9 +17,10 @@ const TypeOctetString ElementType = 4
 const TypeList ElementType = 5
 const TypeNull ElementType = 6
 
+// TlvItem represents one TLV entry.
 type TlvItem struct {
-	Tag   int
-	Type  ElementType
+	Tag          int
+	Type         ElementType
 	detailedType string
 
 	valueBool        bool
@@ -29,6 +30,7 @@ type TlvItem struct {
 	valueList        []TlvItem
 }
 
+// GetChild returns slice of all child entries.
 func (i TlvItem) GetChild() []TlvItem {
 	return i.valueList
 }
@@ -42,9 +44,12 @@ func (i TlvItem) GetItemWithTag(tag int) *TlvItem {
 	return nil
 }
 
+// GetChild returns value of integer entry as int.
 func (i TlvItem) GetInt() int {
 	return int(i.valueInt)
 }
+
+// GetChild returns value of integer entry as uint64.
 func (i TlvItem) GetUint64() uint64 {
 	return uint64(i.valueInt)
 }
@@ -291,6 +296,7 @@ func decode(buf *bytes.Buffer, container *TlvItem) {
 	}
 }
 
+// Decode decodes binary TLV into structure represented by TlvItem.
 func Decode(in []byte) TlvItem {
 	buf := bytes.NewBuffer(in)
 	root := &TlvItem{

@@ -176,7 +176,7 @@ func pBKDFParamRequest(exchange uint16) []byte {
 	tlvx.WriteUInt(0x2, mattertlv.TYPE_UINT_2, 0x0001) //initator session-id
 	tlvx.WriteUInt(0x3, mattertlv.TYPE_UINT_1, 0x00)   // passcode id
 	tlvx.WriteBool(0x4, false)                         // has pbkdf
-	tlvx.WriteAnonStructEnd()
+	tlvx.WriteStructEnd()
 	buffer.Write(tlvx.Bytes())
 	return buffer.Bytes()
 }
@@ -195,7 +195,7 @@ func pake1ParamRequest(exchange uint16, key []byte) []byte {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	tlvx.WriteOctetString(0x1, key)
-	tlvx.WriteAnonStructEnd()
+	tlvx.WriteStructEnd()
 	buffer.Write(tlvx.Bytes())
 	return buffer.Bytes()
 }
@@ -213,7 +213,7 @@ func pake3ParamRequest(exchange uint16, key []byte) []byte {
 	var tlvx mattertlv.TLVBuffer
 	tlvx.WriteAnonStruct()
 	tlvx.WriteOctetString(0x1, key)
-	tlvx.WriteAnonStructEnd()
+	tlvx.WriteStructEnd()
 	buffer.Write(tlvx.Bytes())
 	return buffer.Bytes()
 }
@@ -297,15 +297,15 @@ func EncodeIMInvokeRequest(endpoint uint16, cluster uint32, command uint32, payl
 	tlv.WriteUInt(0, mattertlv.TYPE_UINT_2, uint64(endpoint))
 	tlv.WriteUInt(1, mattertlv.TYPE_UINT_4, uint64(cluster))
 	tlv.WriteUInt(2, mattertlv.TYPE_UINT_4, uint64(command))
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 	tlv.WriteStruct(1)
 	//tlv.writeOctetString(0, payload)
 	tlv.WriteRaw(payload)
-	tlv.WriteAnonStructEnd()
-	tlv.WriteAnonStructEnd()
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
+	tlv.WriteStructEnd()
+	tlv.WriteStructEnd()
 	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -329,11 +329,11 @@ func EncodeIMReadRequest(endpoint uint16, cluster uint32, attr uint32) []byte {
 	tlv.WriteUInt(2, mattertlv.TYPE_UINT_2, uint64(endpoint))
 	tlv.WriteUInt(3, mattertlv.TYPE_UINT_4, uint64(cluster))
 	tlv.WriteUInt(4, mattertlv.TYPE_UINT_4, uint64(attr))
-	tlv.WriteAnonStructEnd()
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
+	tlv.WriteStructEnd()
 	tlv.WriteBool(3, true)
 	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var buffer bytes.Buffer
 
@@ -362,8 +362,8 @@ func EncodeIMSubscribeRequest(endpoint uint16, cluster uint32, event uint32) []b
 	tlv.WriteUInt32(2, cluster)
 	tlv.WriteUInt32(3, event)
 	tlv.WriteBool(4, true) // urgent
-	tlv.WriteAnonStructEnd()
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
+	tlv.WriteStructEnd()
 	/*tlvx.WriteArray(5)
 		tlvx.WriteAnonStruct()
 				tlvx.WriteUInt(0, mattertlv.TYPE_UINT_1, uint64(100))
@@ -372,7 +372,7 @@ func EncodeIMSubscribeRequest(endpoint uint16, cluster uint32, event uint32) []b
 	tlvx.WriteAnonStructEnd()*/
 	tlv.WriteBool(7, false) // fabric filtered
 	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -394,7 +394,7 @@ func EncodeIMTimedRequest(exchange uint16, timeout uint16) []byte {
 	tlv.WriteAnonStruct()
 	tlv.WriteUInt16(0, timeout)
 	tlv.WriteUInt(0xff, mattertlv.TYPE_UINT_1, 10)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{
@@ -415,7 +415,7 @@ func EncodeIMStatusResponse(exchange_id uint16, iflag byte) []byte {
 	var tlv mattertlv.TLVBuffer
 	tlv.WriteAnonStruct()
 	tlv.WriteUInt8(0, 0)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var buffer bytes.Buffer
 	prot := ProtocolMessageHeader{

@@ -66,13 +66,13 @@ func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte
 
 	tlv.WriteList(3) // issuer
 	caConvertDN(in.Issuer, &tlv)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	tlv.WriteUInt32(4, uint32(in.NotBefore.Unix()-946684800))
 	tlv.WriteUInt32(5, uint32(in.NotAfter.Unix())-946684800)
 	tlv.WriteList(6) // subject
 	caConvertDN(in.Subject, &tlv)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 	tlv.WriteUInt8(7, 1)
 	tlv.WriteUInt8(8, 1)
 	//public key:
@@ -80,19 +80,19 @@ func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte
 	tlv.WriteList(10)
 	tlv.WriteStruct(1)
 	tlv.WriteBool(1, in.IsCA) // isCA
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	tlv.WriteUInt(2, mattertlv.TYPE_UINT_1, uint64(in.KeyUsage)) // key-usage
 
 	if len(in.ExtKeyUsage) > 0 {
 		tlv.WriteArray(3)
 		tlv.WriteRaw([]byte{0x04, 0x02, 0x04, 0x01}) // extended key-usage
-		tlv.WriteAnonStructEnd()
+		tlv.WriteStructEnd()
 	}
 
 	tlv.WriteOctetString(4, in.SubjectKeyId) // subject-key-id
 	tlv.WriteOctetString(5, ca_pubkey_hash)  // authority-key-id
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 
 	var signature dsaSignature
 	asn1.Unmarshal(in.Signature, &signature)
@@ -101,6 +101,6 @@ func SerializeCertificateIntoMatter(fabric *Fabric, in *x509.Certificate) []byte
 	s := signature.S.Bytes()
 	s4 := append(r, s...)
 	tlv.WriteOctetString(11, s4)
-	tlv.WriteAnonStructEnd()
+	tlv.WriteStructEnd()
 	return tlv.Bytes()
 }

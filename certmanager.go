@@ -9,12 +9,6 @@ import (
 // all generated certificates must be compatible with matter
 //   - this means that after they are reencoded to matter format and back their signature must match
 type CertificateManager interface {
-	// load previous state of certificate manager
-	// this shall succeed even for first time
-	Load() error
-
-	// bootstrap certificate authority - generate CA keys
-	BootstrapCa()
 	GetCaPublicKey() ecdsa.PublicKey
 	GetCaCertificate() *x509.Certificate
 

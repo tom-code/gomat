@@ -47,6 +47,8 @@ func (cm *FileCertManager) GetCaPublicKey() ecdsa.PublicKey {
 func (cm *FileCertManager) GetCaCertificate() *x509.Certificate {
 	return cm.ca_certificate
 }
+
+// Load initializes CA. It loads required state from files.
 func (cm *FileCertManager) Load() error {
 	_, err := os.Stat("pem/ca-private.pem")
 	if err != nil {
@@ -172,16 +174,20 @@ func (cm *FileCertManager) SignCertificate(user_pubkey *ecdsa.PublicKey, node_id
 	return out_parsed, nil
 }
 
-func (cm *FileCertManager) BootstrapCa() {
-
+// BootstrapCa initializes CA - creates CA keys and certificate
+func (cm *FileCertManager) BootstrapCa() error {
 	_, err := os.Stat("pem/ca-private.pem")
 	if err == nil {
 		log.Printf("CA private key already present - skipping bootstrap\n")
-		return
+		return nil
 	}
 
-	generateAndStoreKeyEcdsa("pem/ca")
-	cm.createCaCert()
+	_, err = generateAndStoreKeyEcdsa("pem/ca")
+	if err != nil {
+		return err
+	}
+	err = cm.createCaCert()
+	return err
 }
 
 func (cm *FileCertManager) createCaCert() error {

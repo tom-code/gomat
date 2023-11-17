@@ -672,10 +672,6 @@ func main() {
 			}
 			//cm := NewCertManager(0x99)
 			fabric := createBasicFabricFromCmd(cmd)
-			err = fabric.CertificateManager.Load()
-			if err != nil {
-				panic(err)
-			}
 			err = fabric.CertificateManager.CreateUser(uint64(id))
 			if err != nil {
 				panic(err)
@@ -688,9 +684,16 @@ func main() {
 	var cabootCmd = &cobra.Command{
 		Use: "ca-bootstrap",
 		Run: func(cmd *cobra.Command, args []string) {
-			//cm := NewCertManager(0x99)
-			fabric := createBasicFabricFromCmd(cmd)
-			fabric.CertificateManager.BootstrapCa()
+			fabric_id_str, _ := cmd.Flags().GetString("fabric")
+			id, err := strconv.ParseUint(fabric_id_str, 0, 64)
+			if err != nil {
+				panic(fmt.Sprintf("invalid fabric id %s", fabric_id_str))
+			}
+			cm := gomat.NewFileCertManager(id)
+			err = cm.BootstrapCa()
+			if err != nil {
+				panic(err)
+			}
 		},
 	}
 
