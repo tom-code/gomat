@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"strings"
 )
 
 // Fabric structure represents matter Fabric.
@@ -33,6 +36,12 @@ func (fabric Fabric) CompressedFabric() []byte {
 func (fabric Fabric) make_ipk() []byte {
 	key := hkdf_sha256(fabric.ipk, fabric.CompressedFabric(), []byte("GroupKey v1.0"), 16)
 	return key
+}
+
+func (fabric Fabric) GetOperationalDeviceId(in uint64) string {
+	compressedFabric := hex.EncodeToString(fabric.CompressedFabric())
+	ids := fmt.Sprintf("%s-%016X", compressedFabric, in)
+	return strings.ToUpper(ids)
 }
 
 // NewFabric constructs new Fabric object.
