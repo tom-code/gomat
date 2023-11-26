@@ -32,7 +32,7 @@ func TestBasic(t *testing.T) {
 	encoder.WriteUInt32(12, 0x12345678)
 	encoder.WriteUInt64(13, 0x123456789abcdef0)
 	encoder.WriteUInt64(14, 0xf23456789abcdef0)
-	encoder.WriteOctetString(15, []byte{1,2,3,4,5})
+	encoder.WriteOctetString(15, []byte{1, 2, 3, 4, 5})
 	encoder.WriteBool(16, false)
 	encoder.WriteBool(17, true)
 	encoder.WriteStructEnd()
@@ -78,10 +78,10 @@ func TestRec(t *testing.T) {
 	var encoder TLVBuffer
 
 	encoder.WriteAnonStruct()
-	encoder.WriteOctetString(1, []byte{1,2,3,4,5})
+	encoder.WriteOctetString(1, []byte{1, 2, 3, 4, 5})
 	encoder.WriteArray(2)
 	encoder.WriteAnonStruct()
-	encoder.WriteOctetString(2, []byte{1,2,3,4,5})
+	encoder.WriteOctetString(2, []byte{1, 2, 3, 4, 5})
 	encoder.WriteUInt32(3, 33)
 	encoder.WriteStructEnd()
 	encoder.WriteStructEnd()
@@ -95,7 +95,7 @@ func TestRec(t *testing.T) {
 
 	decoded := Decode(encoded)
 
-	i, err := decoded.GetIntRec([]int{2,0,3})
+	i, err := decoded.GetIntRec([]int{2, 0, 3})
 	if err != nil {
 		t.Fatalf("error %s", err.Error())
 	}
@@ -103,7 +103,7 @@ func TestRec(t *testing.T) {
 		t.Fatal("incorrect value")
 	}
 
-	it := decoded.GetItemRec([]int{2,0,3})
+	it := decoded.GetItemRec([]int{2, 0, 3})
 	if it == nil {
 		t.Fatalf("not found")
 	}
@@ -111,7 +111,7 @@ func TestRec(t *testing.T) {
 		t.Fatal("incorrect value")
 	}
 
-	it = decoded.GetItemRec([]int{2,0,2})
+	it = decoded.GetItemRec([]int{2, 0, 2})
 	if it == nil {
 		t.Fatalf("not found")
 	}
@@ -119,7 +119,7 @@ func TestRec(t *testing.T) {
 		t.Fatal("incorrect value")
 	}
 
-	os := decoded.GetOctetStringRec([]int{2,0,2})
+	os := decoded.GetOctetStringRec([]int{2, 0, 2})
 	if hex.EncodeToString(os) != "0102030405" {
 		t.Fatal("incorrect value")
 	}

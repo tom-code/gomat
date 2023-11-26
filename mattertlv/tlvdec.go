@@ -19,9 +19,9 @@ const TypeNull ElementType = 6
 
 // TlvItem represents one TLV entry.
 type TlvItem struct {
-	Tag          int
-	Type         ElementType
-	matterType   byte
+	Tag        int
+	Type       ElementType
+	matterType byte
 
 	valueBool        bool
 	valueInt         uint64
@@ -106,7 +106,7 @@ func (i TlvItem) DumpToString(buf *strings.Builder, pad int) {
 	case TypeList:
 		buf.WriteString("struct:\n")
 		for _, ii := range i.valueList {
-			ii.DumpToString(buf, pad + 2)
+			ii.DumpToString(buf, pad+2)
 		}
 		//fmt.Println()
 	default:
