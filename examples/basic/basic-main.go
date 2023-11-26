@@ -34,6 +34,57 @@ func commission(fabric_id, admin_user, device_id uint64, device_ip string, pin i
 	  }
 }
 
+func sendOnCommand(secure_channel *gomat.SecureChannel) {
+	on_command := gomat.EncodeIMInvokeRequest(
+		1,                              // endpoint
+		symbols.CLUSTER_ID_OnOff,       // api cluster (on/off)
+		symbols.COMMAND_ID_OnOff_On,    // on command
+		[]byte{},                       // no extra data
+		false, uint16(rand.Uint32()))
+	
+	secure_channel.Send(on_command)
+	
+	// process ON command response
+	response, err := secure_channel.Receive()
+	if err != nil {
+	panic(err)
+	}
+	if response.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
+	panic("unexpected message")
+	}
+	if gomat.ParseImInvokeResponse(&response.Tlv) != 0 {
+	response.Tlv.Dump(0)
+	panic("response was not OK")
+	}
+}
+
+func sendColorCommand(secure_channel *gomat.SecureChannel) {
+	var tlv mattertlv.TLVBuffer
+	tlv.WriteUInt8(0, 100)        // hue
+	tlv.WriteUInt8(1, 200)        // saturation
+	tlv.WriteUInt8(2, 10)         // time
+	color_command := gomat.EncodeIMInvokeRequest(
+	  1,                                                       // endpoint
+	  symbols.CLUSTER_ID_ColorControl,                         // color control cluster
+	  symbols.COMMAND_ID_ColorControl_MoveToHueAndSaturation,
+	  tlv.Bytes(),
+	  false, uint16(rand.Uint32()))
+  
+	secure_channel.Send(color_command)
+  
+	// process command response
+	response, err := secure_channel.Receive()
+	if err != nil {
+	  panic(err)
+	}
+	if response.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
+	  panic("unexpected message")
+	}
+	if gomat.ParseImInvokeResponse(&response.Tlv) != 0 {
+	  response.Tlv.Dump(0)
+	  panic("response was not OK")
+	}
+}
 
 func main() {
   var fabric_id uint64 = 0x100
@@ -61,52 +112,8 @@ func main() {
 
 
   // send ON command
-  on_command := gomat.EncodeIMInvokeRequest(
-	1,                              // endpoint
-	symbols.CLUSTER_ID_OnOff,       // api cluster (on/off)
-	symbols.COMMAND_ID_OnOff_On,    // on command
-	[]byte{},                       // no extra data
-	false, uint16(rand.Uint32()))
-
-  secure_channel.Send(on_command)
-
-  // process ON command response
-  response, err := secure_channel.Receive()
-  if err != nil {
-	panic(err)
-  }
-  if response.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
-	panic("unexpected message")
-  }
-  if gomat.ParseImInvokeResponse(&response.Tlv) != 0 {
-	response.Tlv.Dump(0)
-	panic("response was not OK")
-  }
+  sendOnCommand(&secure_channel)
 
   // send set color command
-  var tlv mattertlv.TLVBuffer
-  tlv.WriteUInt8(0, 100)        // hue
-  tlv.WriteUInt8(1, 200)        // saturation
-  tlv.WriteUInt8(2, 10)         // time
-  color_command := gomat.EncodeIMInvokeRequest(
-	1,                                                       // endpoint
-	symbols.CLUSTER_ID_ColorControl,                         // color control cluster
-	symbols.COMMAND_ID_ColorControl_MoveToHueAndSaturation,
-	tlv.Bytes(),
-	false, uint16(rand.Uint32()))
-
-  secure_channel.Send(color_command)
-
-  // process command response
-  response, err = secure_channel.Receive()
-  if err != nil {
-	panic(err)
-  }
-  if response.ProtocolHeader.Opcode != gomat.INTERACTION_OPCODE_INVOKE_RSP {
-	panic("unexpected message")
-  }
-  if gomat.ParseImInvokeResponse(&response.Tlv) != 0 {
-	response.Tlv.Dump(0)
-	panic("response was not OK")
-  }
+  sendColorCommand(&secure_channel)
 }
