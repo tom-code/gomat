@@ -63,6 +63,10 @@ go build -o gomat demo/main.go
 
 
 ### how to use api
+#### Example applications
+- [Simple Example application](examples/basic/basic-main.go) - bootstrap ca, commission, send commands to device
+- [Demo application](demo/main.go)
+
 #### commission device using api
 create ca with root certificate, create admin user, then commission device:
 ```
