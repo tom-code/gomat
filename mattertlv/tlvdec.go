@@ -88,6 +88,32 @@ func (i TlvItem) Dump(pad int) {
 	}
 }
 
+func (i TlvItem) DumpToString(buf *strings.Builder, pad int) {
+	pads := strings.Repeat(" ", pad)
+	buf.WriteString(pads)
+	buf.WriteString(fmt.Sprintf("%3d:", i.Tag))
+	switch i.Type {
+	case TypeNull:
+		buf.WriteString("null\n")
+	case TypeInt:
+		buf.WriteString(fmt.Sprintf("%d\n", i.valueInt))
+	case TypeBool:
+		buf.WriteString(fmt.Sprintf("%v\n", i.valueBool))
+	case TypeUTF8String:
+		buf.WriteString(fmt.Sprintf("%s\n", i.valueString))
+	case TypeOctetString:
+		buf.WriteString(fmt.Sprintf("%s\n", hex.EncodeToString(i.valueOctetString)))
+	case TypeList:
+		buf.WriteString("struct:\n")
+		for _, ii := range i.valueList {
+			ii.DumpToString(buf, pad + 2)
+		}
+		//fmt.Println()
+	default:
+		fmt.Printf("unknown %d\n", i.Type)
+	}
+}
+
 func (i TlvItem) DumpWithDict(pad int, path string, dictionary map[string]string) {
 	path_me := fmt.Sprintf("%s.%d", path, i.Tag)
 	pads := strings.Repeat(" ", pad)

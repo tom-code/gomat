@@ -268,3 +268,15 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 	}
 	return nil
 }
+
+func ConnectDevice(device_ip net.IP, port int, fabric *Fabric, device_id, admin_id uint64) (SecureChannel, error) {
+	var secure_channel SecureChannel
+	var err error
+	if secure_channel, err = StartSecureChannel(device_ip, port, 55555); err != nil {
+	  return SecureChannel{}, err
+	}
+	if secure_channel, err = SigmaExchange(fabric, admin_id, device_id, secure_channel); err != nil {
+		return SecureChannel{}, err
+	}
+	return secure_channel, nil
+}
