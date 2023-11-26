@@ -1,7 +1,7 @@
-// this is example application which shows hw to:
-// create fabric (generate CA certificate)
-// commission device (upload certificates to it)
-// send commands to device
+// this is example application which shows how to:
+// - create fabric (generate CA certificate)
+// - commission device (upload certificates to it)
+// - send commands to device
 // devica parameters (ip address and passcode) are hardcoded in main function
 // this example assumes that device is in state accepting new commissioning
 

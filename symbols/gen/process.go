@@ -11,38 +11,34 @@ import (
 	"strings"
 )
 
-
-
 type MatterInfo struct {
 	Clusters map[int]ClusterInfo
 }
 
 type ClusterInfo struct {
-	Name string
-	Id int
-	Commands []CommandInfo
+	Name       string
+	Id         int
+	Commands   []CommandInfo
 	Attributes []AttributeInfo
 }
 
 type CommandInfo struct {
 	Name string
-	Id int
+	Id   int
 }
 type AttributeInfo struct {
 	Name string
-	Id int
+	Id   int
 }
-
 
 type CommandXmlDef struct {
 	Name string `xml:"name,attr"`
-	Id        string `xml:"id,attr"`
+	Id   string `xml:"id,attr"`
 }
 
 type CommandListXmlDef struct {
 	Command []CommandXmlDef `xml:"command"`
 }
-
 
 type AttributeXmlDef struct {
 	Name string `xml:"name,attr"`
@@ -53,16 +49,13 @@ type AttributeListXmlDef struct {
 	Attribute []AttributeXmlDef `xml:"attribute"`
 }
 
-
 type ClusterXmlDef struct {
-	XMLName xml.Name `xml:"cluster"`
-	Name string `xml:"name,attr"`
-	Id        string `xml:"id,attr"`
-	Commands   CommandListXmlDef `xml:"commands"`
+	XMLName    xml.Name            `xml:"cluster"`
+	Name       string              `xml:"name,attr"`
+	Id         string              `xml:"id,attr"`
+	Commands   CommandListXmlDef   `xml:"commands"`
 	Attributes AttributeListXmlDef `xml:"attributes"`
 }
-
-
 
 func symbolize(in string) string {
 	s := strings.ReplaceAll(in, " ", "")
@@ -96,9 +89,9 @@ func process_file(fname string) (ClusterInfo, error) {
 		if err != nil {
 			continue
 		}
-		cmd := CommandInfo {
+		cmd := CommandInfo{
 			Name: symbolize(command.Name),
-			Id: int(id),
+			Id:   int(id),
 		}
 		out.Commands = append(out.Commands, cmd)
 	}
@@ -114,15 +107,14 @@ func process_file(fname string) (ClusterInfo, error) {
 		if err != nil {
 			continue
 		}
-		attr := AttributeInfo {
+		attr := AttributeInfo{
 			Name: symbolize(attribute.Name),
-			Id: int(id),
+			Id:   int(id),
 		}
 		out.Attributes = append(out.Attributes, attr)
 	}
 	return out, nil
 }
-
 
 func writeGoInfo(mi MatterInfo) error {
 	f, err := os.Create("../info.go")
@@ -171,8 +163,7 @@ func process_all() (MatterInfo, error) {
 	return mi, nil
 }
 
-
-const xmlPath  = "../xml"
+const xmlPath = "../xml"
 
 func main() {
 	mi, err := process_all()
