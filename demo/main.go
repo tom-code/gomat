@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -575,6 +576,42 @@ func main() {
 			fmt.Printf("result status: %d\n", status)
 		},
 		Args: cobra.MinimumNArgs(3),
+	})
+
+	// this sends yellight proprietary command to control indidividual leds on yeelight cube
+	commandCmd.AddCommand(&cobra.Command{
+		Use: "test",
+		Run: func(cmd *cobra.Command, args []string) {
+
+			fabric := createBasicFabricFromCmd(cmd)
+			channel, err := connectDeviceFromCmd(fabric, cmd)
+			if err != nil {
+				panic(err)
+			}
+			var tlv mattertlv.TLVBuffer
+			b := bytes.NewBuffer([]byte{})
+			for x:=0; x<5; x++ {
+				for y:=0; y<5; y++ {
+					b.WriteByte(byte(0xff))
+					b.WriteByte(byte(x*50+50))
+					b.WriteByte(byte(10))
+					b.WriteByte(byte(y*40))
+				}
+			}
+			tlv.WriteOctetString(0, b.Bytes())
+			to_send := gomat.EncodeIMInvokeRequest(2, 0x1312fc03, 0x13120007, tlv.Bytes(), false, uint16(rand.Intn(0xffff)))
+			channel.Send(to_send)
+
+			resp, err := channel.Receive()
+			if err != nil {
+				panic(err)
+			}
+			status, err := resp.Tlv.GetIntRec([]int{1, 0, 1, 1, 0})
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("result status: %d\n", status)
+		},
 	})
 
 	commandCmd.AddCommand(&cobra.Command{

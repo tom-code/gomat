@@ -9,15 +9,20 @@ Simple matter protocol library
 The goal is to create golang library and supporting tools to access matter devices.
 
 ### status of project
-- it can commission devices and send commands to them
-- commissioning does not implement any non-mandatory steps (device authenticity verification, attestation, ...). it is minimal code to make it work without any focus on security
+- it can
+  - commission devices
+  - send commands to devices
+  - read attributes from devices
+  - subscribe and receive events
+  - decode onboarding info (qr text, manual pair code)
+  - discover commissionable devices
+  - discover commissioned devices
+  - open commissioning window
 
 
 #### tested devices
 - tested against virtual devices which are part of reference implementation https://github.com/project-chip/connectedhomeip
 - tested with yeelight cube
-  - can control all leds at same time on/off/color, ...
-  - I was not able to determine how to control individual leds. There seems to be proprietary interface on endpoint 2 and I was unable to find any documentation of it.
 
 ### general info
 - it is best to understand matter to use this, but here is most important info:

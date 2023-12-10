@@ -236,6 +236,9 @@ func Commission(fabric *Fabric, device_ip net.IP, pin int, controller_id, device
 		return err
 	}
 	resp_status_add_noc, err := resp.Tlv.GetIntRec([]int{1, 0, 0, 1, 0})
+	if err != nil {
+		return fmt.Errorf("error during AddNOC %s", err.Error())
+	}
 	if resp_status_add_noc != 0 {
 		return fmt.Errorf("unexpected status to AddNOC %d", resp_status_add_noc)
 	}
